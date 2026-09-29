@@ -1,5 +1,5 @@
 // Bong bóng thoại trên đầu robot: nhắc việc đang chờ (việc đầu tiên + "+N"), hoặc câu tóm tắt khi bấm vào robot.
-// Vị trí do robot đặt mỗi khung hình (Robot.tsx) — chỉ trong khoảng trống bên trái màn hình, không đè lên giao diện.
+// Chỉ nằm trong khoảng trống bên trái màn hình, không đè lên giao diện (bubblePlacement.ts; đổi cỡ cửa sổ thì StageSync đặt lại).
 import { useLayoutEffect, useRef } from 'react'
 import { countsFor } from '../../../shared/filters'
 import { tr } from '../../../shared/i18n'
@@ -8,8 +8,8 @@ import { ReminderActions, ReminderHead } from '../screen/ReminderParts'
 import { useAlerts } from '../state/alertStore'
 import { useData } from '../state/dataStore'
 import { useHud } from '../state/hudStore'
+import { placeBubble } from './bubblePlacement'
 import { hud } from './hudRefs'
-import { requestFrame } from './renderLoop'
 
 function Summary(): React.JSX.Element {
   const tasks = useData((s) => s.tasks)
@@ -37,7 +37,7 @@ export function ReminderBubble(): React.JSX.Element | null {
     const measure = (): void => {
       hud.bubbleW = el.offsetWidth
       hud.bubbleH = el.offsetHeight
-      requestFrame()
+      placeBubble()
     }
     const ro = new ResizeObserver(measure)
     ro.observe(el)

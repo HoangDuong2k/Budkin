@@ -445,7 +445,7 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
       if (!(await page.locator('.bubble').count())) return true
       const box = await page.locator('.bubble').boundingBox()
       const rect = await probe(page, (p) => p.stage.screenRect)
-      where = JSON.stringify({ box, screenX: rect.x })
+      where = JSON.stringify({ box, screenX: rect.x, frames: await page.evaluate('window.__budkin.renderStats.frames'), visibility: await page.evaluate('document.visibilityState') })
       return !!box && box.x >= 0 && box.y >= 0 && box.x + box.width <= rect.x
     })
   assert(await insideGap(), `bong bóng thoại nằm trong khoảng trống bên trái, không đè lên màn hình ${where}`)

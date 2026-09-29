@@ -216,19 +216,10 @@ export function Robot(): React.JSX.Element {
       ledHalo.current.material.color.copy(ledMat.color)
     }
 
-    // Vị trí "Zzz" và bong bóng thoại trên đầu robot (lớp HUD)
-    if (hud.zzz || hud.bubble) {
-      // Điểm cố định trên đầu robot (không nhún theo robot: bong bóng đứng yên cho dễ bấm)
+    // Vị trí "Zzz" trên đầu robot (lớp HUD)
+    if (hud.zzz) {
       const p = projectPoint({ x: l.robot.x, y: 0.3, z: l.robot.z }, stage.camera, CAMERA, stage.viewport)
-      if (hud.zzz) hud.zzz.style.transform = `translate(${Math.round(p.x + 6)}px, ${Math.round(p.y - 14)}px)`
-      const b = hud.bubble
-      if (b && hud.bubbleW) {
-        // Chỉ nằm trong khoảng trống bên trái màn hình, đuôi chỉ xuống đầu robot
-        const x = Math.round(Math.max(8, Math.min(p.x - hud.bubbleW * 0.3, stage.screenRect.x - 12 - hud.bubbleW)))
-        const y = Math.round(Math.max(8, p.y - hud.bubbleH - 10))
-        b.style.transform = `translate(${x}px, ${y}px)`
-        b.style.setProperty('--tail', `${Math.round(Math.min(hud.bubbleW - 16, Math.max(16, p.x - x)))}px`)
-      }
+      hud.zzz.style.transform = `translate(${Math.round(p.x + 6)}px, ${Math.round(p.y - 14)}px)`
     }
 
     robot.headYaw = body.current.rotation.y + headYaw.current.rotation.y
