@@ -5,6 +5,7 @@ import type { RenderReason } from '../../../shared/renderMode'
 import type { Quality } from '../../../shared/types'
 import { useData } from '../state/dataStore'
 import { bubbleWidthFor, useHud } from '../state/hudStore'
+import { useUi } from '../state/uiStore'
 import { placeBubble } from './bubblePlacement'
 import { Hud } from './Hud'
 import { projectPlaneRect, snapOutward } from './math/framing'
@@ -143,10 +144,15 @@ export function SceneStage({ webgl, software, onFallback, children }: Props): Re
   const stageRef = useRef<HTMLDivElement>(null)
   const screenRef = useRef<HTMLDivElement>(null)
   const settingsQuality = useData((s) => s.settings?.quality ?? 'balanced')
+  const expanded = useUi((s) => s.expanded)
   const quality: Quality = software ? 'saver' : settingsQuality
   const dpr = DPR[quality]
+  useEffect(() => {
+    useHud.setState({ scene: webgl })
+    return () => useHud.setState({ scene: false })
+  }, [webgl])
   return (
-    <div className="stage" ref={stageRef} data-mode={webgl ? '3d' : '2d'}>
+    <div className={`stage ${webgl && expanded ? 'expanded' : ''}`} ref={stageRef} data-mode={webgl ? '3d' : '2d'}>
       {webgl ? (
         // Bấm vào cảnh 3D (đèn, robot) không làm mất focus của ô đang gõ trên màn hình
         <div className="stage-canvas" onMouseDown={(e) => e.preventDefault()}>

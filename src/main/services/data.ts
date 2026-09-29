@@ -191,6 +191,12 @@ export class DataService {
     return d
   }
 
+  /** Vị trí đầu cột trạng thái (việc mới hiện ngay dưới ô "Thêm việc", không chìm xuống đáy cột) */
+  private startOfColumn(status: TaskStatus): number {
+    const min = this.db.get<{ m: number | null }>('SELECT min(sort_order) AS m FROM tasks WHERE deleted_at IS NULL AND status = ?', status)?.m
+    return min === null || min === undefined ? ORDER_STEP : min - ORDER_STEP
+  }
+
   /** Vị trí cuối cột trạng thái */
   private endOfColumn(status: TaskStatus, exceptId?: string): number {
     const max = this.db.get<{ m: number | null }>(
@@ -236,7 +242,7 @@ export class DataService {
         due.recurrence ? JSON.stringify(due.recurrence) : null,
         due.recurrence ? id : null,
         due.recurrence ? 0 : null,
-        this.endOfColumn(status),
+        this.startOfColumn(status),
         status === 'done' ? now : null,
         taskSearchText(input.title, notes),
         now,
@@ -330,7 +336,8 @@ export class DataService {
       let order = place()
       if (order === null) {
         this.renumberColumn(status, id)
-        order = place()!
+        // Vẫn không có chỗ: hai hàng xóm ngược thứ tự (giao diện còn dữ liệu cũ) — đặt xuống cuối cột
+        order = place() ?? this.endOfColumn(status, id)
       }
       if (status !== row.status) this.writeStatus(row, status, order)
       else {

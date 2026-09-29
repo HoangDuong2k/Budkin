@@ -1,6 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import type { Quality } from '../../../shared/types'
+import { useUi } from '../state/uiStore'
 import { hud } from './hudRefs'
 import { Lamp } from './Lamp'
 import { Lighting } from './Lighting'
@@ -49,7 +50,12 @@ function Driver({ quality, software }: { quality: Quality; software: boolean }):
             requestFrame()
           }, 1000 / fps)
         : undefined
-    const onVisibility = (): void => setPaused(document.hidden)
+    const onVisibility = (): void => setPaused(document.hidden, 'hidden')
+    // Chế độ Mở rộng: giao diện che gần hết cảnh — không vẽ
+    setPaused(useUi.getState().expanded, 'expanded')
+    const offExpanded = useUi.subscribe((s, prev) => {
+      if (s.expanded !== prev.expanded) setPaused(s.expanded, 'expanded')
+    })
     document.addEventListener('visibilitychange', onVisibility)
     requestFrame()
     return () => {
@@ -57,6 +63,7 @@ function Driver({ quality, software }: { quality: Quality; software: boolean }):
       offPointer()
       offInput()
       document.removeEventListener('visibilitychange', onVisibility)
+      offExpanded()
       bindRenderer(null)
     }
   }, [get, quality, software])

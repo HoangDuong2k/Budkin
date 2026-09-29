@@ -5,6 +5,8 @@ import type { Quality } from '../../../shared/types'
 
 let get: (() => RootState) | null = null
 let minInterval = 1000 / 60
+/** Các lý do đang dừng vẽ hẳn (cửa sổ ẩn, chế độ Mở rộng…) — còn lý do nào thì còn dừng */
+const pauses = new Set<string>()
 let lastFrameAt = 0
 let pending: ReturnType<typeof setTimeout> | null = null
 
@@ -16,6 +18,8 @@ export const renderStats = { frames: 0 }
 
 export function bindRenderer(getState: (() => RootState) | null): void {
   get = getState
+  // Canvas tạo lại (đổi mức chất lượng) trong lúc đang dừng: vẫn dừng
+  if (getState && pauses.size) getState().setFrameloop('never')
 }
 
 export function setMaxFps(fps: number): void {
@@ -47,10 +51,14 @@ export function markFrame(): void {
   renderStats.frames++
 }
 
-/** Dừng hẳn / chạy lại vòng vẽ (cửa sổ ẩn, chế độ Mở rộng) */
-export function setPaused(paused: boolean): void {
+/** Dừng hẳn / chạy lại vòng vẽ vì một lý do (cửa sổ ẩn, chế độ Mở rộng); hết mọi lý do thì vẽ lại */
+export function setPaused(paused: boolean, reason: string): void {
+  const was = pauses.size > 0
+  if (paused) pauses.add(reason)
+  else pauses.delete(reason)
+  const now = pauses.size > 0
   const state = get?.()
-  if (!state) return
-  state.setFrameloop(paused ? 'never' : 'demand')
-  if (!paused) state.invalidate()
+  if (!state || was === now) return
+  state.setFrameloop(now ? 'never' : 'demand')
+  if (!now) state.invalidate()
 }

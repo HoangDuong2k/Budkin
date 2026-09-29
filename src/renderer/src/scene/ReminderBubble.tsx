@@ -8,6 +8,7 @@ import { ReminderActions, ReminderHead } from '../screen/ReminderParts'
 import { useAlerts } from '../state/alertStore'
 import { useData } from '../state/dataStore'
 import { useHud } from '../state/hudStore'
+import { useUi } from '../state/uiStore'
 import { placeBubble } from './bubblePlacement'
 import { hud } from './hudRefs'
 
@@ -27,9 +28,11 @@ export function ReminderBubble(): React.JSX.Element | null {
   const active = useAlerts((s) => s.active)
   const width = useHud((s) => s.bubbleWidth)
   const summary = useHud((s) => s.summaryUntil > 0)
+  // Chế độ Mở rộng: giao diện che robot — nhắc việc hiện banner trong màn hình
+  const expanded = useUi((s) => s.expanded)
   const ref = useRef<HTMLDivElement>(null)
   const item = active[0]
-  const show = width > 0 && (item !== undefined || summary)
+  const show = width > 0 && !expanded && (item !== undefined || summary)
   useLayoutEffect(() => {
     const el = ref.current
     if (!show || !el) return

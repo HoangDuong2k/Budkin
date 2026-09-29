@@ -16,7 +16,24 @@ robot phát sáng.
 | ![Bàn làm việc khi bật đèn](docs/screenshots/desk-day.png) | ![Bàn làm việc khi tắt đèn](docs/screenshots/desk-night.png) |
 
 > Đang phát triển theo từng mốc (M0 → M8). Đã xong: khung dự án, dữ liệu (SQLite), giao diện quản lý việc trên màn hình,
-> cảnh 3D (robot nhìn theo chuột, đèn đổi theme), nhắc việc và chạy nền. Tiếp theo: Kanban & Lịch, task lặp lại, đóng gói.
+> cảnh 3D (robot nhìn theo chuột, đèn đổi theme), nhắc việc và chạy nền, Kanban & Lịch. Tiếp theo: task lặp lại,
+> quản lý dữ liệu & cài đặt, đóng gói.
+
+## Danh sách, Kanban, Lịch
+
+| Kanban | Lịch |
+|---|---|
+| ![Kanban](docs/screenshots/kanban.png) | ![Lịch](docs/screenshots/calendar.png) |
+
+- **Kanban:** 3 cột Cần làm / Đang làm / Đã xong, kéo thả thẻ bằng chuột (hoặc bàn phím: Tab tới thẻ, Space nhấc lên,
+  phím mũi tên di chuyển, Space thả). Kéo sang "Đã xong" là Budkin ăn mừng.
+- **Lịch:** tháng hoặc tuần; kéo việc sang ngày khác để đổi hạn (nhắc việc tự đặt lại), kéo lên dải "Chưa có hạn" để bỏ
+  hạn, kéo việc chưa có hạn xuống một ngày để xếp lịch.
+- Cả hai đều lọc theo dự án / nhãn đang chọn và ô tìm kiếm.
+- **Chế độ Mở rộng** (phím **F**): giao diện phủ gần kín cửa sổ, cảnh 3D tạm dừng — tiện khi cửa sổ nhỏ.
+
+Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm · **F** Mở rộng · **Esc** đóng / thoát ·
+**Ctrl+Shift+L** bật / tắt đèn · **Ctrl+Q** thoát hẳn.
 
 ## Nhắc việc, chạy nền
 

@@ -44,6 +44,23 @@ export function shortDate(date: string, today: string): string {
   return `${wd}, ${d}/${m}${sameYear ? '' : `/${y}`}`
 }
 
+/** Tiêu đề lịch tháng: "Tháng 10, 2026" / "October 2026" */
+export function monthTitle(y: number, m: number): string {
+  return getLang() === 'en' ? `${EN_MONTHS[m - 1]} ${y}` : `${tr('Tháng {m}', { m })}, ${y}`
+}
+
+/** Tiêu đề lịch tuần: "5 – 11/10/2026", "28/9 – 4/10/2026" / "Oct 5 – 11, 2026", "Sep 28 – Oct 4, 2026" */
+export function weekTitle(first: string, last: string): string {
+  const a = parseYmd(first)
+  const b = parseYmd(last)
+  if (getLang() === 'en') {
+    const start = `${EN_MONTHS_SHORT[a.m - 1]} ${a.d}`
+    const end = a.m === b.m ? `${b.d}` : `${EN_MONTHS_SHORT[b.m - 1]} ${b.d}`
+    return `${start} – ${end}, ${b.y}`
+  }
+  return a.m === b.m ? `${a.d} – ${b.d}/${b.m}/${b.y}` : `${a.d}/${a.m} – ${b.d}/${b.m}/${b.y}`
+}
+
 /** Ngày đầy đủ: "Thứ Sáu, 3 tháng 10" / "Friday, October 3" (khác năm thì thêm năm) */
 export function fullDate(date: string, today: string): string {
   const { y, m, d } = parseYmd(date)

@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import type { Selection } from '../../../shared/filters'
 
 export type View = 'list' | 'kanban' | 'calendar'
+export type CalendarMode = 'month' | 'week'
 
 export interface Toast {
   id: number
@@ -22,6 +23,11 @@ interface UiState {
   /** Đếm tăng mỗi lần muốn đưa con trỏ vào ô thêm việc nhanh (phím N) */
   quickAddFocus: number
   searchFocus: number
+  /** Chế độ Mở rộng (phím F): giao diện phủ gần kín cửa sổ, cảnh 3D tạm dừng */
+  expanded: boolean
+  calendarMode: CalendarMode
+  /** Lịch đang xem tháng / tuần chứa ngày này (null: hôm nay) */
+  calendarDate: string | null
   setView: (view: View) => void
   select: (selection: Selection) => void
   setSearch: (search: string) => void
@@ -31,12 +37,15 @@ interface UiState {
   dismissToast: (id: number) => void
   focusQuickAdd: () => void
   focusSearch: () => void
+  setExpanded: (expanded: boolean) => void
+  setCalendarMode: (mode: CalendarMode) => void
+  setCalendarDate: (date: string | null) => void
 }
 
 const KEY = 'budkin.ui'
 
 /** Nhớ lựa chọn xem cho lần mở sau (chỉ là tiện lợi — đọc/ghi lỗi thì bỏ qua) */
-function loadPrefs(): Partial<Pick<UiState, 'view' | 'selection' | 'sidebarOpen'>> {
+function loadPrefs(): Partial<Pick<UiState, 'view' | 'selection' | 'sidebarOpen' | 'calendarMode'>> {
   try {
     return JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<UiState>
   } catch {
@@ -56,6 +65,9 @@ export const useUi = create<UiState>((set, get) => ({
   toasts: [],
   quickAddFocus: 0,
   searchFocus: 0,
+  expanded: false,
+  calendarMode: prefs.calendarMode === 'week' ? 'week' : 'month',
+  calendarDate: null,
   setView: (view) => set({ view }),
   select: (selection) => set({ selection, search: '' }),
   setSearch: (search) => set({ search }),
@@ -68,13 +80,16 @@ export const useUi = create<UiState>((set, get) => ({
   },
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
   focusQuickAdd: () => set({ quickAddFocus: get().quickAddFocus + 1, editingId: null }),
-  focusSearch: () => set({ searchFocus: get().searchFocus + 1 })
+  focusSearch: () => set({ searchFocus: get().searchFocus + 1 }),
+  setExpanded: (expanded) => set({ expanded }),
+  setCalendarMode: (calendarMode) => set({ calendarMode }),
+  setCalendarDate: (calendarDate) => set({ calendarDate })
 }))
 
 useUi.subscribe((s, prev) => {
-  if (s.view === prev.view && s.selection === prev.selection && s.sidebarOpen === prev.sidebarOpen) return
+  if (s.view === prev.view && s.selection === prev.selection && s.sidebarOpen === prev.sidebarOpen && s.calendarMode === prev.calendarMode) return
   try {
-    localStorage.setItem(KEY, JSON.stringify({ view: s.view, selection: s.selection, sidebarOpen: s.sidebarOpen }))
+    localStorage.setItem(KEY, JSON.stringify({ view: s.view, selection: s.selection, sidebarOpen: s.sidebarOpen, calendarMode: s.calendarMode }))
   } catch {
     // bộ nhớ trình duyệt bị chặn: không nhớ được, không sao
   }

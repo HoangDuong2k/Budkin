@@ -1,22 +1,57 @@
 // Giao diện "hệ điều hành" trên màn hình máy tính: thanh trên, thanh bên, danh sách, khung sửa, toast
 import { useEffect, useRef } from 'react'
 import { pad2 } from '../../../shared/datetime'
-import { tr } from '../../../shared/i18n'
+import { tr, trKey } from '../../../shared/i18n'
 import { useNow } from '../clock'
+import { useHud } from '../state/hudStore'
 import { useTheme } from '../state/themeStore'
-import { useUi } from '../state/uiStore'
+import { useUi, type View } from '../state/uiStore'
 import { startQuickAdd } from './actions'
-import { Icon } from './icons'
+import { CalendarView } from './CalendarView'
+import { Icon, type IconName } from './icons'
+import { KanbanView } from './KanbanView'
 import { ListView } from './ListView'
 import { ReminderBanner } from './ReminderBanner'
 import { Sidebar } from './Sidebar'
 import { TaskEditor } from './TaskEditor'
+
+const VIEWS: Array<{ id: View; icon: IconName; label: string; key: string }> = [
+  { id: 'list', icon: 'list', label: trKey('Danh sách'), key: '1' },
+  { id: 'kanban', icon: 'kanban', label: trKey('Kanban'), key: '2' },
+  { id: 'calendar', icon: 'calendar', label: trKey('Lịch'), key: '3' }
+]
+
+/** Chuyển cách xem: Danh sách / Kanban / Lịch (phím 1 / 2 / 3) */
+function ViewSwitch(): React.JSX.Element {
+  const view = useUi((s) => s.view)
+  const setView = useUi((s) => s.setView)
+  return (
+    <div className="view-switch" role="radiogroup" aria-label={tr('Cách xem')}>
+      {VIEWS.map((v) => (
+        <button
+          key={v.id}
+          role="radio"
+          aria-checked={view === v.id}
+          className={view === v.id ? 'on' : ''}
+          title={`${tr(v.label)} (${v.key})`}
+          onClick={() => setView(v.id)}
+        >
+          <Icon name={v.icon} size={14} />
+          <span className="label">{tr(v.label)}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
 
 function TopBar(): React.JSX.Element {
   const search = useUi((s) => s.search)
   const setSearch = useUi((s) => s.setSearch)
   const toggleSidebar = useUi((s) => s.toggleSidebar)
   const searchFocus = useUi((s) => s.searchFocus)
+  const expanded = useUi((s) => s.expanded)
+  const setExpanded = useUi((s) => s.setExpanded)
+  const scene = useHud((s) => s.scene)
   const now = useNow()
   const ref = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -28,6 +63,7 @@ function TopBar(): React.JSX.Element {
         <Icon name="sidebar" />
       </button>
       <span className="brand">Budkin</span>
+      <ViewSwitch />
       <div className="grow" />
       <div className="search">
         <Icon name="search" size={14} />
@@ -55,6 +91,17 @@ function TopBar(): React.JSX.Element {
         <Icon name="plus" size={14} />
         <span className="label">{tr('Thêm việc')}</span>
       </button>
+      {scene && (
+        <button
+          className="icon-btn expand-btn"
+          onClick={() => setExpanded(!expanded)}
+          aria-pressed={expanded}
+          aria-label={expanded ? tr('Thu về màn hình (F)') : tr('Mở rộng (F)')}
+          title={expanded ? tr('Thu về màn hình (F)') : tr('Mở rộng (F)')}
+        >
+          <Icon name={expanded ? 'collapse' : 'expand'} size={15} />
+        </button>
+      )}
       <span className="clock" aria-hidden>
         {pad2(Math.floor(now.minutes / 60))}:{pad2(now.minutes % 60)}
       </span>
@@ -108,6 +155,7 @@ function useShortcuts(): void {
         if (typing) el.blur()
         else if (ui.editingId) ui.openEditor(null)
         else if (ui.search) ui.setSearch('')
+        else if (ui.expanded) ui.setExpanded(false)
         return
       }
       if (typing || e.ctrlKey || e.metaKey || e.altKey) return
@@ -117,6 +165,13 @@ function useShortcuts(): void {
       } else if (e.key === '/') {
         e.preventDefault()
         ui.focusSearch()
+      } else if (e.key === '1' || e.key === '2' || e.key === '3') {
+        e.preventDefault()
+        ui.setView(VIEWS[Number(e.key) - 1].id)
+      } else if ((e.key === 'f' || e.key === 'F') && useHud.getState().scene) {
+        // Chế độ Mở rộng chỉ có nghĩa khi có cảnh 3D (giao diện 2D đã phủ kín cửa sổ)
+        e.preventDefault()
+        ui.setExpanded(!ui.expanded)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -127,14 +182,15 @@ function useShortcuts(): void {
 export function Shell(): React.JSX.Element {
   const sidebarOpen = useUi((s) => s.sidebarOpen)
   const editing = useUi((s) => s.editingId !== null)
+  const view = useUi((s) => s.view)
   useShortcuts()
   return (
     <div className={`screen-app ${sidebarOpen ? '' : 'sidebar-closed'} ${editing ? 'editing' : ''}`}>
       <TopBar />
       <Sidebar />
-      <main className="main">
+      <main className={`main view-${view}`}>
         <ReminderBanner />
-        <ListView />
+        {view === 'kanban' ? <KanbanView /> : view === 'calendar' ? <CalendarView /> : <ListView />}
       </main>
       <TaskEditor />
       <Toasts />

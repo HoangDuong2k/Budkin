@@ -161,20 +161,21 @@ describe('thứ tự trên Kanban', () => {
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((t) => t.title)
 
-  it('thả vào giữa hai thẻ, sang cột khác, về đầu cột', () => {
+  it('việc mới lên đầu cột; thả vào giữa hai thẻ, về đầu cột, sang cột khác', () => {
     const [a, b, c] = ['A', 'B', 'C'].map((title) => data.createTask({ title }))
-    expect(column()).toEqual(['A', 'B', 'C'])
-    data.moveTask(c.id, { beforeId: a.id, afterId: b.id })
-    expect(column()).toEqual(['A', 'C', 'B'])
-    data.moveTask(b.id, { afterId: a.id })
-    expect(column()).toEqual(['B', 'A', 'C'])
+    expect(column()).toEqual(['C', 'B', 'A'])
+    data.moveTask(a.id, { beforeId: c.id, afterId: b.id })
+    expect(column()).toEqual(['C', 'A', 'B'])
+    data.moveTask(b.id, { afterId: c.id })
+    expect(column()).toEqual(['B', 'C', 'A'])
     const moved = data.moveTask(a.id, { status: 'in_progress' })
     expect(moved.status).toBe('in_progress')
     expect(column()).toEqual(['B', 'C'])
   })
 
   it('chèn liên tục vào cùng một khe: tự đánh số lại, thứ tự vẫn đúng', () => {
-    const [a, b] = ['A', 'B'].map((title) => data.createTask({ title }))
+    // Việc mới lên đầu cột: tạo B trước để A nằm trên B
+    const [b, a] = ['B', 'A'].map((title) => data.createTask({ title }))
     const inserted: string[] = []
     let below = b.id
     for (let i = 0; i < 60; i++) {
@@ -184,6 +185,13 @@ describe('thứ tự trên Kanban', () => {
       inserted.unshift(`X${i}`)
     }
     expect(column()).toEqual(['A', ...inserted, 'B'])
+  })
+
+  it('hàng xóm ngược thứ tự (giao diện còn dữ liệu cũ): đặt xuống cuối cột thay vì lỗi', () => {
+    const [b, a] = ['B', 'A'].map((title) => data.createTask({ title }))
+    const x = data.createTask({ title: 'X' })
+    data.moveTask(x.id, { beforeId: b.id, afterId: a.id })
+    expect(column()).toEqual(['A', 'B', 'X'])
   })
 })
 

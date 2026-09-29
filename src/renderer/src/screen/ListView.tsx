@@ -13,7 +13,7 @@ import { Icon } from './icons'
 import { TaskRow } from './TaskRow'
 
 /** Thêm việc nhanh theo ngữ cảnh đang xem: Hôm nay → hạn hôm nay; dự án / nhãn → gán luôn */
-function QuickAdd({ sel, today }: { sel: Selection; today: string }): React.JSX.Element {
+export function QuickAdd({ sel, today }: { sel: Selection; today: string }): React.JSX.Element {
   const [text, setText] = useState('')
   const ref = useRef<HTMLInputElement>(null)
   const focusTick = useUi((s) => s.quickAddFocus)
@@ -53,7 +53,7 @@ function QuickAdd({ sel, today }: { sel: Selection; today: string }): React.JSX.
   )
 }
 
-function useSelectionTitle(sel: Selection, now: Now): { title: string; subtitle?: string } {
+export function useSelectionTitle(sel: Selection, now: Now): { title: string; subtitle?: string } {
   const projects = useData((s) => s.projects)
   const tags = useData((s) => s.tags)
   if (sel.kind === 'project') return { title: projects[sel.id]?.name ?? tr('Dự án') }

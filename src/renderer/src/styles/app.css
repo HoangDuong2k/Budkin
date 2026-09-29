@@ -79,6 +79,30 @@ body {
   box-shadow: var(--shadow);
 }
 
+/* Chế độ Mở rộng (phím F): giao diện phủ gần kín cửa sổ, đè lên vị trí do cảnh 3D đặt; cảnh phía sau tối lại, dừng vẽ */
+.stage.expanded::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.stage.expanded .screen {
+  left: 12px !important;
+  top: 12px !important;
+  width: calc(100% - 24px) !important;
+  height: calc(100% - 24px) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.stage.expanded .scene-hud,
+.stage.expanded .scene-hotspots {
+  display: none;
+}
+
 /* ---- Lớp HUD trên cảnh 3D (vị trí do cảnh đặt mỗi khung bằng transform) ---- */
 
 .scene-hotspots,

@@ -119,6 +119,28 @@ export const EN: Record<string, string> = {
   'Hôm nay còn {n} việc.': '{n} tasks left today.',
   'Hôm nay còn {n} việc, {m} việc quá hạn.': '{n} tasks left today, {m} overdue.',
 
+  // Kanban, Lịch, chế độ Mở rộng
+  'Cách xem': 'View',
+  'Lịch': 'Calendar',
+  'Mở rộng (F)': 'Expand (F)',
+  'Thu về màn hình (F)': 'Back to the desk (F)',
+  'Kéo việc vào đây': 'Drag tasks here',
+  'Đã nhấc "{title}"': 'Picked up "{title}"',
+  '"{title}" đang ở cột {column}': '"{title}" is over the {column} column',
+  'Đã thả "{title}" vào cột {column}': 'Dropped "{title}" into the {column} column',
+  'Đã huỷ kéo "{title}"': 'Cancelled dragging "{title}"',
+  'Nhấn Space để nhấc thẻ, phím mũi tên để di chuyển, Space để thả, Esc để huỷ.':
+    'Press Space to pick up a card, the arrow keys to move it, Space to drop it and Esc to cancel.',
+  '+{n} việc': '+{n} more',
+  'Chưa có hạn': 'No due date',
+  'Kéo việc lên đây để bỏ hạn': 'Drag a task here to remove its due date',
+  'Tuần trước': 'Previous week',
+  'Tuần sau': 'Next week',
+  'Kiểu lịch': 'Calendar layout',
+  'Tháng': 'Month',
+  'Tuần': 'Week',
+  'Tháng {m}': 'Month {m}',
+
   // Khay hệ thống, chạy nền
   'Mở Budkin': 'Open Budkin',
   'Thêm việc nhanh': 'Quick add a task',

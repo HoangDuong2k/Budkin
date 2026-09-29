@@ -1,8 +1,10 @@
 // Thao tác dữ liệu từ giao diện: gọi main, lỗi thì hiện toast (không bao giờ ném ra giao diện)
 import type { ArgsOf, Channel, ResultOf } from '../../../shared/api'
 import { tr } from '../../../shared/i18n'
+import { orderBetween } from '../../../shared/ordering'
+import type { TaskPatch } from '../../../shared/schemas'
 import type { Task, TaskStatus } from '../../../shared/types'
-import { nowParts } from '../clock'
+import { now, nowParts } from '../clock'
 import { ApiError, call } from '../ipc'
 import { dispatchRobot } from '../scene/robotState'
 import { useData } from '../state/dataStore'
@@ -55,6 +57,41 @@ export function openTask(taskId: string): void {
   const task = useData.getState().tasks[taskId]
   ui.select({ kind: 'smart', id: task?.dueDate && task.dueDate <= nowParts().date ? 'today' : 'all' })
   ui.openEditor(taskId)
+}
+
+/** Đặt lại một việc trong bộ đệm (trả lại khi thao tác lạc quan bị lỗi) */
+function putTask(task: Task): void {
+  useData.setState({ tasks: { ...useData.getState().tasks, [task.id]: task } })
+}
+
+/**
+ * Kéo thẻ trên Kanban: sang cột `status`, nằm giữa beforeId / afterId. Hiện ngay trên màn hình (lạc quan), main trả về
+ * bản chuẩn qua data:changed; lỗi thì trả thẻ về chỗ cũ. Kéo sang "Đã xong" thì robot ăn mừng
+ */
+export async function moveTask(task: Task, status: TaskStatus, beforeId: string | null, afterId: string | null): Promise<void> {
+  const tasks = useData.getState().tasks
+  const prev = tasks[task.id] ?? task
+  const order = orderBetween(beforeId ? (tasks[beforeId]?.sortOrder ?? null) : null, afterId ? (tasks[afterId]?.sortOrder ?? null) : null)
+  putTask({ ...prev, status, sortOrder: order ?? prev.sortOrder, completedAt: status === 'done' ? (prev.completedAt ?? now()) : null })
+  const res = await run('tasks:move', task.id, { status, beforeId, afterId })
+  if (!res.ok) putTask(prev)
+  else if (status === 'done' && prev.status !== 'done') celebrate()
+}
+
+/** Kéo việc trên Lịch sang ngày khác (null: bỏ hạn). Việc chưa có hạn được xếp lịch thì nhắc trong ngày đến hạn */
+export async function rescheduleTask(task: Task, dueDate: string | null): Promise<void> {
+  const prev = useData.getState().tasks[task.id] ?? task
+  if (prev.dueDate === dueDate) return
+  const patch: TaskPatch = { dueDate }
+  if (dueDate && !prev.dueDate) patch.remindBeforeMin = 0
+  putTask({
+    ...prev,
+    dueDate,
+    dueTime: dueDate ? prev.dueTime : null,
+    remindBeforeMin: dueDate ? (patch.remindBeforeMin ?? prev.remindBeforeMin) : null
+  })
+  const res = await run('tasks:update', task.id, patch)
+  if (!res.ok) putTask(prev)
 }
 
 // ---- Nhắc việc (bong bóng thoại của robot, banner trong màn hình) ----

@@ -11,7 +11,7 @@ import { mkdirSync, rmSync } from 'fs'
 import { join, resolve } from 'path'
 import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core'
 import type { ApiResponse, ArgsOf, Channel, DeskApi, ResultOf } from '../src/shared/api'
-import { localDateOf, pad2 } from '../src/shared/datetime'
+import { addDays, localDateOf, pad2 } from '../src/shared/datetime'
 import { SCREEN_BG } from '../src/shared/palette'
 import type { Task } from '../src/shared/types'
 
@@ -485,6 +485,83 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
     await value(page, 'tasks:create', { title, ...dueOf(now + (i + 1) * 20 * MIN), remindBeforeMin: 0 })
 }
 
+/** Kéo bằng chuột thật: nhấn giữ, nhích quá ngưỡng bắt đầu kéo, đi dần tới đích, thả */
+async function dragTo(page: Page, from: { x: number; y: number }, to: { x: number; y: number }): Promise<void> {
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.mouse.move(from.x + 12, from.y + 8, { steps: 4 })
+  await page.mouse.move(to.x, to.y, { steps: 14 })
+  await page.waitForTimeout(150)
+  await page.mouse.up()
+}
+
+async function centerOf(page: Page, selector: string): Promise<{ x: number; y: number }> {
+  // Cột / ô lịch có thanh cuộn riêng: đưa phần tử vào tầm nhìn trước
+  await page.locator(selector).first().scrollIntoViewIfNeeded()
+  const box = await page.locator(selector).first().boundingBox()
+  if (!box) throw new Error(`Không thấy ${selector}`)
+  return { x: box.x + box.width / 2, y: box.y + Math.min(box.height / 2, 40) }
+}
+
+/**
+ * Kanban và Lịch (M5): kéo thẻ sang "Đang làm" bằng chuột thật; kéo việc trên Lịch sang ngày mai → nhắc việc đặt lại;
+ * chế độ Mở rộng (F) phủ gần kín cửa sổ và dừng vẽ cảnh 3D. Trả về id thẻ đã kéo để kiểm tra sau khi mở lại app
+ */
+async function boardFlow(app: ElectronApplication, page: Page): Promise<string> {
+  // Về danh sách "Tất cả việc" để Kanban / Lịch không bị lọc
+  await page.locator('.sidebar .nav-main').nth(3).click()
+  const card = await value(page, 'tasks:create', { title: 'Viết kịch bản video giới thiệu' })
+
+  await page.locator('.list-head').first().click()
+  await page.keyboard.press('2')
+  assert(await until(async () => (await page.locator('.board').count()) === 1), 'phím 2: chuyển sang Kanban')
+  const cardSel = `.board-col.col-todo .task-card[data-task-id="${card.id}"]`
+  assert(await until(async () => (await page.locator(cardSel).count()) === 1), 'việc mới nằm ở cột "Cần làm"')
+  await dragTo(page, await centerOf(page, cardSel), await centerOf(page, '.board-col.col-in_progress .board-col-body'))
+  assert(await until(async () => (await taskTitled(page, card.title))?.status === 'in_progress'), 'kéo thẻ bằng chuột sang "Đang làm": việc chuyển sang Đang làm')
+  assert((await page.locator(`.board-col.col-in_progress .task-card[data-task-id="${card.id}"]`).count()) === 1, 'thẻ nằm trong cột "Đang làm"')
+  await page.screenshot({ path: join(OUT, '14-kanban.png') })
+
+  // Lịch: việc hạn ngày mai, nhắc trước 1 ngày (báo ngay) → kéo sang ngày kia → nhắc việc đặt lại theo hạn mới
+  // (robot thôi báo). Không dùng ô hôm nay: đã nhiều việc, có thể bị gộp vào "+N"
+  const now = await mainNow(app)
+  const tomorrow = addDays(localDateOf(now), 1)
+  const later = addDays(localDateOf(now), 2)
+  const due = await value(page, 'tasks:create', { title: 'Gửi hợp đồng cho đối tác', ...dueOf(now + 24 * 3600_000), remindBeforeMin: 1440 })
+  const alerted = async (): Promise<boolean> => (await probe(page, (p) => (p as unknown as { alerts: { getState(): { active: Array<{ taskId: string }> } } }).alerts.getState().active)).some((a) => a.taskId === due.id)
+  assert(await until(alerted), 'việc nhắc trước 1 ngày: có nhắc việc đang chờ')
+  await page.keyboard.press('3')
+  assert(await until(async () => (await page.locator('.cal-grid').count()) === 1), 'phím 3: chuyển sang Lịch (tháng)')
+  await dragTo(page, await centerOf(page, `.cal-cell[data-date="${tomorrow}"] .cal-chip[data-task-id="${due.id}"]`), await centerOf(page, `.cal-cell[data-date="${later}"]`))
+  assert(await until(async () => (await taskTitled(page, due.title))?.dueDate === later), 'kéo việc trên Lịch sang ngày kia: đổi hạn')
+  assert(await until(async () => !(await alerted())), 'đổi hạn trên Lịch: nhắc việc đặt lại theo hạn mới (robot thôi báo)')
+  await page.screenshot({ path: join(OUT, '15-calendar.png') })
+
+  // Chế độ Mở rộng: giao diện phủ gần kín cửa sổ, cảnh 3D dừng vẽ; F lần nữa thì về lại màn hình máy tính
+  const frameloop = (): Promise<string> => page.evaluate('window.__budkin.stage.getR3F().frameloop') as Promise<string>
+  await page.keyboard.press('f')
+  const vp = await probe(page, (p) => p.stage.viewport)
+  assert(
+    await until(async () => {
+      const box = await page.locator('.screen').boundingBox()
+      return !!box && box.width > vp.width * 0.9 && box.height > vp.height * 0.9 && (await frameloop()) === 'never'
+    }),
+    'phím F: Mở rộng phủ gần kín cửa sổ, cảnh 3D dừng vẽ'
+  )
+  await page.screenshot({ path: join(OUT, '16-expanded.png') })
+  await page.keyboard.press('f')
+  const rect = await probe(page, (p) => p.stage.screenRect)
+  assert(
+    await until(async () => {
+      const box = await page.locator('.screen').boundingBox()
+      return !!box && Math.abs(box.x - rect.x) < 1 && Math.abs(box.width - rect.width) < 1 && (await frameloop()) === 'demand'
+    }),
+    'F lần nữa: giao diện về khít màn hình máy tính, cảnh vẽ lại'
+  )
+  await page.keyboard.press('2')
+  return card.id
+}
+
 async function main(): Promise<void> {
   // Chống treo (vd. hộp thoại chờ người bấm): quá 5 phút thì báo lỗi, đóng app và thoát
   setTimeout(() => {
@@ -575,12 +652,17 @@ async function main(): Promise<void> {
   ;({ app, page } = await launch())
   await until(async () => probe(page, (p) => p.data.getState().loaded), 5000)
   await reminderFlow(app, page)
+  const movedCard = await boardFlow(app, page)
   await app.evaluate(({ app: a }) => a.exit(0))
   // Mở lại 2 giờ sau: ba nhắc đã quá giờ (trong vòng 6 giờ) gộp thành đúng một thông báo
   ;({ app, page } = await launch({ BUDKIN_CLOCK_OFFSET: String(CLOCK_BASE + 2 * 3600_000) }))
   const summary = await notices(app)
   assert(summary.length === 1 && summary[0].taskId === null && summary[0].title === 'Bạn có 3 việc cần làm', `mở lại app sau khi tắt: đúng 1 thông báo gộp (${JSON.stringify(summary.map((n) => n.title))})`)
   assert(await until(async () => (await page.locator('.reminder-more').textContent().catch(() => '')) === '+2'), 'mở lại app: robot vẫn báo các nhắc chưa xử lý (+2)')
+  assert(
+    await until(async () => (await page.locator(`.board-col.col-in_progress .task-card[data-task-id="${movedCard}"]`).count()) === 1, 5000),
+    'mở lại app: vẫn đang xem Kanban, thẻ đã kéo vẫn ở cột "Đang làm"'
+  )
   await app.evaluate(({ app: a }) => a.exit(0))
 
   // ---- Máy không có WebGL: chế độ 2D ----

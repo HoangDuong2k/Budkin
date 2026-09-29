@@ -3,13 +3,15 @@
 import { create } from 'zustand'
 
 interface HudState {
+  /** Đang có cảnh 3D (không phải giao diện 2D) — nút Mở rộng chỉ có ý nghĩa khi có cảnh */
+  scene: boolean
   /** Bề rộng bong bóng thoại (px); 0 = không vừa khoảng trống / chế độ 2D → nhắc việc hiện banner trong màn hình */
   bubbleWidth: number
   /** Câu tóm tắt "hôm nay còn N việc" hiện tới lúc này (performance.now) */
   summaryUntil: number
 }
 
-export const useHud = create<HudState>(() => ({ bubbleWidth: 0, summaryUntil: 0 }))
+export const useHud = create<HudState>(() => ({ scene: false, bubbleWidth: 0, summaryUntil: 0 }))
 
 /** Bong bóng hẹp hơn chừng này thì chữ, nút bị chật: dùng banner trong màn hình */
 export const BUBBLE_MIN = 168
