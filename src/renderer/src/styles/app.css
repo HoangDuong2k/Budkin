@@ -1,0 +1,79 @@
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Trước khi có data-theme: nền trong suốt để thấy màu nền cửa sổ do main đặt đúng theme (không chớp) */
+:root[data-theme] body {
+  background: var(--bg);
+}
+
+body {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ---- Sân khấu: canvas 3D + lớp giao diện đặt khít lên màn hình máy tính ---- */
+
+.stage {
+  position: fixed;
+  inset: 0;
+}
+
+.stage-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Giao diện quản lý task. Không transform / filter / will-change: chữ phải sắc nét */
+.screen {
+  position: absolute;
+  z-index: 10;
+  overflow: hidden;
+  background: var(--screen-bg);
+  container-type: size;
+  container-name: screen;
+}
+
+/* Chế độ 2D (không có WebGL): giao diện phủ cả cửa sổ */
+.stage[data-mode='2d'] .screen {
+  inset: 12px;
+  border-radius: 12px;
+}
+
+.screen-ui {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  user-select: text;
+}
+
+.screen-ui h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.screen-ui .muted {
+  color: var(--muted);
+}
+
+.btn {
+  font: inherit;
+  border: 1px solid var(--line);
+  background: var(--accent);
+  color: var(--accent-text);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  align-self: flex-start;
+}

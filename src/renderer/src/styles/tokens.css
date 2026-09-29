@@ -1,0 +1,42 @@
+/* Màu theo theme. Chỉ dựa vào [data-theme] (đèn bàn bật/tắt), không dùng prefers-color-scheme:
+   theme hệ thống đổi không đồng bộ với khung hình 3D, sẽ làm giao diện và cảnh lệch nhau. */
+
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  src: url('../assets/fonts/BeVietnamPro-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+  src: url('../assets/fonts/BeVietnamPro-Bold.ttf') format('truetype');
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f3e7d9;
+  --screen-bg: #fffdf8;
+  --panel: #f7f2ea;
+  --line: #ebe3d6;
+  --text: #2b2a33;
+  --muted: #6f6b7a;
+  --accent: #7c6cf2;
+  --accent-text: #ffffff;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #141824;
+  --screen-bg: #1a1e2a;
+  --panel: #202533;
+  --line: #2b3142;
+  --text: #e8e6f0;
+  --muted: #9a97a8;
+  --accent: #a99bff;
+  --accent-text: #15131f;
+}

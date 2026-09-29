@@ -1,0 +1,8 @@
+# Chuẩn hoá xuống dòng LF trong repo (tránh lỗi khi clone trên Windows với core.autocrlf)
+* text=auto eol=lf
+# Script NSIS phải là CRLF
+*.nsh text eol=crlf
+*.png binary
+*.ico binary
+*.ttf binary
+*.woff2 binary
