@@ -1,12 +1,17 @@
 import { Canvas, advance, useThree } from '@react-three/fiber'
-import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react'
+import { Component, useEffect, useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react'
 import * as THREE from 'three'
+import type { RenderReason } from '../../../shared/renderMode'
+import type { Quality } from '../../../shared/types'
+import { useData } from '../state/dataStore'
+import { Hud } from './Hud'
 import { projectPlaneRect, snapOutward } from './math/framing'
 import { CAMERA, cameraFor, sceneLayout } from './math/layout'
+import { requestFrame } from './renderLoop'
 import { stage } from './stage'
 import { World } from './World'
 
-const DPR: [number, number] = [1, 1.5]
+const DPR: Record<Quality, [number, number]> = { high: [1, 2], balanced: [1, 1.5], saver: [1, 1] }
 
 interface StageRefs {
   stageRef: RefObject<HTMLDivElement | null>
@@ -17,7 +22,7 @@ interface StageRefs {
  * Cửa sổ đổi cỡ: tính lại bố cục, camera, vị trí lớp giao diện và kích thước canvas rồi vẽ ngay trong cùng
  * một khung hình — lớp giao diện không bao giờ trễ một nhịp so với màn hình 3D bên dưới.
  */
-function StageSync({ stageRef, screenRef }: StageRefs): null {
+function StageSync({ stageRef, screenRef, dpr }: StageRefs & { dpr: [number, number] }): null {
   const get = useThree((s) => s.get)
   useLayoutEffect(() => {
     const el = stageRef.current
@@ -51,7 +56,9 @@ function StageSync({ stageRef, screenRef }: StageRefs): null {
       stage.screenRect = rect
       stage.viewport = { width, height }
       state.setSize(width, height)
-      state.setDpr(DPR)
+      state.setDpr(dpr)
+      // Bố cục đổi → bóng của đèn bàn tính lại (bình thường không tính lại mỗi khung)
+      state.gl.shadowMap.needsUpdate = true
       advance(performance.now())
       stage.ready = true
     }
@@ -63,34 +70,102 @@ function StageSync({ stageRef, screenRef }: StageRefs): null {
       ro.disconnect()
       stage.getR3F = null
       stage.ready = false
+      // Sang chế độ 2D: bỏ vị trí đặt tay để CSS của chế độ 2D có hiệu lực
+      for (const k of ['left', 'top', 'width', 'height'] as const) screenEl.style[k] = ''
     }
-  }, [get, stageRef, screenRef])
+  }, [get, stageRef, screenRef, dpr])
   return null
 }
 
-export function SceneStage({ webgl, children }: { webgl: boolean; children: ReactNode }): React.JSX.Element {
+/**
+ * Mất WebGL (driver lỗi, GPU bị reset): 2 lần, hoặc 2 giây không phục hồi → chuyển 2D.
+ * Nằm trong Canvas để tự gỡ khi canvas được tạo lại (đổi mức chất lượng) — lúc đó R3F cố ý huỷ context cũ,
+ * không phải lỗi GPU.
+ */
+function ContextGuard({ onFallback }: { onFallback: (reason: RenderReason) => void }): null {
+  const gl = useThree((s) => s.gl)
+  useEffect(() => {
+    let lost = 0
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const onLost = (e: Event): void => {
+      e.preventDefault()
+      lost++
+      if (lost >= 2) onFallback('context-lost')
+      else timer = setTimeout(() => onFallback('context-lost'), 2000)
+    }
+    const onRestored = (): void => {
+      clearTimeout(timer)
+      gl.shadowMap.needsUpdate = true
+      requestFrame()
+    }
+    const canvas = gl.domElement
+    canvas.addEventListener('webglcontextlost', onLost)
+    canvas.addEventListener('webglcontextrestored', onRestored)
+    return () => {
+      clearTimeout(timer)
+      canvas.removeEventListener('webglcontextlost', onLost)
+      canvas.removeEventListener('webglcontextrestored', onRestored)
+    }
+  }, [gl, onFallback])
+  return null
+}
+
+/** Lỗi trong cảnh 3D (shader, driver…) → chuyển sang giao diện 2D thay vì màn hình trắng */
+class SceneBoundary extends Component<{ onFail: (reason: RenderReason) => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true }
+  }
+  componentDidCatch(err: unknown): void {
+    console.error('[scene]', err)
+    this.props.onFail('error')
+  }
+  render(): ReactNode {
+    return this.state.failed ? null : this.props.children
+  }
+}
+
+interface Props {
+  webgl: boolean
+  software: boolean
+  onFallback: (reason: RenderReason) => void
+  children: ReactNode
+}
+
+export function SceneStage({ webgl, software, onFallback, children }: Props): React.JSX.Element {
   const stageRef = useRef<HTMLDivElement>(null)
   const screenRef = useRef<HTMLDivElement>(null)
+  const settingsQuality = useData((s) => s.settings?.quality ?? 'balanced')
+  const quality: Quality = software ? 'saver' : settingsQuality
+  const dpr = DPR[quality]
   return (
     <div className="stage" ref={stageRef} data-mode={webgl ? '3d' : '2d'}>
-      {webgl && (
+      {webgl ? (
         // Bấm vào cảnh 3D (đèn, robot) không làm mất focus của ô đang gõ trên màn hình
         <div className="stage-canvas" onMouseDown={(e) => e.preventDefault()}>
-          <Canvas
-            frameloop="demand"
-            dpr={DPR}
-            camera={{ manual: true, fov: THREE.MathUtils.radToDeg(CAMERA.fovY), near: 0.05, far: 30 }}
-            gl={{ antialias: true, alpha: false, stencil: false, powerPreference: 'low-power' }}
-            onCreated={({ gl }) => {
-              // ACES làm nhạt màu pastel
-              gl.toneMapping = THREE.NeutralToneMapping
-            }}
-          >
-            <StageSync stageRef={stageRef} screenRef={screenRef} />
-            <World />
-          </Canvas>
+          <SceneBoundary onFail={onFallback}>
+            <Canvas
+              // Đổi khử răng cưa (MSAA) phải tạo lại canvas
+              key={quality}
+              frameloop="demand"
+              dpr={dpr}
+              shadows={quality === 'saver' ? false : 'percentage'}
+              camera={{ manual: true, fov: THREE.MathUtils.radToDeg(CAMERA.fovY), near: 0.05, far: 30 }}
+              gl={{ antialias: quality !== 'saver', alpha: false, stencil: false, powerPreference: 'low-power' }}
+              onCreated={({ gl }) => {
+                // ACES làm bạc màu; Neutral giữ màu đậm của tranh
+                gl.toneMapping = THREE.NeutralToneMapping
+                gl.shadowMap.autoUpdate = false
+              }}
+            >
+              <ContextGuard onFallback={onFallback} />
+              <StageSync stageRef={stageRef} screenRef={screenRef} dpr={dpr} />
+              <World quality={quality} software={software} />
+            </Canvas>
+          </SceneBoundary>
         </div>
-      )}
+      ) : null}
+      {webgl && <Hud />}
       <div className="screen" ref={screenRef}>
         {children}
       </div>

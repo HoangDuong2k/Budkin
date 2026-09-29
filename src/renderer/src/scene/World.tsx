@@ -1,84 +1,87 @@
-import { useFrame } from '@react-three/fiber'
-import { useRef } from 'react'
-import type * as THREE from 'three'
-import { SCREEN_BG, WINDOW_BG, type Theme } from '../../../shared/palette'
-import { useTheme } from '../state/themeStore'
-import { BEZEL, CAMERA, LAMP_BOX, ROBOT_BOX } from './math/layout'
+import { useFrame, useThree } from '@react-three/fiber'
+import { useEffect } from 'react'
+import type { Quality } from '../../../shared/types'
+import { hud } from './hudRefs'
+import { Lamp } from './Lamp'
+import { Lighting } from './Lighting'
+import { projectPoint } from './math/framing'
+import { CAMERA } from './math/layout'
+import { Monitor } from './Monitor'
+import { reducedMotion } from './motion'
+import { installPointerTracking, onUserInput, pointer } from './pointer'
+import { Props } from './Props'
+import { bindRenderer, markFrame, policy, requestFrame, setMaxFps, setPaused } from './renderLoop'
+import { Robot } from './Robot'
+import { robot, robotInput } from './robotState'
+import { Room } from './Room'
 import { stage } from './stage'
+import { ThemeDirector } from './ThemeDirector'
+import { Vignette } from './Vignette'
 
-// Cảnh tạm của bước khởi tạo: bàn, màn hình (vị trí chính xác), khối giữ chỗ cho robot và đèn
+/** Chuyển động nền (robot thở, ăng-ten đung đưa) — số khung mỗi giây theo mức chất lượng */
+const AMBIENT_FPS: Record<Quality, number> = { high: 30, balanced: 10, saver: 0 }
 
-const COLORS: Record<Theme, { desk: string; bezel: string; stand: string; robot: string; lamp: string }> = {
-  light: { desk: '#e9c7a0', bezel: '#fbf8f3', stand: '#e2dace', robot: '#fff6ec', lamp: '#ffd98e' },
-  dark: { desk: '#4a3d3a', bezel: '#2a2f3d', stand: '#262b37', robot: '#d9d2c8', lamp: '#caa45e' }
+function place(el: HTMLElement | null, world: { x: number; y: number; z: number }, w: number, h: number): void {
+  if (!el) return
+  const p = projectPoint(world, stage.camera, CAMERA, stage.viewport)
+  el.style.transform = `translate(${Math.round(p.x - w / 2)}px, ${Math.round(p.y - h / 2)}px)`
+  el.style.width = `${w}px`
+  el.style.height = `${h}px`
 }
 
-function Monitor({ theme }: { theme: Theme }): React.JSX.Element {
-  const head = useRef<THREE.Group>(null)
-  const bezel = useRef<THREE.Mesh>(null)
-  const screen = useRef<THREE.Mesh>(null)
-  const neck = useRef<THREE.Mesh>(null)
+/** Điều phối vòng vẽ: đếm khung, con trỏ, chuyển động nền, tạm dừng khi cửa sổ bị ẩn */
+function Driver({ quality, software }: { quality: Quality; software: boolean }): null {
+  const get = useThree((s) => s.get)
+  useEffect(() => {
+    bindRenderer(get)
+    policy.quality = quality
+    policy.software = software
+    setMaxFps(software ? 20 : quality === 'saver' ? 30 : 60)
+    const offPointer = installPointerTracking()
+    const offInput = onUserInput(robotInput)
+    const fps = software || reducedMotion() ? 0 : AMBIENT_FPS[quality]
+    // Chuyển động nền chỉ khi cửa sổ đang được dùng: có focus, robot thức; "Cân bằng" thì chỉ 30 giây sau thao tác cuối
+    const ambient =
+      fps > 0
+        ? setInterval(() => {
+            if (document.hidden || !document.hasFocus() || robot.mode === 'sleep') return
+            if (quality === 'balanced' && performance.now() - pointer.lastInputAt > 30_000) return
+            requestFrame()
+          }, 1000 / fps)
+        : undefined
+    const onVisibility = (): void => setPaused(document.hidden)
+    document.addEventListener('visibilitychange', onVisibility)
+    requestFrame()
+    return () => {
+      clearInterval(ambient)
+      offPointer()
+      offInput()
+      document.removeEventListener('visibilitychange', onVisibility)
+      bindRenderer(null)
+    }
+  }, [get, quality, software])
+
   useFrame(() => {
+    markFrame()
     const l = stage.layout
-    head.current?.position.set(l.screenCenter.x, l.screenCenter.y, l.screenCenter.z)
-    bezel.current?.scale.set(l.screenW + BEZEL * 2, l.screenH + BEZEL * 2, 1)
-    screen.current?.scale.set(l.screenW, l.screenH, 1)
-    neck.current?.position.set(l.screenCenter.x, l.screenCenter.y / 2, l.screenCenter.z - 0.03)
-  })
-  const c = COLORS[theme]
-  return (
-    <>
-      <group ref={head} rotation-x={-CAMERA.pitch}>
-        <mesh ref={bezel} position-z={-0.016}>
-          <boxGeometry args={[1, 1, 0.03]} />
-          <meshStandardMaterial color={c.bezel} roughness={0.6} />
-        </mesh>
-        {/* Nền màn hình = nền giao diện: lệch một pixel ở mép cũng không thấy */}
-        <mesh ref={screen} position-z={0.0005}>
-          <planeGeometry />
-          <meshBasicMaterial color={SCREEN_BG[theme]} toneMapped={false} />
-        </mesh>
-      </group>
-      <mesh ref={neck}>
-        <boxGeometry args={[0.05, 0.3, 0.02]} />
-        <meshStandardMaterial color={c.stand} roughness={0.6} />
-      </mesh>
-    </>
-  )
+    place(hud.lampButton, { x: l.lamp.x - 0.02, y: 0.25, z: l.lamp.z }, 64, 150)
+    place(hud.robotButton, { x: l.robot.x, y: 0.12, z: l.robot.z }, 70, 90)
+  }, -20)
+  return null
 }
 
-function Placeholder({ box, which, color }: { box: typeof ROBOT_BOX; which: 'robot' | 'lamp'; color: string }): React.JSX.Element {
-  const ref = useRef<THREE.Mesh>(null)
-  const size = { x: box.max.x - box.min.x, y: box.max.y - box.min.y, z: box.max.z - box.min.z }
-  useFrame(() => {
-    const at = stage.layout[which]
-    ref.current?.position.set(at.x + (box.min.x + box.max.x) / 2, at.y + size.y / 2, at.z + (box.min.z + box.max.z) / 2)
-  })
-  return (
-    <mesh ref={ref}>
-      <boxGeometry args={[size.x * 0.8, size.y * 0.8, size.z * 0.8]} />
-      <meshStandardMaterial color={color} roughness={0.6} />
-    </mesh>
-  )
-}
-
-export function World(): React.JSX.Element {
-  const theme = useTheme((s) => s.theme)
-  const c = COLORS[theme]
-  const dark = theme === 'dark'
+export function World({ quality, software }: { quality: Quality; software: boolean }): React.JSX.Element {
   return (
     <>
-      <color attach="background" args={[WINDOW_BG[theme]]} />
-      <hemisphereLight args={['#fff6ea', '#d9c6b0', dark ? 0.35 : 1.6]} />
-      <directionalLight position={[-1, 2, 1.5]} intensity={dark ? 0.25 : 1.4} />
-      {/* Mặt bàn */}
-      <mesh position={[0, -0.02, 0]}>
-        <boxGeometry args={[3, 0.04, 0.8]} />
-        <meshStandardMaterial color={c.desk} roughness={0.7} />
-      </mesh>
-      <Monitor theme={theme} />
-      <Placeholder box={ROBOT_BOX} which="robot" color={c.robot} />
-      <Placeholder box={LAMP_BOX} which="lamp" color={c.lamp} />
+      <Driver quality={quality} software={software} />
+      <ThemeDirector />
+      <Lighting />
+      <Room />
+      <Monitor />
+      <Props />
+      <Lamp />
+      <Robot />
+      <Vignette />
     </>
   )
 }

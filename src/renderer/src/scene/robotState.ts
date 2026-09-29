@@ -1,0 +1,61 @@
+// Trạng thái robot đang chạy: máy trạng thái (logic/robotMachine) + hẹn giờ + giá trị cho kiểm thử
+import { TEST_TIMINGS, TIMINGS, initialState, nextDeadline, reduce, visibleMode, type RobotEvent, type VisibleMode } from './logic/robotMachine'
+import { requestFrame } from './renderLoop'
+import { playChirp } from './sound'
+
+const cfg = window.api.boot.test ? TEST_TIMINGS : TIMINGS
+
+export const robot = {
+  state: initialState(performance.now(), !window.api.boot.test),
+  mode: 'intro' as VisibleMode,
+  /** Lúc bắt đầu hoạt cảnh hiện tại (performance.now) */
+  since: performance.now(),
+  // Cho kiểm thử đọc
+  headYaw: 0,
+  headPitch: 0,
+  settled: false
+}
+robot.mode = visibleMode(robot.state)
+
+type Listener = (mode: VisibleMode) => void
+const listeners = new Set<Listener>()
+let timer: ReturnType<typeof setTimeout> | undefined
+
+/** Nghe khi hoạt cảnh đổi (HUD hiện "Zzz", bong bóng…) */
+export function onRobotMode(l: Listener): () => void {
+  listeners.add(l)
+  return () => listeners.delete(l)
+}
+
+const SOUND: Partial<Record<VisibleMode, Parameters<typeof playChirp>[0]>> = { poked: 'poke', startled: 'startled', celebrate: 'celebrate' }
+
+export function dispatchRobot(e: RobotEvent): void {
+  robot.state = reduce(robot.state, e, cfg)
+  const mode = visibleMode(robot.state)
+  if (mode !== robot.mode) {
+    robot.mode = mode
+    robot.since = performance.now()
+    const s = SOUND[mode]
+    if (s) playChirp(s)
+    for (const l of listeners) l(mode)
+  }
+  schedule()
+  requestFrame()
+}
+
+/** Hẹn đúng lúc cần kiểm tra lại (hết hoạt cảnh, tới giờ buồn ngủ) — không kiểm tra mỗi khung hình */
+function schedule(): void {
+  clearTimeout(timer)
+  const at = nextDeadline(robot.state, cfg)
+  if (!Number.isFinite(at)) return
+  timer = setTimeout(() => dispatchRobot({ type: 'tick', at: performance.now() }), Math.max(0, at - performance.now()) + 5)
+}
+
+/** Người dùng thao tác: robot tỉnh (gộp bớt — chuột di liên tục không cần gọi máy trạng thái mỗi lần) */
+export function robotInput(): void {
+  const now = performance.now()
+  if (robot.state.base === 'idle' && now - robot.state.lastInputAt < 1000) return
+  dispatchRobot({ type: 'input', at: now })
+}
+
+schedule()

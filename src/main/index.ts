@@ -116,6 +116,12 @@ function registerIpc(): void {
           send('theme:changed', theme)
         }
       },
+      'app:sceneHealthy': {
+        args: z.tuple([]),
+        run: () => {
+          if (boot.gpuCrashes > 0) saveBoot({ gpuCrashes: 0 })
+        }
+      },
       ...dataHandlers(data, onSettingsChanged)
     },
     isTrustedSender
@@ -139,6 +145,8 @@ function createWindow(): void {
       nodeIntegration: false,
       // Kiểm thử chế độ 2D: giả lập máy không có WebGL (cờ --disable-webgl không tới được renderer)
       webgl: !(TEST && process.env.DESKBUDDY_E2E_NO_WEBGL === '1'),
+      // Robot kêu, chuông nhắc việc phát được cả khi người dùng chưa bấm gì
+      autoplayPolicy: 'no-user-gesture-required',
       // Theme, ngôn ngữ, chế độ render… cho preload đọc ngay, trước lần vẽ đầu tiên (không chớp màn hình)
       additionalArguments: [
         bootArg({
@@ -196,6 +204,11 @@ else {
     registerIpc()
     if (TEST) (globalThis as unknown as { __deskbuddy: unknown }).__deskbuddy = { clock, data }
     createWindow()
+  })
+
+  // Tiến trình GPU chết (driver lỗi…): đếm lại, 2 lần liên tiếp thì lần mở sau dùng giao diện 2D
+  app.on('child-process-gone', (_e, details) => {
+    if (details.type === 'GPU' && details.reason !== 'clean-exit') saveBoot({ gpuCrashes: boot.gpuCrashes + 1 })
   })
 
   app.on('window-all-closed', () => app.quit())

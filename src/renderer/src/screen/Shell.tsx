@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { pad2 } from '../../../shared/datetime'
 import { tr } from '../../../shared/i18n'
 import { useNow } from '../clock'
+import { useTheme } from '../state/themeStore'
 import { useUi } from '../state/uiStore'
 import { Icon } from './icons'
 import { ListView } from './ListView'
@@ -99,6 +100,12 @@ function useShortcuts(): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.defaultPrevented || e.isComposing) return
+      // Bật / tắt đèn: dùng được cả khi đang gõ
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyL') {
+        e.preventDefault()
+        useTheme.getState().toggle()
+        return
+      }
       const ui = useUi.getState()
       const el = e.target as HTMLElement
       const typing = !!el.closest?.('input, textarea, [contenteditable="true"]')

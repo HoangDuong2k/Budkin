@@ -48,6 +48,8 @@ export interface InvokeMap {
   'app:info': { args: []; result: AppInfo }
   /** Đổi theme (bật/tắt đèn): lưu lại, đổi theme hệ thống của cửa sổ và màu nền */
   'app:setTheme': { args: [theme: Theme]; result: void }
+  /** Cảnh 3D chạy ổn một lúc: xoá bộ đếm lỗi GPU */
+  'app:sceneHealthy': { args: []; result: void }
 
   'tasks:list': { args: [scope: TaskListScope]; result: Task[] }
   'tasks:get': { args: [id: string]; result: Task }

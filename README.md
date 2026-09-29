@@ -6,8 +6,16 @@
 - **Robot nhỏ bên trái** — luôn nhìn theo con trỏ chuột, báo hiệu khi có việc sắp đến hạn / đến hạn.
 - **Đèn bàn bên phải** — bật đèn là theme sáng, tắt đèn là theme tối.
 
-> Đang phát triển theo từng mốc (M0 → M8). Hiện tại: **M0 — khung dự án**: cửa sổ Electron, cảnh 3D giữ chỗ,
-> lớp giao diện đặt khít lên màn hình máy tính 3D, đổi theme, SQLite chạy sẵn trong Electron, CI và đóng gói.
+Phong cách lấy cảm hứng từ tranh hoạt hình vẽ tay steampunk / art deco: đồng thau, gỗ gụ, giấy dán tường hoa văn quạt,
+pha lê năng lượng phát sáng. **Bật đèn** là ban ngày ở thành phố vàng (nắng ấm, xanh ngọc); **tắt đèn** là ban đêm
+ở khu phố ngầm (neon hồng, xanh độc, graffiti phát sáng).
+
+| Bật đèn (ngày) | Tắt đèn (đêm) |
+|---|---|
+| ![Bàn làm việc ban ngày](docs/screenshots/desk-day.png) | ![Bàn làm việc ban đêm](docs/screenshots/desk-night.png) |
+
+> Đang phát triển theo từng mốc (M0 → M8). Đã xong: khung dự án, dữ liệu (SQLite), giao diện quản lý việc trên màn hình,
+> cảnh 3D (robot nhìn theo chuột, đèn đổi theme). Tiếp theo: nhắc việc, Kanban & Lịch, task lặp lại, đóng gói.
 
 ## Cài đặt để phát triển
 
@@ -34,6 +42,7 @@ npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột
 - Kiểm thử bản đã đóng gói: `DESKBUDDY_E2E_EXE=release/linux-unpacked/desk-buddy npm run e2e`.
 - Linux không có màn hình (CI): `xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e`. Trên máy có màn hình, cửa sổ app
   hiện lên trong lúc chạy e2e (không giành focus); cài `xvfb` để chạy ẩn.
+- Ảnh giới thiệu: `npm run build && npm run screenshots` → `docs/screenshots/`.
 
 ## Đóng gói bộ cài
 

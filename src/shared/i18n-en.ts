@@ -1,8 +1,9 @@
 // Bản tiếng Anh của các câu trên giao diện (khoá là câu tiếng Việt trong code)
 export const EN: Record<string, string> = {
-  // Đèn, theme
+  // Đèn, theme, robot
   'Bật đèn': 'Turn the lamp on',
   'Tắt đèn': 'Turn the lamp off',
+  'Chọc robot': 'Poke the robot',
 
   // Lỗi khi mở dữ liệu
   'Không mở được dữ liệu': 'Could not open your data',

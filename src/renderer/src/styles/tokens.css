@@ -1,6 +1,8 @@
-/* Màu theo theme. Chỉ dựa vào [data-theme] (đèn bàn bật/tắt), không dùng prefers-color-scheme:
-   theme hệ thống đổi không đồng bộ với khung hình 3D, sẽ làm giao diện và cảnh lệch nhau.
-   Không dùng CSS transition cho các màu này (đổi theme phải khớp đúng khung hình với cảnh 3D). */
+/* Màu theo theme — cảm hứng phim hoạt hình vẽ tay kiểu steampunk / art deco:
+   ngày (bật đèn): thành phố vàng — giấy da, mực nâu, xanh ngọc đậm, viền đồng thau;
+   đêm (tắt đèn): khu phố ngầm — đá phiến xanh đen, neon hồng, xanh độc, cyan.
+   Chỉ dựa vào [data-theme] (đèn bàn), không dùng prefers-color-scheme: theme hệ thống đổi không đồng bộ với
+   khung hình 3D. Không dùng CSS transition cho các màu này (đổi theme phải khớp khung hình với cảnh 3D). */
 
 @font-face {
   font-family: 'Be Vietnam Pro';
@@ -18,48 +20,80 @@
   src: url('../assets/fonts/BeVietnamPro-Bold.ttf') format('truetype');
 }
 
+/* Tiêu đề: serif cổ điển */
+@font-face {
+  font-family: 'Playfair Display';
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: block;
+  src: url('../assets/fonts/PlayfairDisplay-Variable.ttf') format('truetype');
+}
+
+/* Nhãn chữ in hoa: chữ hẹp kiểu art deco */
+@font-face {
+  font-family: 'Oswald';
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: block;
+  src: url('../assets/fonts/Oswald-Variable.ttf') format('truetype');
+}
+
+:root {
+  --font-body: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-label: 'Oswald', 'Be Vietnam Pro', sans-serif;
+}
+
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f3e7d9;
-  --screen-bg: #fffdf8;
-  --panel: #f7f2ea;
-  --panel-2: #efe8dc;
-  --line: #ebe3d6;
-  --text: #2b2a33;
-  --muted: #77727f;
-  --faint: #b3adb9;
-  --accent: #7c6cf2;
-  --accent-soft: #ece8ff;
-  --accent-text: #ffffff;
-  --danger: #dc4f47;
-  --danger-soft: #fdecea;
-  --warn: #c98a0c;
-  --ok: #2c9c66;
-  --prio-1: #3d9be9;
-  --prio-2: #e0a21b;
-  --prio-3: #dc4f47;
-  --shadow: 0 10px 28px rgba(70, 50, 30, 0.16);
+  --bg: #2f5550;
+  --screen-bg: #f3ead5;
+  --panel: #ebdfc4;
+  --panel-2: #e0d0ae;
+  --line: #d2bd92;
+  --text: #2a1f17;
+  --muted: #6d5a44;
+  --faint: #a8926c;
+  --accent: #1d6f6b;
+  --accent-soft: #d6e5dc;
+  --accent-text: #f6eedb;
+  --gold: #b0802e;
+  --gold-soft: #e8d3a0;
+  --glow: #36b9e8;
+  --danger: #b2322a;
+  --danger-soft: #f3d9cf;
+  --warn: #b8720f;
+  --ok: #2f7a4d;
+  --prio-1: #2e86ad;
+  --prio-2: #c08a1c;
+  --prio-3: #b2322a;
+  --shadow: 0 10px 28px rgba(40, 22, 10, 0.28);
+  --grain-opacity: 0.07;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #141824;
-  --screen-bg: #1a1e2a;
-  --panel: #1f2431;
-  --panel-2: #272d3c;
-  --line: #2b3142;
-  --text: #e8e6f0;
-  --muted: #9a97a8;
-  --faint: #5d6173;
-  --accent: #a99bff;
-  --accent-soft: #2e2a4d;
-  --accent-text: #15131f;
-  --danger: #ff7b72;
-  --danger-soft: #3a2426;
-  --warn: #f2c14e;
-  --ok: #5fd39a;
-  --prio-1: #7cc0ff;
-  --prio-2: #f2c14e;
-  --prio-3: #ff7b72;
-  --shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  --bg: #0e1716;
+  --screen-bg: #121a1d;
+  --panel: #172327;
+  --panel-2: #1f2e33;
+  --line: #2c3d40;
+  --text: #ebe0c8;
+  --muted: #9aa49b;
+  --faint: #5b6a66;
+  --accent: #ff4fa3;
+  --accent-soft: #3b1a2f;
+  --accent-text: #1b0c15;
+  --gold: #d4a94f;
+  --gold-soft: #4a3a1c;
+  --glow: #46e3ff;
+  --danger: #ff5c6c;
+  --danger-soft: #3d1c22;
+  --warn: #ffb347;
+  --ok: #6dffb0;
+  --prio-1: #46e3ff;
+  --prio-2: #ffb347;
+  --prio-3: #ff5c7a;
+  --shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+  --grain-opacity: 0.05;
 }

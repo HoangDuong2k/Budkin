@@ -12,7 +12,7 @@ body,
 }
 
 body {
-  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -32,12 +32,14 @@ body {
   z-index: 0;
 }
 
-/* Giao diện quản lý task. Không transform / filter / will-change: chữ phải sắc nét */
+/* Giao diện quản lý task. Không transform / filter / will-change: chữ phải sắc nét.
+   Nền có vân giấy / vân sơn rất nhẹ (cảm giác vẽ tay) */
 .screen {
   position: absolute;
   z-index: 10;
   overflow: hidden;
-  background: var(--screen-bg);
+  background-color: var(--screen-bg);
+  background-image: var(--grain);
   container-type: size;
   container-name: screen;
 }
@@ -46,7 +48,7 @@ body {
 .screen *,
 .popover {
   scrollbar-width: thin;
-  scrollbar-color: var(--faint) transparent;
+  scrollbar-color: var(--gold) transparent;
 }
 
 /* Chế độ 2D (không có WebGL): giao diện phủ cả cửa sổ */
@@ -54,6 +56,101 @@ body {
   inset: 12px;
   border-radius: 12px;
   box-shadow: var(--shadow);
+}
+
+/* ---- Lớp HUD trên cảnh 3D (vị trí do cảnh đặt mỗi khung bằng transform) ---- */
+
+.scene-hotspots,
+.scene-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.scene-hotspots {
+  z-index: 5;
+}
+
+.scene-hud {
+  z-index: 20;
+}
+
+/* Nút ẩn cho đèn / robot: chuột bấm thẳng vào cảnh 3D; bàn phím Tab tới thì hiện viền */
+.hotspot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 18px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hotspot:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* "Zzz" khi robot ngủ: hoạt ảnh CSS — cảnh 3D không phải vẽ khung nào */
+.zzz {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 700;
+  color: var(--glow);
+  text-shadow: 0 0 8px var(--glow);
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+.zzz.on {
+  opacity: 1;
+}
+
+.zzz span {
+  display: inline-block;
+  animation: zzz 2.4s ease-in-out infinite;
+}
+
+.zzz span:nth-child(2) {
+  font-size: 15px;
+  animation-delay: 0.4s;
+}
+
+.zzz span:nth-child(3) {
+  font-size: 19px;
+  animation-delay: 0.8s;
+}
+
+.zzz:not(.on) span {
+  animation-play-state: paused;
+}
+
+@keyframes zzz {
+  0% {
+    transform: translate(0, 4px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(10px, -18px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zzz span {
+    animation: none;
+  }
 }
 
 /* Popover, menu nổi: ngoài .screen (container query làm position: fixed bên trong bị tính theo .screen) */

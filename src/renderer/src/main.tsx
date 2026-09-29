@@ -1,10 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { setLang } from '../../shared/i18n'
+import { decideRenderMode } from '../../shared/renderMode'
 import { App } from './App'
 import { probeWebgl } from './flat/webglProbe'
+import { renderInfo } from './scene/renderInfo'
 import { installTestProbe } from './scene/testProbe'
 import { subscribeData, useData } from './state/dataStore'
+import { installGrain } from './styles/grain'
 import './styles/tokens.css'
 import './styles/app.css'
 import './styles/screen.css'
@@ -15,9 +18,13 @@ document.documentElement.dataset.theme = boot.theme
 document.documentElement.dataset.platform = boot.platform
 document.documentElement.lang = boot.lang
 setLang(boot.lang)
+installGrain()
 
-const webgl = boot.render !== '2d' && probeWebgl().webgl2
-installTestProbe(webgl ? '3d' : '2d')
+// 3D hay 2D: có WebGL2 không, vẽ bằng GPU hay CPU, GPU đã lỗi mấy lần, người dùng chọn gì
+const facts = boot.render === '2d' ? { webgl2: false, renderer: '', software: false } : probeWebgl()
+const decision = decideRenderMode(boot.render, { ...facts, gpuCrashes: boot.gpuCrashes })
+renderInfo.renderer = facts.renderer
+installTestProbe()
 
 subscribeData()
 void useData.getState().load()
@@ -33,6 +40,6 @@ window.addEventListener('drop', (e) => e.preventDefault())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App webgl={webgl} />
+    <App initial={decision} />
   </StrictMode>
 )

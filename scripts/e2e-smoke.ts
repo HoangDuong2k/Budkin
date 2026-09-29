@@ -285,6 +285,93 @@ async function uiFlow(page: Page): Promise<void> {
   assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Hôm nay'), 'đổi lại tiếng Việt')
 }
 
+/** Cảnh 3D: robot nhìn theo chuột, bấm đèn đổi theme, chọc robot, không vẽ khi đứng yên, ngủ, mất WebGL → 2D */
+async function sceneFlow(page: Page): Promise<void> {
+  const num = async (expr: string): Promise<number> => Number(await page.evaluate(expr))
+  // Cờ "đứng yên" chỉ cập nhật khi vẽ khung: chờ khung hình mới sau khi di chuột rồi mới chờ robot dừng
+  const settled = async (): Promise<boolean> => {
+    await page.waitForTimeout(250)
+    return until(async () => (await page.evaluate('window.__deskbuddy.robot.settled')) === true, 5000)
+  }
+  const vp = await probe(page, (p) => p.stage.viewport)
+
+  // Robot quay đầu theo con trỏ (kể cả khi con trỏ nằm trên giao diện trong màn hình).
+  // Chờ hết hoạt cảnh đang dở (vd. vừa bật/tắt đèn thì robot quay sang nhìn đèn)
+  await page.mouse.move(vp.width / 2, vp.height / 2, { steps: 3 })
+  await until(async () => (await page.evaluate('window.__deskbuddy.robot.mode')) === 'idle', 3000)
+  await page.mouse.move(4, vp.height / 2, { steps: 6 })
+  await settled()
+  const yawLeft = await num('window.__deskbuddy.robot.headYaw')
+  await page.mouse.move(vp.width - 4, vp.height / 2, { steps: 10 })
+  await settled()
+  const yawRight = await num('window.__deskbuddy.robot.headYaw')
+  // Robot đứng sát mép trái nên con trỏ ở mép trái chỉ lệch trái một chút so với robot
+  assert(yawLeft < 0 && yawRight - yawLeft > 0.4, `robot nhìn theo chuột: trái ${yawLeft.toFixed(2)} rad, phải ${yawRight.toFixed(2)} rad`)
+  await page.mouse.move(vp.width * 0.12, 3, { steps: 6 })
+  await settled()
+  const pitchUp = await num('window.__deskbuddy.robot.headPitch')
+  assert(pitchUp > 0.05, `con trỏ ở mép trên: robot ngẩng lên (${pitchUp.toFixed(2)} rad)`)
+  await page.screenshot({ path: join(OUT, '9-scene.png') })
+
+  // Bấm vào đèn khi đang gõ trong ô tìm kiếm: đổi theme, ô tìm kiếm vẫn giữ con trỏ
+  await page.locator('.search input').click()
+  const before = await page.evaluate(() => document.documentElement.dataset.theme)
+  const hit = await probe(page, (p) => (p as unknown as { hit(): { lamp: { x: number; y: number }; robot: { x: number; y: number } } }).hit())
+  await page.mouse.move(hit.lamp.x, hit.lamp.y, { steps: 4 })
+  assert(
+    await until(async () => (await page.evaluate("getComputedStyle(document.querySelector('.stage-canvas')).cursor")) === 'pointer'),
+    'rê chuột lên đèn: con trỏ thành bàn tay'
+  )
+  await page.mouse.click(hit.lamp.x, hit.lamp.y)
+  assert(await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) !== before, 1500), 'bấm vào đèn: đổi theme')
+  assert(await page.evaluate(() => document.activeElement === document.querySelector('.search input')), 'bấm đèn không làm mất con trỏ trong ô đang gõ')
+  await until(async () => (await page.evaluate('window.__deskbuddy.env.anim === null')) === true, 3000)
+  await page.screenshot({ path: join(OUT, '10-lamp-toggled.png') })
+  await page.keyboard.press('Control+Shift+L')
+  assert(await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) === before, 1500), 'Ctrl+Shift+L (đang gõ) bật / tắt đèn trở lại')
+  await page.keyboard.press('Escape')
+
+  // Chọc robot
+  await page.mouse.click(hit.robot.x, hit.robot.y)
+  assert(await until(async () => (await page.evaluate('window.__deskbuddy.robot.mode')) === 'poked', 1000), 'bấm vào robot: robot bẹp-giãn')
+
+  // Chế độ Tiết kiệm: đứng yên thì không vẽ khung nào
+  await invoke(page, 'settings:update', { quality: 'saver' })
+  await page.waitForFunction(() => (window as unknown as Probe).__deskbuddy.stage.ready, undefined, { timeout: 10000 })
+  // Di chuột nhẹ (đặt lại hẹn giờ buồn ngủ — 4 s khi kiểm thử), chờ robot đứng yên rồi đo; chỉ tính lần đo mà
+  // robot không đổi trạng thái giữa chừng (máy chậm / vẽ bằng CPU có thể chạm mốc buồn ngủ)
+  let idleFrames = -1
+  for (let attempt = 0; attempt < 3 && idleFrames < 0; attempt++) {
+    await page.mouse.move(vp.width / 2 + attempt * 7, vp.height - 30, { steps: 2 })
+    await settled()
+    const mode0 = await page.evaluate('window.__deskbuddy.robot.mode')
+    const f0 = await num('window.__deskbuddy.renderStats.frames')
+    await page.waitForTimeout(1200)
+    const f1 = await num('window.__deskbuddy.renderStats.frames')
+    if (mode0 === 'idle' && (await page.evaluate('window.__deskbuddy.robot.mode')) === 'idle') idleFrames = f1 - f0
+  }
+  assert(idleFrames === 0, `Tiết kiệm, đứng yên 1,2 giây: ${idleFrames} khung hình`)
+  assert((await probe(page, (p) => p.renderMode)) === '3d', 'đổi mức chất lượng (tạo lại canvas) vẫn ở chế độ 3D')
+
+  // Lâu không thao tác (kiểm thử rút ngắn còn vài giây): robot ngủ, hiện "Zzz", cảnh không vẽ
+  assert(await until(async () => (await page.evaluate('window.__deskbuddy.robot.mode')) === 'sleep', 8000), 'lâu không thao tác: robot ngủ')
+  assert(await until(async () => page.locator('.zzz.on').isVisible(), 1500), 'robot ngủ: hiện "Zzz"')
+  await page.screenshot({ path: join(OUT, '11-robot-sleep.png') })
+  const s0 = await num('window.__deskbuddy.renderStats.frames')
+  await page.waitForTimeout(1500)
+  assert((await num('window.__deskbuddy.renderStats.frames')) === s0, 'robot ngủ: cảnh không vẽ khung nào')
+  await page.mouse.move(vp.width / 2, vp.height - 20, { steps: 4 })
+  assert(await until(async () => ['startled', 'idle'].includes(String(await page.evaluate('window.__deskbuddy.robot.mode'))), 1500), 'di chuột: robot tỉnh dậy')
+
+  // Mất WebGL không phục hồi: chuyển sang giao diện 2D, chữ đang gõ dở vẫn còn
+  await page.locator('.quick-add-input').click()
+  await page.keyboard.type('Nháp chưa lưu')
+  await page.evaluate('window.__deskbuddy.loseContext()')
+  assert(await until(async () => (await probe(page, (p) => p.renderMode)) === '2d', 5000), 'mất WebGL: tự chuyển sang giao diện 2D')
+  assert((await page.locator('.quick-add-input').inputValue()) === 'Nháp chưa lưu', 'chuyển sang 2D: chữ đang gõ dở không mất')
+  await invoke(page, 'settings:update', { quality: 'balanced' })
+}
+
 async function main(): Promise<void> {
   // Chống treo (vd. hộp thoại chờ người bấm): quá 5 phút thì báo lỗi, đóng app và thoát
   setTimeout(() => {
@@ -327,6 +414,8 @@ async function main(): Promise<void> {
     await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) === theme1),
     `bấm nút đổi theme: ${theme0} → ${theme1}`
   )
+  // Chờ căn phòng sáng / tối dần xong (~0,75 s)
+  await until(async () => (await page.evaluate('window.__deskbuddy.env.anim === null')) === true, 3000)
   await checkAlignment(page, `theme ${theme1}`, theme1)
   await page.screenshot({ path: join(OUT, `3-theme-${theme1}.png`) })
 
@@ -366,6 +455,7 @@ async function main(): Promise<void> {
     'mở lại app: task, checklist, nhãn, dự án còn nguyên'
   )
   await uiFlow(page)
+  await sceneFlow(page)
   await app.evaluate(({ app: a }) => a.exit(0))
 
   // ---- Máy không có WebGL: chế độ 2D ----
