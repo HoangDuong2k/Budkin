@@ -4,15 +4,16 @@
 
 - **Máy tính ở giữa** — màn hình của nó chính là nơi quản lý task (danh sách, Kanban, lịch).
 - **Robot nhỏ bên trái** — luôn nhìn theo con trỏ chuột, báo hiệu khi có việc sắp đến hạn / đến hạn.
-- **Đèn bàn bên phải** — bật đèn là theme sáng, tắt đèn là theme tối.
+- **Đèn bàn bên phải** — bật / tắt đèn để đổi giữa hai theme.
 
-Phong cách lấy cảm hứng từ tranh hoạt hình vẽ tay steampunk / art deco: đồng thau, gỗ gụ, giấy dán tường hoa văn quạt,
-pha lê năng lượng phát sáng. **Bật đèn** là ban ngày ở thành phố vàng (nắng ấm, xanh ngọc); **tắt đèn** là ban đêm
-ở khu phố ngầm (neon hồng, xanh độc, graffiti phát sáng).
+Phong cách: thế giới hiện đại hậu tận thế, tông tối và lạnh — tường bê tông nứt, cửa sổ vỡ nhìn ra thành phố đổ nát
+trong sương xanh, còn đồ trên bàn là thiết bị hiện đại (graphite, nhôm, kính đen, đèn LED cyan). **Bật đèn** là giờ xanh
+cuối ngày dưới ánh đèn LED trắng lạnh; **tắt đèn** là mất điện ban đêm — chỉ còn màn hình, đèn nền bàn phím và mắt
+robot phát sáng.
 
-| Bật đèn (ngày) | Tắt đèn (đêm) |
+| Bật đèn (giờ xanh) | Tắt đèn (mất điện) |
 |---|---|
-| ![Bàn làm việc ban ngày](docs/screenshots/desk-day.png) | ![Bàn làm việc ban đêm](docs/screenshots/desk-night.png) |
+| ![Bàn làm việc khi bật đèn](docs/screenshots/desk-day.png) | ![Bàn làm việc khi tắt đèn](docs/screenshots/desk-night.png) |
 
 > Đang phát triển theo từng mốc (M0 → M8). Đã xong: khung dự án, dữ liệu (SQLite), giao diện quản lý việc trên màn hình,
 > cảnh 3D (robot nhìn theo chuột, đèn đổi theme). Tiếp theo: nhắc việc, Kanban & Lịch, task lặp lại, đóng gói.
@@ -43,6 +44,7 @@ npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột
 - Linux không có màn hình (CI): `xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e`. Trên máy có màn hình, cửa sổ app
   hiện lên trong lúc chạy e2e (không giành focus); cài `xvfb` để chạy ẩn.
 - Ảnh giới thiệu: `npm run build && npm run screenshots` → `docs/screenshots/`.
+- Đo cảnh 3D (số lần vẽ, số tam giác — ngân sách ≤ 90 lần vẽ mỗi khung): `npm run build && npm run stats:scene`.
 
 ## Đóng gói bộ cài
 

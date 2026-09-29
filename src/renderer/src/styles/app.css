@@ -33,28 +33,49 @@ body {
 }
 
 /* Giao diện quản lý task. Không transform / filter / will-change: chữ phải sắc nét.
-   Nền có vân giấy / vân sơn rất nhẹ (cảm giác vẽ tay) */
+   Nền có ánh sáng loang nhẹ từ mép trên và lớp nhiễu mịn (tránh dải màu trên nền tối) */
 .screen {
   position: absolute;
   z-index: 10;
   overflow: hidden;
   background-color: var(--screen-bg);
-  background-image: var(--grain);
+  background-image: var(--screen-light), var(--grain);
   container-type: size;
   container-name: screen;
+}
+
+/* Bốn góc ngắm kiểu HUD quanh mép màn hình (không nhận chuột) */
+.screen::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.55;
+  --c: var(--accent);
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / 2px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 2px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 2px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 2px 14px no-repeat;
 }
 
 /* Thanh cuộn mảnh theo màu theme (thanh mặc định của Chromium quá dày trên màn hình nhỏ) */
 .screen *,
 .popover {
   scrollbar-width: thin;
-  scrollbar-color: var(--gold) transparent;
+  scrollbar-color: var(--faint) transparent;
 }
 
 /* Chế độ 2D (không có WebGL): giao diện phủ cả cửa sổ */
 .stage[data-mode='2d'] .screen {
   inset: 12px;
-  border-radius: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 
@@ -83,7 +104,7 @@ body {
   top: 0;
   border: 0;
   background: transparent;
-  border-radius: 18px;
+  border-radius: var(--radius);
   opacity: 0;
   pointer-events: none;
 }
@@ -101,8 +122,7 @@ body {
   top: 0;
   display: flex;
   gap: 2px;
-  font-family: var(--font-display);
-  font-style: italic;
+  font-family: var(--font-mono);
   font-weight: 700;
   color: var(--glow);
   text-shadow: 0 0 8px var(--glow);

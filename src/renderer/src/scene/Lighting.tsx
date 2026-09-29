@@ -1,5 +1,5 @@
-// Ánh sáng chung: trời, nắng / neon qua cửa sổ, ánh viền phía sau, neon hồng ban đêm, ánh màn hình,
-// môi trường phản chiếu cho kim loại, sương mù tạo chiều sâu.
+// Ánh sáng chung: trời, ánh sáng lạnh cuối ngày / ánh trăng qua cửa sổ vỡ, ánh viền phía sau, đèn dự phòng xanh khi
+// mất điện, ánh màn hình, môi trường phản chiếu cho kim loại và kính, sương bụi tạo chiều sâu.
 // Mọi đèn luôn được mount, chỉ đổi cường độ và màu (thêm / bớt đèn bắt biên dịch lại shader — giật hình).
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
@@ -14,9 +14,10 @@ const hemiGround = pair('hemiGround')
 const sunColor = pair('sun')
 const rimColor = pair('rim')
 const fogColor = pair('fog')
+const glowColor = pair('glow')
 /** Cường độ (candela, đơn vị mét) */
 const GLOW = 0.22
-const NEON = 0.18
+const BACKUP = 0.14
 
 export function Lighting(): React.JSX.Element {
   const gl = useThree((s) => s.gl)
@@ -24,12 +25,12 @@ export function Lighting(): React.JSX.Element {
   const hemi = useRef<HemisphereLight>(null)
   const sun = useRef<DirectionalLight>(null)
   const rim = useRef<DirectionalLight>(null)
-  const neon = useRef<PointLight>(null)
+  const backup = useRef<PointLight>(null)
   const glow = useRef<SpotLight>(null)
   const glowTarget = useRef<Object3D>(null)
-  const fog = useMemo(() => new FogExp2('#58705f', 0.14), [])
+  const fog = useMemo(() => new FogExp2('#1b2633', 0.2), [])
 
-  // Môi trường phản chiếu dựng bằng code (không tải ảnh HDR): kim loại đồng thau cần có gì để phản chiếu
+  // Môi trường phản chiếu dựng bằng code (không tải ảnh HDR): kim loại cần có gì để phản chiếu
   useEffect(() => {
     const pmrem = new PMREMGenerator(gl)
     const room = new RoomEnvironment()
@@ -61,11 +62,12 @@ export function Lighting(): React.JSX.Element {
       rimColor.apply(rim.current.color, t)
       rim.current.intensity = mix('rimI', t)
     }
-    if (neon.current) {
-      neon.current.intensity = NEON * mix('neonI', t)
-      neon.current.position.set(-(l.screenW / 2 + 0.45), 0.5, -0.22)
+    if (backup.current) {
+      backup.current.intensity = BACKUP * mix('backupI', t)
+      backup.current.position.set(l.screenW / 2 + 0.3, 0.55, -0.26)
     }
     if (glow.current && glowTarget.current) {
+      glowColor.apply(glow.current.color, t)
       glow.current.intensity = GLOW * mix('glowI', t)
       glow.current.position.set(0, l.screenCenter.y, l.screenCenter.z + 0.02)
       glowTarget.current.position.set(0, 0.02, 0.4)
@@ -78,12 +80,13 @@ export function Lighting(): React.JSX.Element {
   return (
     <>
       <hemisphereLight ref={hemi} />
-      {/* Nắng / ánh phố chiếu xiên từ cửa sổ bên trái */}
+      {/* Ánh sáng cuối ngày / ánh trăng chiếu xiên từ cửa sổ bên trái */}
       <directionalLight ref={sun} position={[-1.4, 1.5, 0.6]} />
       {/* Ánh viền từ phía sau bên phải — viền sáng quanh robot, đèn, màn hình */}
       <directionalLight ref={rim} position={[0.8, 0.12, -1.6]} />
-      <pointLight ref={neon} color="#ff4fa3" distance={1.8} decay={2} />
-      <spotLight ref={glow} color="#b9d6ff" angle={1.2} penumbra={1} distance={2} decay={2} />
+      {/* Đèn dự phòng xanh đâu đó phía trên bên phải, ngoài khung hình */}
+      <pointLight ref={backup} color="#2f7bff" distance={1.4} decay={2} />
+      <spotLight ref={glow} angle={1.2} penumbra={1} distance={2} decay={2} />
       <object3D ref={glowTarget} />
     </>
   )

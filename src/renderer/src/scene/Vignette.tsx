@@ -25,8 +25,8 @@ export function Vignette(): React.JSX.Element {
     m.rotation.set(-CAMERA.pitch, 0, 0)
     const h = 2 * DIST * Math.tan(CAMERA.fovY / 2) * 1.02
     m.scale.set((h * stage.viewport.width) / Math.max(1, stage.viewport.height), h, 1)
-    // Ban đêm tối mép hơn
-    mat.opacity = 0.7 + 0.3 * (1 - env.env)
+    // Mất điện: tối mép hơn nữa
+    mat.opacity = 0.85 + 0.15 * (1 - env.env)
   })
   return (
     <mesh ref={mesh} material={mat} renderOrder={VIGNETTE_ORDER} frustumCulled={false}>

@@ -1,12 +1,25 @@
-// Robot nhỏ bên trái (người máy tự động vỏ đồng thau, lõi pha lê năng lượng): nhìn theo con trỏ, chớp mắt, buồn ngủ rồi ngủ khi lâu không thao tác, bị chọc thì bẹp-giãn,
-// báo động khi có việc đến hạn (đèn ăng-ten đỏ, nhún nhảy), ăn mừng khi hoàn thành việc.
+// Robot nhỏ bên trái (robot hiện đại: vỏ gốm xám lạnh, mặt kính đen, mắt LED cyan, bánh xe gọn): nhìn theo con trỏ,
+// chớp mắt, buồn ngủ rồi ngủ khi lâu không thao tác, bị chọc thì bẹp-giãn, báo động khi có việc đến hạn (đèn trạng thái
+// chuyển đỏ nhấp nháy, nhún nhảy), ăn mừng khi hoàn thành việc.
 // Khớp: root (xoay về phía màn hình) › fx (nhảy / bẹp / xoay) › body › neck › headYaw › headPitch › eyes
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { easing } from 'maath'
 import { useEffect, useMemo, useRef } from 'react'
-import { AdditiveBlending, Color, MeshBasicMaterial, type Group, type Mesh, type Sprite } from 'three'
+import {
+  AdditiveBlending,
+  BoxGeometry,
+  CapsuleGeometry,
+  Color,
+  CylinderGeometry,
+  MeshBasicMaterial,
+  SphereGeometry,
+  TorusGeometry,
+  type Group,
+  type Mesh,
+  type Sprite
+} from 'three'
 import { env } from './envState'
-import { crystal, gear, roundedBox } from './geometry'
+import { merged, roundedBox } from './geometry'
 import { hud } from './hudRefs'
 import { materials } from './materials'
 import { projectPoint } from './math/framing'
@@ -48,16 +61,34 @@ export function Robot(): React.JSX.Element {
   const eyeHalo = useRef<Sprite>(null)
   const blink = useRef({ start: -1, double: false })
 
-  // Vỏ đồng thau, khớp men xanh ngọc, mặt kính tối — người máy tự động kiểu steampunk
+  // Robot hiện đại: vỏ gốm xám lạnh, đai và khớp graphite, mặt kính đen bóng, mắt LED cyan, vòng sáng ở cổ, bánh xe gọn
   const m = materials()
-  const shell = m.brass
-  const accent = m.teal
-  const visor = m.glass
   const eyeMat = useMemo(() => new MeshBasicMaterial({ color: ROBOT.eye, toneMapped: false }), [])
-  const cheekMat = useMemo(() => new MeshBasicMaterial({ color: ROBOT.cheek, toneMapped: false, transparent: true, opacity: 0.85 }), [])
+  // Đèn trạng thái (vạch pin, dải đèn trước, vòng cổ, đầu ăng-ten): cyan, đỏ nhấp nháy khi báo động
   const ledMat = useMemo(() => new MeshBasicMaterial({ color: ROBOT.led, toneMapped: false }), [])
   const ledNormal = useMemo(() => new Color(ROBOT.led), [])
   const ledAlert = useMemo(() => new Color(ROBOT.alert), [])
+  // Mảnh tĩnh cùng khớp, cùng vật liệu gộp chung một lần vẽ
+  const parts = useMemo(() => {
+    type V3 = [number, number, number]
+    const side = (s: number, x: number, y: number, z: number): V3 => [s * x, y, z]
+    const eye = new CapsuleGeometry(0.0068, 0.011, 4, 10)
+    const smile = new TorusGeometry(0.008, 0.0022, 6, 16, Math.PI)
+    return {
+      wheels: merged('robot-wheels', [-1, 1].map((s) => ({ geo: new CylinderGeometry(0.016, 0.016, 0.012, 24), at: side(s, 0.039, 0.016, 0), rot: [0, 0, Math.PI / 2] as V3 }))),
+      hubs: merged('robot-hubs', [-1, 1].map((s) => ({ geo: new CylinderGeometry(0.008, 0.008, 0.002, 18), at: side(s, 0.0455, 0.016, 0), rot: [0, 0, Math.PI / 2] as V3 }))),
+      arms: merged('robot-arms', [-1, 1].map((s) => ({ geo: new CapsuleGeometry(0.0078, 0.028, 4, 10), at: side(s, 0.052, 0.055, 0.004), rot: [0, 0, s * 0.35] as V3 }))),
+      shoulders: merged('robot-shoulders', [-1, 1].map((s) => ({ geo: new SphereGeometry(0.0088, 14, 10), at: side(s, 0.046, 0.072, 0.004) }))),
+      hands: merged('robot-hands', [-1, 1].map((s) => ({ geo: new SphereGeometry(0.009, 14, 10), at: side(s, 0.0605, 0.031, 0.004) }))),
+      // Ba vạch pin trên ngực
+      bars: merged('robot-bars', [-0.009, 0, 0.009].map((x) => ({ geo: new BoxGeometry(0.0055, 0.015, 0.001), at: [x, 0, 0] as V3 }))),
+      // Tai: hai khối tròn graphite, nắp nhôm anod cyan
+      ears: merged('robot-ears', [-1, 1].map((s) => ({ geo: new CylinderGeometry(0.013, 0.013, 0.008, 24), at: side(s, 0.058, 0.046, 0), rot: [0, 0, Math.PI / 2] as V3 }))),
+      earCaps: merged('robot-ear-caps', [-1, 1].map((s) => ({ geo: new CylinderGeometry(0.008, 0.008, 0.002, 20), at: side(s, 0.0625, 0.046, 0), rot: [0, 0, Math.PI / 2] as V3 }))),
+      eyes: merged('robot-eyes', [-1, 1].map((s) => ({ geo: eye, at: side(s, 0.02, 0, 0) }))),
+      happy: merged('robot-happy', [-1, 1].map((s) => ({ geo: smile, at: side(s, 0.02, -0.003, 0) })))
+    }
+  }, [])
 
   // Chớp mắt ngẫu nhiên mỗi 2,5–6 s (20% chớp đôi) — hẹn giờ, không kiểm tra mỗi khung
   useEffect(() => {
@@ -216,91 +247,63 @@ export function Robot(): React.JSX.Element {
         <meshBasicMaterial map={blobTexture()} transparent depthWrite={false} opacity={0.8} />
       </mesh>
       <group ref={fx}>
-        {/* Đế */}
-        <mesh position-y={0.01} material={accent} castShadow>
-          <cylinderGeometry args={[0.04, 0.045, 0.02, 28]} />
+        {/* Gầm graphite, hai bánh xe cao su moay-ơ nhôm, dải đèn phía trước */}
+        <mesh geometry={roundedBox(0.066, 0.02, 0.07, 0.008, 3)} position-y={0.018} material={m.graphite} castShadow />
+        <mesh geometry={parts.wheels} material={m.rubber} castShadow />
+        <mesh geometry={parts.hubs} material={m.aluminium} />
+        <mesh position={[0, 0.018, 0.0356]} material={ledMat}>
+          <boxGeometry args={[0.034, 0.003, 0.0015]} />
         </mesh>
         <group ref={body}>
-          {/* Thân đồng thau + ô cửa tròn trên ngực, bên trong là lõi pha lê năng lượng */}
-          <mesh geometry={roundedBox(0.085, 0.07, 0.066, 0.022, 4)} position-y={0.056} material={shell} castShadow />
-          <mesh position={[0, 0.058, 0.0335]} material={m.brassDark}>
-            <torusGeometry args={[0.0155, 0.003, 8, 24]} />
-          </mesh>
-          <mesh position={[0, 0.058, 0.032]} material={visor}>
-            <circleGeometry args={[0.0152, 24]} />
-          </mesh>
-          <mesh geometry={crystal(0.0075)} position={[0, 0.058, 0.034]} material={m.crystal} />
-          <sprite ref={coreHalo} position={[0, 0.058, 0.04]} scale={[0.06, 0.06, 1]}>
+          {/* Thân vỏ gốm, đai graphite, ô kính trên ngực có vạch pin */}
+          <mesh geometry={roundedBox(0.084, 0.07, 0.066, 0.02, 4)} position-y={0.056} material={m.shell} castShadow />
+          <mesh geometry={roundedBox(0.0856, 0.008, 0.0676, 0.004, 2)} position-y={0.03} material={m.graphite} />
+          <mesh geometry={roundedBox(0.042, 0.028, 0.004, 0.005, 2)} position={[0, 0.06, 0.032]} material={m.glass} />
+          <mesh geometry={parts.bars} position={[0, 0.06, 0.0343]} material={ledMat} />
+          <sprite ref={coreHalo} position={[0, 0.06, 0.04]} scale={[0.06, 0.06, 1]}>
             <spriteMaterial map={haloTexture()} color={ROBOT.led} blending={AdditiveBlending} depthWrite={false} transparent toneMapped={false} fog={false} opacity={0.5} />
           </sprite>
-          {/* Tay men xanh ngọc, khớp vai đồng thau */}
-          {[-1, 1].map((s) => (
-            <group key={s}>
-              <mesh position={[s * 0.052, 0.055, 0.004]} rotation-z={s * 0.35} material={accent} castShadow>
-                <capsuleGeometry args={[0.0095, 0.03, 4, 10]} />
-              </mesh>
-              <mesh position={[s * 0.046, 0.072, 0.004]} material={m.brassDark}>
-                <sphereGeometry args={[0.0085, 12, 10]} />
-              </mesh>
-            </group>
-          ))}
-          {/* Cổ */}
-          <mesh position-y={0.097} material={accent}>
-            <cylinderGeometry args={[0.012, 0.014, 0.016, 16]} />
+          {/* Tay graphite, khớp vai nhôm, bàn tay tròn vỏ gốm */}
+          <mesh geometry={parts.arms} material={m.graphite} castShadow />
+          <mesh geometry={parts.shoulders} material={m.aluminium} />
+          <mesh geometry={parts.hands} material={m.shell} />
+          {/* Cổ graphite, vòng sáng */}
+          <mesh position-y={0.097} material={m.graphite}>
+            <cylinderGeometry args={[0.011, 0.012, 0.016, 16]} />
+          </mesh>
+          <mesh position-y={0.094} rotation-x={Math.PI / 2} material={ledMat}>
+            <torusGeometry args={[0.0126, 0.0015, 6, 28]} />
           </mesh>
           <group ref={headYaw} position-y={NECK_Y}>
             <group ref={headPitch}>
-              <mesh geometry={roundedBox(0.11, 0.085, 0.086, 0.03, 4)} position-y={0.043} material={shell} castShadow onClick={poke} onPointerOver={hover(true)} onPointerOut={hover(false)} />
-              <mesh geometry={roundedBox(0.094, 0.058, 0.012, 0.016, 3)} position={[0, 0.044, 0.038]} material={visor} />
-              {/* Đinh tán quanh mặt kính */}
-              {[
-                [-0.049, 0.074],
-                [0.049, 0.074],
-                [-0.049, 0.014],
-                [0.049, 0.014]
-              ].map(([x, y]) => (
-                <mesh key={`${x},${y}`} position={[x, y, 0.041]} material={m.brassDark}>
-                  <sphereGeometry args={[0.0028, 8, 6]} />
-                </mesh>
-              ))}
+              {/* Đầu vỏ gốm, mặt kính đen bóng */}
+              <mesh geometry={roundedBox(0.11, 0.085, 0.086, 0.026, 4)} position-y={0.043} material={m.shell} castShadow onClick={poke} onPointerOver={hover(true)} onPointerOut={hover(false)} />
+              <mesh geometry={roundedBox(0.094, 0.06, 0.012, 0.016, 3)} position={[0, 0.044, 0.038]} material={m.glass} />
               <group position={[0, EYE_Y - NECK_Y, 0.0445]}>
                 <group ref={eyes}>
-                  {[-1, 1].map((s) => (
-                    <mesh key={s} position={[s * 0.02, 0, 0]} material={eyeMat}>
-                      <capsuleGeometry args={[0.0068, 0.011, 4, 10]} />
-                    </mesh>
-                  ))}
+                  <mesh geometry={parts.eyes} material={eyeMat} />
                 </group>
                 {/* Mắt cười ^^ khi ăn mừng */}
                 <group ref={happy} visible={false}>
-                  {[-1, 1].map((s) => (
-                    <mesh key={s} position={[s * 0.02, -0.003, 0]} material={eyeMat}>
-                      <torusGeometry args={[0.008, 0.0022, 6, 16, Math.PI]} />
-                    </mesh>
-                  ))}
+                  <mesh geometry={parts.happy} material={eyeMat} />
                 </group>
                 <sprite ref={eyeHalo} scale={[0.09, 0.06, 1]}>
                   <spriteMaterial map={haloTexture()} color={ROBOT.eye} blending={AdditiveBlending} depthWrite={false} transparent toneMapped={false} fog={false} opacity={0} />
                 </sprite>
-                {/* Má hổ phách phát sáng + miệng */}
-                {[-1, 1].map((s) => (
-                  <mesh key={s} position={[s * 0.034, -0.013, 0]} material={cheekMat}>
-                    <circleGeometry args={[0.0062, 14]} />
-                  </mesh>
-                ))}
+                {/* Miệng: nụ cười nhỏ */}
                 <mesh position={[0, -0.013, 0]} rotation-z={Math.PI} material={eyeMat}>
                   <torusGeometry args={[0.0055, 0.0015, 6, 12, Math.PI]} />
                 </mesh>
               </group>
-              {/* Tai là bánh răng men xanh ngọc */}
-              {[-1, 1].map((s) => (
-                <mesh key={s} geometry={gear(0.018, 8, 0.01)} position={[s * 0.058, 0.044, 0]} rotation-y={Math.PI / 2} material={accent} castShadow />
-              ))}
-              {/* Ăng-ten đồng thau, đỉnh gắn pha lê (đỏ cam khi báo động) */}
-              <mesh position={[0, 0.098, 0]} material={m.brassDark}>
-                <cylinderGeometry args={[0.0022, 0.0022, 0.028, 8]} />
+              <mesh geometry={parts.ears} material={m.graphite} />
+              <mesh geometry={parts.earCaps} material={m.anodized} />
+              {/* Ăng-ten nhôm mảnh, đầu là đèn trạng thái (đỏ khi báo động) */}
+              <mesh position={[0, 0.1025, 0]} material={m.aluminium}>
+                <cylinderGeometry args={[0.0014, 0.0014, 0.034, 8]} />
               </mesh>
-              <mesh ref={led} geometry={crystal(0.0075)} position={[0, 0.12, 0]} material={ledMat} />
+              <mesh ref={led} position={[0, 0.12, 0]} material={ledMat}>
+                <sphereGeometry args={[0.0058, 14, 10]} />
+              </mesh>
               <sprite ref={ledHalo} position={[0, 0.12, 0]} scale={[0.05, 0.05, 1]}>
                 <spriteMaterial map={haloTexture()} blending={AdditiveBlending} depthWrite={false} transparent toneMapped={false} fog={false} opacity={0} />
               </sprite>

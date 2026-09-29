@@ -7,24 +7,24 @@ export function isTheme(v: unknown): v is Theme {
 }
 
 /** Màu nền cửa sổ trước khi trang vẽ xong — gần màu tường của cảnh để mở app không bị chớp */
-export const WINDOW_BG: Record<Theme, string> = { light: '#2f5550', dark: '#0e1716' }
+export const WINDOW_BG: Record<Theme, string> = { light: '#11161c', dark: '#06080b' }
 
 /** Nền màn hình máy tính 3D = nền giao diện quản lý task (lệch một pixel ở mép cũng không thấy) */
-export const SCREEN_BG: Record<Theme, string> = { light: '#f3ead5', dark: '#121a1d' }
+export const SCREEN_BG: Record<Theme, string> = { light: '#131920', dark: '#080b0f' }
 
 /** Màu của dự án / nhãn lưu bằng khoá (không lưu mã màu) để tự đổi sắc độ theo theme sáng/tối */
 export const COLOR_KEYS = ['lavender', 'sky', 'mint', 'sage', 'lemon', 'peach', 'coral', 'rose', 'slate'] as const
 export type ColorKey = (typeof COLOR_KEYS)[number]
 
-/** Tông màu đậm kiểu tranh vẽ: ban ngày đủ tương phản trên nền giấy da, ban đêm sáng như neon */
+/** Cả hai theme đều nền tối, tông lạnh: bật đèn dịu hơn; tắt đèn sáng hơn như đèn báo trong bóng tối */
 export const LABEL_COLORS: Record<ColorKey, Record<Theme, string>> = {
-  lavender: { light: '#7247ad', dark: '#c49bff' },
-  sky: { light: '#2a7fa6', dark: '#46e3ff' },
-  mint: { light: '#1c8378', dark: '#5ff2d6' },
-  sage: { light: '#5b7a2a', dark: '#b5e06a' },
-  lemon: { light: '#a8761f', dark: '#ffd166' },
-  peach: { light: '#b35a25', dark: '#ffa56b' },
-  coral: { light: '#ad2f28', dark: '#ff6b6b' },
-  rose: { light: '#a82b73', dark: '#ff4fa3' },
-  slate: { light: '#555b63', dark: '#a9b2bd' }
+  lavender: { light: '#a99cf0', dark: '#b8aaff' },
+  sky: { light: '#6fb4f0', dark: '#72c8ff' },
+  mint: { light: '#5fcfb4', dark: '#5ff0cc' },
+  sage: { light: '#9cc486', dark: '#aee89a' },
+  lemon: { light: '#e0c860', dark: '#ffe070' },
+  peach: { light: '#e8a070', dark: '#ffb07a' },
+  coral: { light: '#ec6f68', dark: '#ff7470' },
+  rose: { light: '#df7fa8', dark: '#ff86b8' },
+  slate: { light: '#98a6b4', dark: '#a8b8c8' }
 }

@@ -20,6 +20,7 @@
     "test": "vitest run",
     "e2e": "tsx scripts/e2e-smoke.ts",
     "screenshots": "tsx scripts/screenshots.ts",
+    "stats:scene": "tsx scripts/scene-stats.ts",
     "dist": "electron-vite build && electron-builder",
     "dist:win": "electron-vite build && electron-builder --win",
     "dist:linux": "electron-vite build && electron-builder --linux"

@@ -1,15 +1,17 @@
-// Đèn bàn = công tắc theme. Bấm vào đèn (hoặc Ctrl+Shift+L) để bật / tắt: công tắc lún, tiếng tách,
-// bóng chớp khi bật; SpotLight của đèn là đèn duy nhất đổ bóng.
+// Đèn LED làm việc hiện đại = công tắc theme: đế tròn graphite có nút cảm ứng và vòng sáng báo trạng thái, tay đòn nhôm
+// đôi song song, khớp graphite viền cyan, đầu đèn nhôm dẹt với tấm tản quang trắng lạnh. Bấm vào đèn (hoặc Ctrl+Shift+L)
+// để bật / tắt: nút lún, tiếng tách, đèn chớp khi bật; SpotLight của đèn là đèn duy nhất đổ bóng.
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import {
   AdditiveBlending,
-  BackSide,
   Color,
+  CylinderGeometry,
+  Euler,
   LatheGeometry,
   MeshBasicMaterial,
-  MeshStandardMaterial,
   Quaternion,
+  TorusGeometry,
   Vector2,
   Vector3,
   type Group,
@@ -20,6 +22,7 @@ import {
 } from 'three'
 import { useTheme } from '../state/themeStore'
 import { env } from './envState'
+import { merged, roundedBox, type Part } from './geometry'
 import { materials } from './materials'
 import { LAMP } from './palette3d'
 import { requestFrame } from './renderLoop'
@@ -27,19 +30,43 @@ import { stage } from './stage'
 import { blobTexture, haloTexture } from './textures'
 
 /** Cường độ đèn bàn (candela, mét) */
-const LAMP_I = 0.9
+const LAMP_I = 1.0
 
 // Khung đèn trong toạ độ của đế (đơn vị mét): đế → khuỷu → khớp đầu đèn
 const BASE_TOP = new Vector3(0, 0.024, 0)
 const ELBOW = new Vector3(0.028, 0.26, -0.02)
 const HEADJ = new Vector3(-0.04, 0.42, 0.012)
-/** Hướng chụp đèn: chúc xuống, về phía bàn phím */
+/** Hướng đầu đèn: chúc xuống, về phía bàn phím */
 const AIM = new Vector3(-0.55, -1, 0.42).normalize()
+/** Tâm tấm tản quang (mặt dưới đầu đèn) */
+const PANEL = HEADJ.clone().addScaledVector(AIM, 0.019)
 
-/** Đoạn thẳng a → b: vị trí giữa, hướng, chiều dài (dựng khối trụ dọc theo đoạn) */
+type V3 = [number, number, number]
+const xyz = (v: Vector3): V3 => [v.x, v.y, v.z]
+const eulerOf = (q: Quaternion): V3 => {
+  const e = new Euler().setFromQuaternion(q)
+  return [e.x, e.y, e.z]
+}
+
+/** Thanh nối a → b: vị trí giữa, hướng (trục y dọc thanh), chiều dài */
 function segment(a: Vector3, b: Vector3): { mid: Vector3; quat: Quaternion; len: number } {
   const dir = b.clone().sub(a)
   return { mid: a.clone().add(b).multiplyScalar(0.5), quat: new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), dir.clone().normalize()), len: dir.length() }
+}
+
+/** Hai thanh nhôm song song (lệch ±7,5 mm theo trục z của thanh) */
+function twinBars(a: Vector3, b: Vector3): Part[] {
+  const s = segment(a, b)
+  return [-1, 1].map((k) => ({
+    geo: roundedBox(0.0085, s.len + 0.012, 0.005, 0.002, 1),
+    at: xyz(s.mid.clone().add(new Vector3(0, 0, 0.0075 * k).applyQuaternion(s.quat))),
+    rot: eulerOf(s.quat)
+  }))
+}
+
+/** Khớp: trụ ngắn trục z */
+function knuckle(at: Vector3, r: number): Part {
+  return { geo: new CylinderGeometry(r, r, 0.02, 20), at: xyz(at), rot: [Math.PI / 2, 0, 0] }
 }
 
 export function Lamp(): React.JSX.Element {
@@ -49,40 +76,57 @@ export function Lamp(): React.JSX.Element {
   const target = useRef<Object3D>(null)
   const halo = useRef<Sprite>(null)
   const toggle = useTheme((s) => s.toggle)
-  const arm1 = useMemo(() => segment(BASE_TOP, ELBOW), [])
-  const arm2 = useMemo(() => segment(ELBOW, HEADJ), [])
-  const shadeQuat = useMemo(() => new Quaternion().setFromUnitVectors(new Vector3(0, -1, 0), AIM), [])
-  const bulbPos = useMemo(() => HEADJ.clone().addScaledVector(AIM, 0.034), [])
-  const baseGeo = useMemo(
-    () => new LatheGeometry([new Vector2(0, 0), new Vector2(0.052, 0), new Vector2(0.052, 0.007), new Vector2(0.044, 0.016), new Vector2(0.022, 0.024), new Vector2(0, 0.026)], 28),
-    []
-  )
-  // Chụp đèn hình chuông, mở về phía dưới (trục −y trước khi xoay). Điểm đi từ dưới lên để mặt ngoài quay ra ngoài
-  const shadeGeo = useMemo(
-    () => new LatheGeometry([new Vector2(0.047, -0.066), new Vector2(0.044, -0.058), new Vector2(0.032, -0.03), new Vector2(0.02, -0.006), new Vector2(0.012, 0.004)], 28),
-    []
-  )
-  // Thân đồng thau riêng của đèn (rê chuột thì sáng lên — không làm sáng lây đồng thau của màn hình, robot)
-  const bodyMat = useMemo(() => materials().brass.clone(), [])
-  const jointMat = materials().brassDark
-  // Chụp kính xanh lục kiểu đèn bàn làm việc cổ điển
-  const shadeMat = materials().greenGlass
-  const insideMat = useMemo(() => new MeshStandardMaterial({ color: LAMP.inside, side: BackSide, roughness: 0.6, emissive: new Color(LAMP.light) }), [])
-  const bulbMat = useMemo(() => new MeshBasicMaterial({ toneMapped: false }), [])
-  const bulbOff = useMemo(() => new Color('#8a857c'), [])
-  const bulbOn = useMemo(() => new Color(LAMP.bulb), [])
+  const headQuat = useMemo(() => new Quaternion().setFromUnitVectors(new Vector3(0, -1, 0), AIM), [])
+  const geo = useMemo(() => {
+    const headRot = eulerOf(headQuat)
+    // Viền nhôm quanh tấm tản quang, trong toạ độ đầu đèn rồi đưa về toạ độ đế
+    const bezel = new TorusGeometry(0.039, 0.0016, 6, 40)
+    bezel.rotateX(Math.PI / 2)
+    bezel.translate(0, -0.0185, 0)
+    return {
+      // Đế tròn dẹt, mép vát
+      base: new LatheGeometry([new Vector2(0, 0), new Vector2(0.054, 0), new Vector2(0.054, 0.013), new Vector2(0.05, 0.0172), new Vector2(0, 0.0172)], 40),
+      // Mọi phần nhôm gộp một lần vẽ: viền trên đế, 2 cặp tay đòn, viền tấm tản quang
+      aluminium: merged('lamp-aluminium', [
+        { geo: new TorusGeometry(0.0505, 0.0014, 6, 48), at: [0, 0.0166, 0], rot: [Math.PI / 2, 0, 0] },
+        ...twinBars(BASE_TOP, ELBOW),
+        ...twinBars(ELBOW, HEADJ),
+        { geo: bezel, at: xyz(HEADJ), rot: headRot }
+      ]),
+      // Khớp graphite ở chân, khuỷu, đầu
+      knuckles: merged('lamp-knuckles', [knuckle(BASE_TOP, 0.0085), knuckle(ELBOW, 0.0095), knuckle(HEADJ, 0.0095)]),
+      // Viền cyan hai bên mỗi khớp
+      rings: merged(
+        'lamp-rings',
+        [ELBOW, HEADJ].flatMap((p) => [-1, 1].map((k) => ({ geo: new TorusGeometry(0.0096, 0.0011, 5, 24), at: [p.x, p.y, p.z + 0.0101 * k] as V3 })))
+      )
+    }
+  }, [headQuat])
+  // Đế và đầu đèn riêng của đèn (rê chuột thì ánh lên — không làm sáng lây vật khác dùng chung vật liệu)
+  const bodyMat = useMemo(() => materials().graphite.clone(), [])
+  const headMat = useMemo(() => materials().aluminium.clone(), [])
+  const m = materials()
+  const panelMat = useMemo(() => new MeshBasicMaterial({ toneMapped: false }), [])
+  const panelOff = useMemo(() => new Color('#3a4450'), [])
+  const panelOn = useMemo(() => new Color(LAMP.panel), [])
+  // Vòng sáng quanh nút cảm ứng: tắt thì mờ, bật thì cyan
+  const ringMat = useMemo(() => new MeshBasicMaterial({ toneMapped: false }), [])
+  const ringOff = useMemo(() => new Color('#123440'), [])
+  const ringOn = useMemo(() => new Color('#5fe6ff'), [])
 
   useFrame(() => {
     const l = stage.layout
     group.current?.position.set(l.lamp.x, 0, l.lamp.z)
-    if (sw.current) sw.current.position.y = 0.028 - 0.004 * env.press
-    // Rê chuột lên đèn: thân đồng thau ánh lên
-    bodyMat.emissive.setRGB(env.lampHover ? 0.12 : 0, env.lampHover ? 0.08 : 0, 0)
-    insideMat.emissiveIntensity = 0.9 * env.bulb
-    bulbMat.color.lerpColors(bulbOff, bulbOn, env.bulb)
+    if (sw.current) sw.current.position.y = 0.0185 - 0.0015 * env.press
+    // Rê chuột lên đèn: đế và đầu đèn ánh xanh
+    const glow = env.lampHover ? 1 : 0
+    bodyMat.emissive.setRGB(0.01 * glow, 0.05 * glow, 0.07 * glow)
+    headMat.emissive.setRGB(0.01 * glow, 0.05 * glow, 0.07 * glow)
+    panelMat.color.lerpColors(panelOff, panelOn, env.bulb)
+    ringMat.color.lerpColors(ringOff, ringOn, env.bulb)
     if (halo.current) {
-      halo.current.material.opacity = 0.9 * env.bulb
-      halo.current.scale.setScalar(0.09 + 0.03 * env.bulb)
+      halo.current.material.opacity = 0.85 * env.bulb
+      halo.current.scale.setScalar(0.11 + 0.04 * env.bulb)
     }
     if (spot.current && target.current) {
       spot.current.intensity = LAMP_I * env.lamp
@@ -104,39 +148,35 @@ export function Lamp(): React.JSX.Element {
 
   return (
     <group ref={group}>
-      <mesh geometry={baseGeo} material={bodyMat} castShadow receiveShadow />
-      {/* Công tắc */}
-      <mesh ref={sw} position={[0, 0.028, 0.024]} material={jointMat}>
-        <cylinderGeometry args={[0.009, 0.009, 0.008, 16]} />
+      <mesh geometry={geo.base} material={bodyMat} castShadow receiveShadow />
+      <mesh geometry={geo.aluminium} material={m.aluminium} castShadow />
+      <mesh geometry={geo.knuckles} material={m.graphite} />
+      <mesh geometry={geo.rings} material={m.anodized} />
+      {/* Nút cảm ứng + vòng sáng trạng thái */}
+      <mesh ref={sw} position={[0, 0.0185, 0.028]} material={m.graphiteGloss}>
+        <cylinderGeometry args={[0.0085, 0.0085, 0.003, 24]} />
       </mesh>
-      <mesh position={arm1.mid} quaternion={arm1.quat} material={bodyMat} castShadow>
-        <capsuleGeometry args={[0.008, arm1.len, 4, 12]} />
+      <mesh position={[0, 0.0174, 0.028]} rotation-x={Math.PI / 2} material={ringMat}>
+        <torusGeometry args={[0.0102, 0.0012, 6, 28]} />
       </mesh>
-      <mesh position={ELBOW} material={jointMat}>
-        <sphereGeometry args={[0.013, 16, 12]} />
-      </mesh>
-      <mesh position={arm2.mid} quaternion={arm2.quat} material={bodyMat} castShadow>
-        <capsuleGeometry args={[0.008, arm2.len, 4, 12]} />
-      </mesh>
-      <mesh position={HEADJ} material={jointMat}>
-        <sphereGeometry args={[0.012, 16, 12]} />
-      </mesh>
-      <group position={HEADJ} quaternion={shadeQuat}>
-        <mesh geometry={shadeGeo} material={shadeMat} castShadow />
-        <mesh geometry={shadeGeo} material={insideMat} />
+      {/* Đầu đèn: đĩa nhôm dẹt, mặt dưới là tấm tản quang */}
+      <group position={HEADJ} quaternion={headQuat}>
+        <mesh position-y={-0.0115} material={headMat} castShadow>
+          <cylinderGeometry args={[0.042, 0.044, 0.013, 40]} />
+        </mesh>
+        <mesh position-y={-0.0182} rotation-x={Math.PI / 2} material={panelMat}>
+          <circleGeometry args={[0.037, 40]} />
+        </mesh>
       </group>
-      <mesh position={bulbPos} material={bulbMat}>
-        <sphereGeometry args={[0.013, 16, 12]} />
-      </mesh>
-      <sprite ref={halo} position={bulbPos}>
+      <sprite ref={halo} position={PANEL}>
         <spriteMaterial map={haloTexture()} color={LAMP.light} blending={AdditiveBlending} depthWrite={false} transparent toneMapped={false} fog={false} />
       </sprite>
       <spotLight
         ref={spot}
-        position={bulbPos}
+        position={PANEL}
         color={LAMP.light}
-        angle={0.62}
-        penumbra={0.75}
+        angle={0.66}
+        penumbra={0.8}
         distance={1.6}
         decay={2}
         castShadow
@@ -147,8 +187,8 @@ export function Lamp(): React.JSX.Element {
       />
       <object3D ref={target} position={[-0.3, 0, 0.18]} />
       <mesh position={[0, 0.0012, 0]} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[0.15, 0.15]} />
-        <meshBasicMaterial map={blobTexture()} transparent depthWrite={false} opacity={0.75} />
+        <planeGeometry args={[0.16, 0.16]} />
+        <meshBasicMaterial map={blobTexture()} transparent depthWrite={false} opacity={0.8} />
       </mesh>
       {/* Vùng bấm rộng hơn thân đèn (dễ trúng) — vô hình nhưng vẫn nhận tia chuột */}
       <mesh position={[-0.015, 0.25, 0]} visible={false} onClick={onClick} onPointerOver={hover(true)} onPointerOut={hover(false)}>

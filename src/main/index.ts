@@ -81,9 +81,9 @@ function isTrustedSender(event: IpcMainInvokeEvent): boolean {
   return url.split(/[?#]/)[0] === RENDERER_URL
 }
 
-/** Theme của cửa sổ: thanh tiêu đề, hộp thoại hệ thống và màu nền trước khi trang vẽ */
+/** Màu nền cửa sổ trước khi trang vẽ. Thanh tiêu đề, hộp thoại hệ thống luôn tối: cả hai theme của app đều nền tối */
 function applyTheme(theme: Theme): void {
-  nativeTheme.themeSource = theme
+  nativeTheme.themeSource = 'dark'
   mainWindow?.setBackgroundColor(WINDOW_BG[theme])
 }
 
@@ -195,7 +195,7 @@ else {
     if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
     // Lần đầu mở app: theme theo hệ điều hành
     if (storedBoot === null) saveBoot({ theme: nativeTheme.shouldUseDarkColors ? 'dark' : 'light' })
-    nativeTheme.themeSource = boot.theme
+    nativeTheme.themeSource = 'dark'
     Menu.setApplicationMenu(null)
     if (!openData()) {
       app.quit()

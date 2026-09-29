@@ -1,8 +1,8 @@
-// Vân giấy / vân sơn cho giao diện (cảm giác vẽ tay): ảnh nhiễu nhỏ tạo bằng canvas lúc chạy, đặt vào biến CSS --grain.
-// Chấm vừa sáng vừa tối, độ mờ rất thấp — dùng chung cho nền giấy da (ngày) lẫn nền tối (đêm).
+// Nhiễu mịn cho nền giao diện: ảnh nhỏ tạo bằng canvas lúc chạy, đặt vào biến CSS --grain. Độ mờ rất thấp — xoá dải màu
+// trên nền tối, thêm chút bụi cho màn hình giữa thế giới đổ nát mà không làm giao diện bẩn.
 
 export function installGrain(): void {
-  const size = 160
+  const size = 256
   const c = document.createElement('canvas')
   c.width = c.height = size
   const g = c.getContext('2d')
@@ -12,25 +12,12 @@ export function installGrain(): void {
   const rnd = (): number => ((seed = (seed * 16807) % 2147483647) / 2147483647)
   for (let i = 0; i < size * size; i++) {
     const light = rnd() < 0.5
-    const v = light ? 255 : 30
-    img.data[i * 4] = v
-    img.data[i * 4 + 1] = light ? 245 : 20
-    img.data[i * 4 + 2] = light ? 225 : 10
-    img.data[i * 4 + 3] = Math.floor(rnd() * rnd() * 34)
+    img.data[i * 4] = light ? 210 : 0
+    img.data[i * 4 + 1] = light ? 228 : 0
+    img.data[i * 4 + 2] = light ? 240 : 0
+    // Thỉnh thoảng một hạt bụi rõ hơn
+    img.data[i * 4 + 3] = rnd() < 0.004 ? 40 : Math.floor(rnd() * 14)
   }
   g.putImageData(img, 0, 0)
-  // Vài vệt cọ dài, rất mờ
-  g.globalAlpha = 0.014
-  g.lineCap = 'round'
-  for (let i = 0; i < 14; i++) {
-    g.strokeStyle = rnd() < 0.5 ? '#fff4dc' : '#1e140c'
-    g.lineWidth = 2 + rnd() * 5
-    g.beginPath()
-    const x = rnd() * size
-    const y = rnd() * size
-    g.moveTo(x, y)
-    g.quadraticCurveTo(x + 30 * rnd(), y + 10 * (rnd() - 0.5), x + 40 + 40 * rnd(), y + 12 * (rnd() - 0.5))
-    g.stroke()
-  }
   document.documentElement.style.setProperty('--grain', `url(${c.toDataURL('image/png')})`)
 }
