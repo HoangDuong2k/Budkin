@@ -1,5 +1,5 @@
-appId: com.deskbuddy.app
-productName: DeskBuddy
+appId: com.budkin.app
+productName: Budkin
 # Không có module native nào cần build lại: SQLite dùng node:sqlite có sẵn trong Electron
 npmRebuild: false
 directories:

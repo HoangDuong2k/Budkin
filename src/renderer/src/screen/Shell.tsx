@@ -32,7 +32,7 @@ function TopBar(): React.JSX.Element {
       <button className="icon-btn" onClick={toggleSidebar} aria-label={tr('Ẩn / hiện thanh bên')}>
         <Icon name="sidebar" />
       </button>
-      <span className="brand">DeskBuddy</span>
+      <span className="brand">Budkin</span>
       <div className="grow" />
       <div className="search">
         <Icon name="search" size={14} />

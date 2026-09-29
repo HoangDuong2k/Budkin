@@ -27,10 +27,10 @@ async function main(): Promise<void> {
   const app = await electron.launch({
     executablePath: require('electron') as unknown as string,
     args: [ROOT, ...(process.platform === 'linux' ? ['--no-sandbox'] : [])],
-    env: { ...process.env, DESKBUDDY_TEST: '1', DESKBUDDY_USER_DATA: USER_DATA } as Record<string, string>
+    env: { ...process.env, BUDKIN_TEST: '1', BUDKIN_USER_DATA: USER_DATA } as Record<string, string>
   })
   const page = await app.firstWindow()
-  await page.waitForFunction(() => (window as unknown as { __deskbuddy?: { stage: { ready: boolean } } }).__deskbuddy?.stage.ready, undefined, { timeout: 20000 })
+  await page.waitForFunction(() => (window as unknown as { __budkin?: { stage: { ready: boolean } } }).__budkin?.stage.ready, undefined, { timeout: 20000 })
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1440, 860))
   await page.waitForTimeout(500)
 
@@ -54,8 +54,8 @@ async function main(): Promise<void> {
   await call(page, 'tasks:create', { title: 'Đọc tài liệu kiến trúc', dueDate: addDays(today, 2), projectId: work.id })
 
   for (const theme of ['light', 'dark'] as const) {
-    await page.evaluate((t) => (window as unknown as { __deskbuddy: { theme: { getState(): { request(t: string): void } } } }).__deskbuddy.theme.getState().request(t), theme)
-    await page.waitForFunction(() => (window as unknown as { __deskbuddy: { env: { anim: unknown } } }).__deskbuddy.env.anim === null, undefined, { timeout: 5000 })
+    await page.evaluate((t) => (window as unknown as { __budkin: { theme: { getState(): { request(t: string): void } } } }).__budkin.theme.getState().request(t), theme)
+    await page.waitForFunction(() => (window as unknown as { __budkin: { env: { anim: unknown } } }).__budkin.env.anim === null, undefined, { timeout: 5000 })
     // Con trỏ trên danh sách: robot quay sang nhìn màn hình
     await page.mouse.move(820, 330, { steps: 6 })
     await page.waitForTimeout(1200)

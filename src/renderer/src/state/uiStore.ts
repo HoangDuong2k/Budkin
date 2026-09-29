@@ -33,7 +33,7 @@ interface UiState {
   focusSearch: () => void
 }
 
-const KEY = 'deskbuddy.ui'
+const KEY = 'budkin.ui'
 
 /** Nhớ lựa chọn xem cho lần mở sau (chỉ là tiện lợi — đọc/ghi lỗi thì bỏ qua) */
 function loadPrefs(): Partial<Pick<UiState, 'view' | 'selection' | 'sidebarOpen'>> {

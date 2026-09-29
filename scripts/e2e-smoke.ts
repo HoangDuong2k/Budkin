@@ -1,11 +1,11 @@
 /**
  * Kiểm thử end-to-end: mở app đã build, điều khiển bằng chuột / bàn phím thật, chụp ảnh các bước.
  * Chạy: npm run build && npm run e2e
- * Bản đã đóng gói: DESKBUDDY_E2E_EXE=release/linux-unpacked/desk-buddy npm run e2e
- *   (Windows: DESKBUDDY_E2E_EXE="release/win-unpacked/DeskBuddy.exe")
- * Máy không có GPU (CI): DESKBUDDY_E2E_SWIFTSHADER=1 — WebGL vẽ bằng CPU
- * Chạy bản deb đã cài mà không tắt sandbox (kiểm tra profile AppArmor): DESKBUDDY_E2E_SANDBOX=1
- * Giả lập màn hình nhỏ (máy ảo Windows 1024×768 của GitHub): DESKBUDDY_E2E_WINDOW=1000x660
+ * Bản đã đóng gói: BUDKIN_E2E_EXE=release/linux-unpacked/budkin npm run e2e
+ *   (Windows: BUDKIN_E2E_EXE="release/win-unpacked/Budkin.exe")
+ * Máy không có GPU (CI): BUDKIN_E2E_SWIFTSHADER=1 — WebGL vẽ bằng CPU
+ * Chạy bản deb đã cài mà không tắt sandbox (kiểm tra profile AppArmor): BUDKIN_E2E_SANDBOX=1
+ * Giả lập màn hình nhỏ (máy ảo Windows 1024×768 của GitHub): BUDKIN_E2E_WINDOW=1000x660
  */
 import { mkdirSync, rmSync } from 'fs'
 import { join, resolve } from 'path'
@@ -29,7 +29,7 @@ interface Rect {
 /** Những gì renderer mở cho kiểm thử (src/renderer/src/scene/testProbe.ts) */
 interface Probe {
   api: DeskApi
-  __deskbuddy: {
+  __budkin: {
     renderMode: '3d' | '2d'
     stage: { screenRect: Rect; viewport: { width: number; height: number }; ready: boolean }
     webglInfo(): { version: string; renderer: string } | null
@@ -93,16 +93,16 @@ function near(a: Rgb, b: Rgb, tol = 6): boolean {
 }
 
 async function launch(extraEnv: Record<string, string> = {}): Promise<{ app: ElectronApplication; page: Page }> {
-  const exe = process.env.DESKBUDDY_E2E_EXE
+  const exe = process.env.BUDKIN_E2E_EXE
   const args = [
     ...(exe ? [] : [ROOT]),
-    ...(process.platform === 'linux' && !process.env.DESKBUDDY_E2E_SANDBOX ? ['--no-sandbox'] : []),
-    ...(process.env.DESKBUDDY_E2E_SWIFTSHADER ? ['--use-gl=angle', '--use-angle=swiftshader'] : [])
+    ...(process.platform === 'linux' && !process.env.BUDKIN_E2E_SANDBOX ? ['--no-sandbox'] : []),
+    ...(process.env.BUDKIN_E2E_SWIFTSHADER ? ['--use-gl=angle', '--use-angle=swiftshader'] : [])
   ]
   const app = (appRef = await electron.launch({
     executablePath: exe ?? (require('electron') as unknown as string),
     args,
-    env: { ...process.env, DESKBUDDY_TEST: '1', DESKBUDDY_USER_DATA: USER_DATA, ...extraEnv } as Record<string, string>
+    env: { ...process.env, BUDKIN_TEST: '1', BUDKIN_USER_DATA: USER_DATA, ...extraEnv } as Record<string, string>
   }))
   app.process().stderr?.on('data', (d: Buffer) => {
     for (const line of d.toString().split(/\r?\n/))
@@ -118,9 +118,9 @@ async function launch(extraEnv: Record<string, string> = {}): Promise<{ app: Ele
   })
   await page.waitForSelector('.screen-app', { timeout: 20000 })
   // Cảnh 3D dựng xong sau giao diện (canvas phải đo kích thước trước)
-  const mode = await page.evaluate(() => (window as unknown as Probe).__deskbuddy.renderMode)
-  if (mode === '3d') await page.waitForFunction(() => (window as unknown as Probe).__deskbuddy.stage.ready, undefined, { timeout: 20000 })
-  const win = /^(\d+)x(\d+)$/.exec(process.env.DESKBUDDY_E2E_WINDOW ?? '')
+  const mode = await page.evaluate(() => (window as unknown as Probe).__budkin.renderMode)
+  if (mode === '3d') await page.waitForFunction(() => (window as unknown as Probe).__budkin.stage.ready, undefined, { timeout: 20000 })
+  const win = /^(\d+)x(\d+)$/.exec(process.env.BUDKIN_E2E_WINDOW ?? '')
   if (win) await resize(app, page, Number(win[1]), Number(win[2]))
   return { app, page }
 }
@@ -140,13 +140,13 @@ async function resize(app: ElectronApplication, page: Page, w: number, h: number
   )
   if (!fits) return false
   return until(async () => {
-    const v = await page.evaluate(() => (window as unknown as Probe).__deskbuddy.stage.viewport)
+    const v = await page.evaluate(() => (window as unknown as Probe).__budkin.stage.viewport)
     return Math.abs(v.width - w) < 1.5 && Math.abs(v.height - h) < 1.5
   }, 4000)
 }
 
-async function probe<T>(page: Page, fn: (p: Probe['__deskbuddy']) => T): Promise<T> {
-  return page.evaluate(`(${fn.toString()})(window.__deskbuddy)`) as Promise<T>
+async function probe<T>(page: Page, fn: (p: Probe['__budkin']) => T): Promise<T> {
+  return page.evaluate(`(${fn.toString()})(window.__budkin)`) as Promise<T>
 }
 
 /** Lớp giao diện khớp màn hình 3D: so khung DOM với tính toán, rồi ẩn lớp DOM và đọc điểm ảnh canvas quanh mép */
@@ -176,7 +176,7 @@ async function checkAlignment(page: Page, label: string, theme: 'light' | 'dark'
     { x: midX, y: rect.y - d },
     { x: midX, y: rect.y + rect.height + d }
   ]
-  const px = await page.evaluate((pts) => (window as unknown as Probe).__deskbuddy.samplePixels(pts), [...inside, ...outside])
+  const px = await page.evaluate((pts) => (window as unknown as Probe).__budkin.samplePixels(pts), [...inside, ...outside])
   await page.evaluate(() => ((document.querySelector('.screen') as HTMLElement).style.visibility = ''))
   const bg = hex(SCREEN_BG[theme])
   assert(
@@ -274,14 +274,14 @@ async function uiFlow(page: Page): Promise<void> {
   // Đổi ngôn ngữ (thanh bên thu gọn ở màn hình nhỏ thì đổi qua store)
   const langBtn = page.locator('.lang-switch button', { hasText: 'EN' })
   if (await langBtn.isVisible()) await langBtn.click()
-  else await page.evaluate("window.__deskbuddy.lang.getState().setLang('en')")
+  else await page.evaluate("window.__budkin.lang.getState().setLang('en')")
   assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Today'), 'đổi sang tiếng Anh: giao diện hiện "Today"')
   await page.screenshot({ path: join(OUT, '7-today-en.png') })
   await page.locator('.theme-toggle').click()
   await page.waitForTimeout(200)
   await page.screenshot({ path: join(OUT, '8-today-en-other-theme.png') })
   await page.locator('.theme-toggle').click()
-  await page.evaluate("window.__deskbuddy.lang.getState().setLang('vi')")
+  await page.evaluate("window.__budkin.lang.getState().setLang('vi')")
   assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Hôm nay'), 'đổi lại tiếng Việt')
 }
 
@@ -291,25 +291,25 @@ async function sceneFlow(page: Page): Promise<void> {
   // Cờ "đứng yên" chỉ cập nhật khi vẽ khung: chờ khung hình mới sau khi di chuột rồi mới chờ robot dừng
   const settled = async (): Promise<boolean> => {
     await page.waitForTimeout(250)
-    return until(async () => (await page.evaluate('window.__deskbuddy.robot.settled')) === true, 5000)
+    return until(async () => (await page.evaluate('window.__budkin.robot.settled')) === true, 5000)
   }
   const vp = await probe(page, (p) => p.stage.viewport)
 
   // Robot quay đầu theo con trỏ (kể cả khi con trỏ nằm trên giao diện trong màn hình).
   // Chờ hết hoạt cảnh đang dở (vd. vừa bật/tắt đèn thì robot quay sang nhìn đèn)
   await page.mouse.move(vp.width / 2, vp.height / 2, { steps: 3 })
-  await until(async () => (await page.evaluate('window.__deskbuddy.robot.mode')) === 'idle', 3000)
+  await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'idle', 3000)
   await page.mouse.move(4, vp.height / 2, { steps: 6 })
   await settled()
-  const yawLeft = await num('window.__deskbuddy.robot.headYaw')
+  const yawLeft = await num('window.__budkin.robot.headYaw')
   await page.mouse.move(vp.width - 4, vp.height / 2, { steps: 10 })
   await settled()
-  const yawRight = await num('window.__deskbuddy.robot.headYaw')
+  const yawRight = await num('window.__budkin.robot.headYaw')
   // Robot đứng sát mép trái nên con trỏ ở mép trái chỉ lệch trái một chút so với robot
   assert(yawLeft < 0 && yawRight - yawLeft > 0.4, `robot nhìn theo chuột: trái ${yawLeft.toFixed(2)} rad, phải ${yawRight.toFixed(2)} rad`)
   await page.mouse.move(vp.width * 0.12, 3, { steps: 6 })
   await settled()
-  const pitchUp = await num('window.__deskbuddy.robot.headPitch')
+  const pitchUp = await num('window.__budkin.robot.headPitch')
   assert(pitchUp > 0.05, `con trỏ ở mép trên: robot ngẩng lên (${pitchUp.toFixed(2)} rad)`)
   await page.screenshot({ path: join(OUT, '9-scene.png') })
 
@@ -325,7 +325,7 @@ async function sceneFlow(page: Page): Promise<void> {
   await page.mouse.click(hit.lamp.x, hit.lamp.y)
   assert(await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) !== before, 1500), 'bấm vào đèn: đổi theme')
   assert(await page.evaluate(() => document.activeElement === document.querySelector('.search input')), 'bấm đèn không làm mất con trỏ trong ô đang gõ')
-  await until(async () => (await page.evaluate('window.__deskbuddy.env.anim === null')) === true, 3000)
+  await until(async () => (await page.evaluate('window.__budkin.env.anim === null')) === true, 3000)
   await page.screenshot({ path: join(OUT, '10-lamp-toggled.png') })
   await page.keyboard.press('Control+Shift+L')
   assert(await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) === before, 1500), 'Ctrl+Shift+L (đang gõ) bật / tắt đèn trở lại')
@@ -333,40 +333,40 @@ async function sceneFlow(page: Page): Promise<void> {
 
   // Chọc robot
   await page.mouse.click(hit.robot.x, hit.robot.y)
-  assert(await until(async () => (await page.evaluate('window.__deskbuddy.robot.mode')) === 'poked', 1000), 'bấm vào robot: robot bẹp-giãn')
+  assert(await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'poked', 1000), 'bấm vào robot: robot bẹp-giãn')
 
   // Chế độ Tiết kiệm: đứng yên thì không vẽ khung nào
   await invoke(page, 'settings:update', { quality: 'saver' })
-  await page.waitForFunction(() => (window as unknown as Probe).__deskbuddy.stage.ready, undefined, { timeout: 10000 })
+  await page.waitForFunction(() => (window as unknown as Probe).__budkin.stage.ready, undefined, { timeout: 10000 })
   // Di chuột nhẹ (đặt lại hẹn giờ buồn ngủ — 4 s khi kiểm thử), chờ robot đứng yên rồi đo; chỉ tính lần đo mà
   // robot không đổi trạng thái giữa chừng (máy chậm / vẽ bằng CPU có thể chạm mốc buồn ngủ)
   let idleFrames = -1
   for (let attempt = 0; attempt < 3 && idleFrames < 0; attempt++) {
     await page.mouse.move(vp.width / 2 + attempt * 7, vp.height - 30, { steps: 2 })
     await settled()
-    const mode0 = await page.evaluate('window.__deskbuddy.robot.mode')
-    const f0 = await num('window.__deskbuddy.renderStats.frames')
+    const mode0 = await page.evaluate('window.__budkin.robot.mode')
+    const f0 = await num('window.__budkin.renderStats.frames')
     await page.waitForTimeout(1200)
-    const f1 = await num('window.__deskbuddy.renderStats.frames')
-    if (mode0 === 'idle' && (await page.evaluate('window.__deskbuddy.robot.mode')) === 'idle') idleFrames = f1 - f0
+    const f1 = await num('window.__budkin.renderStats.frames')
+    if (mode0 === 'idle' && (await page.evaluate('window.__budkin.robot.mode')) === 'idle') idleFrames = f1 - f0
   }
   assert(idleFrames === 0, `Tiết kiệm, đứng yên 1,2 giây: ${idleFrames} khung hình`)
   assert((await probe(page, (p) => p.renderMode)) === '3d', 'đổi mức chất lượng (tạo lại canvas) vẫn ở chế độ 3D')
 
   // Lâu không thao tác (kiểm thử rút ngắn còn vài giây): robot ngủ, hiện "Zzz", cảnh không vẽ
-  assert(await until(async () => (await page.evaluate('window.__deskbuddy.robot.mode')) === 'sleep', 8000), 'lâu không thao tác: robot ngủ')
+  assert(await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'sleep', 8000), 'lâu không thao tác: robot ngủ')
   assert(await until(async () => page.locator('.zzz.on').isVisible(), 1500), 'robot ngủ: hiện "Zzz"')
   await page.screenshot({ path: join(OUT, '11-robot-sleep.png') })
-  const s0 = await num('window.__deskbuddy.renderStats.frames')
+  const s0 = await num('window.__budkin.renderStats.frames')
   await page.waitForTimeout(1500)
-  assert((await num('window.__deskbuddy.renderStats.frames')) === s0, 'robot ngủ: cảnh không vẽ khung nào')
+  assert((await num('window.__budkin.renderStats.frames')) === s0, 'robot ngủ: cảnh không vẽ khung nào')
   await page.mouse.move(vp.width / 2, vp.height - 20, { steps: 4 })
-  assert(await until(async () => ['startled', 'idle'].includes(String(await page.evaluate('window.__deskbuddy.robot.mode'))), 1500), 'di chuột: robot tỉnh dậy')
+  assert(await until(async () => ['startled', 'idle'].includes(String(await page.evaluate('window.__budkin.robot.mode'))), 1500), 'di chuột: robot tỉnh dậy')
 
   // Mất WebGL không phục hồi: chuyển sang giao diện 2D, chữ đang gõ dở vẫn còn
   await page.locator('.quick-add-input').click()
   await page.keyboard.type('Nháp chưa lưu')
-  await page.evaluate('window.__deskbuddy.loseContext()')
+  await page.evaluate('window.__budkin.loseContext()')
   assert(await until(async () => (await probe(page, (p) => p.renderMode)) === '2d', 5000), 'mất WebGL: tự chuyển sang giao diện 2D')
   assert((await page.locator('.quick-add-input').inputValue()) === 'Nháp chưa lưu', 'chuyển sang 2D: chữ đang gõ dở không mất')
   await invoke(page, 'settings:update', { quality: 'balanced' })
@@ -415,7 +415,7 @@ async function main(): Promise<void> {
     `bấm nút đổi theme: ${theme0} → ${theme1}`
   )
   // Chờ căn phòng sáng / tối dần xong (~0,75 s)
-  await until(async () => (await page.evaluate('window.__deskbuddy.env.anim === null')) === true, 3000)
+  await until(async () => (await page.evaluate('window.__budkin.env.anim === null')) === true, 3000)
   await checkAlignment(page, `theme ${theme1}`, theme1)
   await page.screenshot({ path: join(OUT, `3-theme-${theme1}.png`) })
 
@@ -459,7 +459,7 @@ async function main(): Promise<void> {
   await app.evaluate(({ app: a }) => a.exit(0))
 
   // ---- Máy không có WebGL: chế độ 2D ----
-  ;({ app, page } = await launch({ DESKBUDDY_E2E_NO_WEBGL: '1' }))
+  ;({ app, page } = await launch({ BUDKIN_E2E_NO_WEBGL: '1' }))
   assert((await probe(page, (p) => p.renderMode)) === '2d', 'không có WebGL → chế độ 2D')
   const box2d = await page.locator('.screen').boundingBox()
   const vp = page.viewportSize() ?? (await page.evaluate(() => ({ width: innerWidth, height: innerHeight })))

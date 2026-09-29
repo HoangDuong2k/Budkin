@@ -113,7 +113,7 @@ export function ListView(): React.JSX.Element {
       {loaded && sections.length === 0 && (
         <div className="empty">
           <p>{terms.length ? tr('Không tìm thấy việc nào khớp.') : tr('Chưa có việc nào ở đây.')}</p>
-          {!terms.length && <p className="muted">{tr('Gõ vào ô phía trên để thêm việc mới — robot sẽ nhắc bạn khi đến hạn.')}</p>}
+          {!terms.length && <p className="muted">{tr('Gõ vào ô phía trên để thêm việc mới — Budkin sẽ nhắc bạn khi đến hạn.')}</p>}
         </div>
       )}
     </div>

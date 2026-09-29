@@ -3,11 +3,11 @@ export const EN: Record<string, string> = {
   // Đèn, theme, robot
   'Bật đèn': 'Turn the lamp on',
   'Tắt đèn': 'Turn the lamp off',
-  'Chọc robot': 'Poke the robot',
+  'Chọc Budkin': 'Poke Budkin',
 
   // Lỗi khi mở dữ liệu
   'Không mở được dữ liệu': 'Could not open your data',
-  'Dữ liệu được tạo bởi phiên bản DeskBuddy mới hơn. Hãy cài bản mới nhất.': 'Your data was created by a newer version of DeskBuddy. Please install the latest version.',
+  'Dữ liệu được tạo bởi phiên bản Budkin mới hơn. Hãy cài bản mới nhất.': 'Your data was created by a newer version of Budkin. Please install the latest version.',
 
   // Danh sách thông minh, nhóm
   'Hôm nay': 'Today',
@@ -27,7 +27,7 @@ export const EN: Record<string, string> = {
   'Kết quả tìm kiếm': 'Search results',
   'Không tìm thấy việc nào khớp.': 'No matching tasks.',
   'Chưa có việc nào ở đây.': 'Nothing here yet.',
-  'Gõ vào ô phía trên để thêm việc mới — robot sẽ nhắc bạn khi đến hạn.': 'Type in the box above to add a task — the robot will remind you when it is due.',
+  'Gõ vào ô phía trên để thêm việc mới — Budkin sẽ nhắc bạn khi đến hạn.': 'Type in the box above to add a task — Budkin will remind you when it is due.',
   'Thêm việc mới… (Enter để lưu)': 'Add a task… (Enter to save)',
 
   // Thanh trên, thanh bên

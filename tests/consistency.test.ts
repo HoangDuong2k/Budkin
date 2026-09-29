@@ -41,6 +41,6 @@ describe('thiết lập khởi động (boot.json)', () => {
     const info = { ...DEFAULT_BOOT, theme: 'dark' as const, platform: 'win32', lang: 'en' as const, test: true, clockOffset: 3600_000 }
     expect(parseBootArg(['electron', '--foo', bootArg(info)])).toEqual(info)
     expect(parseBootArg(['electron'])).toBeNull()
-    expect(parseBootArg(['--deskbuddy-boot=%7Bhỏng'])).toBeNull()
+    expect(parseBootArg(['--budkin-boot=%7Bhỏng'])).toBeNull()
   })
 })

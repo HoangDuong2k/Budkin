@@ -1,4 +1,4 @@
-// Cho kiểm thử tự động (DESKBUDDY_TEST=1) đọc trạng thái cảnh, lấy mẫu điểm ảnh, giả lập mất WebGL
+// Cho kiểm thử tự động (BUDKIN_TEST=1) đọc trạng thái cảnh, lấy mẫu điểm ảnh, giả lập mất WebGL
 import { advance } from '@react-three/fiber'
 import { useData } from '../state/dataStore'
 import { useLang } from '../state/langStore'
@@ -51,7 +51,7 @@ function loseContext(): void {
 
 export function installTestProbe(): void {
   if (!window.api.boot.test) return
-  ;(window as unknown as { __deskbuddy: unknown }).__deskbuddy = {
+  ;(window as unknown as { __budkin: unknown }).__budkin = {
     get renderMode() {
       return renderInfo.mode
     },

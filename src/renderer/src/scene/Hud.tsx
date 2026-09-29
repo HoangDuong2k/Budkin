@@ -27,7 +27,7 @@ export function Hud(): React.JSX.Element {
             hud.robotButton = el
           }}
           className="hotspot"
-          aria-label={tr('Chọc robot')}
+          aria-label={tr('Chọc Budkin')}
           onClick={() => dispatchRobot({ type: 'poke', at: performance.now() })}
         />
       </div>

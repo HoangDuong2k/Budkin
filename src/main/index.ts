@@ -19,15 +19,15 @@ import { registerAll } from './ipc'
 import { DataService } from './services/data'
 
 /** Kiểm thử tự động: cửa sổ hiện mà không giành focus, thư mục dữ liệu riêng, đồng hồ đẩy tới được */
-const TEST = process.env.DESKBUDDY_TEST === '1'
-if (process.env.DESKBUDDY_USER_DATA) app.setPath('userData', process.env.DESKBUDDY_USER_DATA)
+const TEST = process.env.BUDKIN_TEST === '1'
+if (process.env.BUDKIN_USER_DATA) app.setPath('userData', process.env.BUDKIN_USER_DATA)
 
 const bootFile = join(app.getPath('userData'), 'boot.json')
 const storedBoot = readBootFile(bootFile)
 let boot: BootPrefs = normalizeBoot(storedBoot)
 applyGraphicsSwitches(boot)
 
-const clock: Clock = TEST ? new TestClock(Number(process.env.DESKBUDDY_CLOCK_OFFSET ?? 0)) : systemClock
+const clock: Clock = TEST ? new TestClock(Number(process.env.BUDKIN_CLOCK_OFFSET ?? 0)) : systemClock
 let mainWindow: BrowserWindow | null = null
 let db: Db | null = null
 let data: DataService
@@ -58,10 +58,10 @@ function sqliteVersion(): string {
 function openData(): boolean {
   const dir = app.getPath('userData')
   try {
-    db = new Db(join(dir, 'deskbuddy.db'))
+    db = new Db(join(dir, 'budkin.db'))
     migrate(db, join(dir, 'backups'))
   } catch (err) {
-    const detail = err instanceof NewerDatabaseError ? tr('Dữ liệu được tạo bởi phiên bản DeskBuddy mới hơn. Hãy cài bản mới nhất.') : String(err)
+    const detail = err instanceof NewerDatabaseError ? tr('Dữ liệu được tạo bởi phiên bản Budkin mới hơn. Hãy cài bản mới nhất.') : String(err)
     dialog.showErrorBox(tr('Không mở được dữ liệu'), detail)
     return false
   }
@@ -144,7 +144,7 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       // Kiểm thử chế độ 2D: giả lập máy không có WebGL (cờ --disable-webgl không tới được renderer)
-      webgl: !(TEST && process.env.DESKBUDDY_E2E_NO_WEBGL === '1'),
+      webgl: !(TEST && process.env.BUDKIN_E2E_NO_WEBGL === '1'),
       // Robot kêu, chuông nhắc việc phát được cả khi người dùng chưa bấm gì
       autoplayPolicy: 'no-user-gesture-required',
       // Theme, ngôn ngữ, chế độ render… cho preload đọc ngay, trước lần vẽ đầu tiên (không chớp màn hình)
@@ -202,7 +202,7 @@ else {
       return
     }
     registerIpc()
-    if (TEST) (globalThis as unknown as { __deskbuddy: unknown }).__deskbuddy = { clock, data }
+    if (TEST) (globalThis as unknown as { __budkin: unknown }).__budkin = { clock, data }
     createWindow()
   })
 

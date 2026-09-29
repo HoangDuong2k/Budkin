@@ -1,9 +1,9 @@
-# DeskBuddy
+# Budkin
 
 Ứng dụng desktop quản lý công việc (Windows / Ubuntu, giao diện **tiếng Việt / English**) với giao diện là **một bàn làm việc 3D**:
 
 - **Máy tính ở giữa** — màn hình của nó chính là nơi quản lý task (danh sách, Kanban, lịch).
-- **Robot nhỏ bên trái** — luôn nhìn theo con trỏ chuột, báo hiệu khi có việc sắp đến hạn / đến hạn.
+- **Budkin, chú robot nhỏ bên trái** — luôn nhìn theo con trỏ chuột, báo hiệu khi có việc sắp đến hạn / đến hạn.
 - **Đèn bàn bên phải** — bật / tắt đèn để đổi giữa hai theme.
 
 Phong cách: thế giới hiện đại hậu tận thế, tông tối — tường bê tông nứt, cửa sổ vỡ nhìn ra thành phố đổ nát, còn đồ
@@ -23,6 +23,7 @@ robot phát sáng.
 Yêu cầu: **Node.js 24** (trùng bản Node trong Electron 44 — cần cho `node:sqlite` khi chạy unit test), Git.
 
 ```bash
+git clone https://github.com/HoangDuong2k/Budkin.git && cd Budkin
 nvm install 24 && nvm use   # đọc phiên bản từ .nvmrc
 npm install
 npm run dev                 # chạy app ở chế độ phát triển
@@ -39,8 +40,8 @@ npm test                    # vitest: toán khung hình, i18n, cấu hình
 npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột / bàn phím, ảnh chụp trong test-output/e2e/
 ```
 
-- Máy không có GPU (CI, máy ảo): `DESKBUDDY_E2E_SWIFTSHADER=1 npm run e2e` — WebGL vẽ bằng CPU.
-- Kiểm thử bản đã đóng gói: `DESKBUDDY_E2E_EXE=release/linux-unpacked/desk-buddy npm run e2e`.
+- Máy không có GPU (CI, máy ảo): `BUDKIN_E2E_SWIFTSHADER=1 npm run e2e` — WebGL vẽ bằng CPU.
+- Kiểm thử bản đã đóng gói: `BUDKIN_E2E_EXE=release/linux-unpacked/budkin npm run e2e`.
 - Linux không có màn hình (CI): `xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e`. Trên máy có màn hình, cửa sổ app
   hiện lên trong lúc chạy e2e (không giành focus); cài `xvfb` để chạy ẩn.
 - Ảnh giới thiệu: `npm run build && npm run screenshots` → `docs/screenshots/`.
@@ -50,7 +51,7 @@ npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột
 
 | Hệ điều hành | Lệnh (chạy trên chính hệ điều hành đó) | Kết quả trong `release/` |
 |---|---|---|
-| **Windows** | `npm ci` rồi `npm run dist:win` | `DeskBuddy-Setup-x.y.z.exe` (cài cho người dùng hiện tại, không cần quyền Administrator) |
+| **Windows** | `npm ci` rồi `npm run dist:win` | `Budkin-Setup-x.y.z.exe` (cài cho người dùng hiện tại, không cần quyền Administrator) |
 | **Ubuntu** | `npm ci` rồi `npm run dist:linux` | `.deb` (khuyên dùng) và `.AppImage` |
 
 - **deb** tự cài profile AppArmor để sandbox của Chromium chạy được trên Ubuntu 24.04+.

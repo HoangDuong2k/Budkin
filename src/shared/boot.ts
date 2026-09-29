@@ -20,7 +20,7 @@ export interface BootInfo extends BootPrefs {
   platform: string
   /** Ngôn ngữ giao diện (từ thiết lập) — vẽ đúng ngôn ngữ ngay khung hình đầu tiên */
   lang: Lang
-  /** Chế độ kiểm thử tự động (DESKBUDDY_TEST=1) */
+  /** Chế độ kiểm thử tự động (BUDKIN_TEST=1) */
   test: boolean
   /** Kiểm thử: đồng hồ lệch khỏi giờ thật (ms) */
   clockOffset: number
@@ -41,7 +41,7 @@ export function normalizeBoot(raw: unknown, fallbackTheme: Theme = DEFAULT_BOOT.
   }
 }
 
-const BOOT_ARG = '--deskbuddy-boot='
+const BOOT_ARG = '--budkin-boot='
 
 export function bootArg(info: BootInfo): string {
   return BOOT_ARG + encodeURIComponent(JSON.stringify(info))

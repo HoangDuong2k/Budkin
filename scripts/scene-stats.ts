@@ -20,17 +20,17 @@ async function main(): Promise<void> {
   const app = await electron.launch({
     executablePath: require('electron') as unknown as string,
     args: [ROOT, ...(process.platform === 'linux' ? ['--no-sandbox'] : [])],
-    env: { ...process.env, DESKBUDDY_TEST: '1', DESKBUDDY_USER_DATA: USER_DATA } as Record<string, string>
+    env: { ...process.env, BUDKIN_TEST: '1', BUDKIN_USER_DATA: USER_DATA } as Record<string, string>
   })
   const page = await app.firstWindow()
-  await page.waitForFunction(() => (window as unknown as { __deskbuddy?: { stage: { ready: boolean } } }).__deskbuddy?.stage.ready, undefined, { timeout: 20000 })
+  await page.waitForFunction(() => (window as unknown as { __budkin?: { stage: { ready: boolean } } }).__budkin?.stage.ready, undefined, { timeout: 20000 })
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1440, 860))
   await page.waitForTimeout(800)
   for (const theme of ['light', 'dark'] as const) {
-    await page.evaluate((t) => (window as unknown as { __deskbuddy: { theme: { getState(): { request(t: string): void } } } }).__deskbuddy.theme.getState().request(t), theme)
+    await page.evaluate((t) => (window as unknown as { __budkin: { theme: { getState(): { request(t: string): void } } } }).__budkin.theme.getState().request(t), theme)
     await page.waitForTimeout(1200)
     const stats = await page.evaluate(() => {
-      const s = (window as unknown as { __deskbuddy: { stage: { getR3F(): R3F } } }).__deskbuddy.stage.getR3F()
+      const s = (window as unknown as { __budkin: { stage: { getR3F(): R3F } } }).__budkin.stage.getR3F()
       // Khung thường (bóng đổ không vẽ lại) và khung có vẽ lại bóng đổ (đổi cỡ cửa sổ)
       s.gl.render(s.scene, s.camera)
       const plain = { ...s.gl.info.render }
