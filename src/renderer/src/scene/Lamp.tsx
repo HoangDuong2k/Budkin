@@ -1,5 +1,5 @@
 // Đèn LED làm việc hiện đại = công tắc theme: đế tròn graphite có nút cảm ứng và vòng sáng báo trạng thái, tay đòn nhôm
-// đôi song song, khớp graphite viền cyan, đầu đèn nhôm dẹt với tấm tản quang trắng lạnh. Bấm vào đèn (hoặc Ctrl+Shift+L)
+// đôi song song, khớp graphite viền xanh ngọc, đầu đèn nhôm dẹt với tấm tản quang trắng ấm. Bấm vào đèn (hoặc Ctrl+Shift+L)
 // để bật / tắt: nút lún, tiếng tách, đèn chớp khi bật; SpotLight của đèn là đèn duy nhất đổ bóng.
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
@@ -95,7 +95,7 @@ export function Lamp(): React.JSX.Element {
       ]),
       // Khớp graphite ở chân, khuỷu, đầu
       knuckles: merged('lamp-knuckles', [knuckle(BASE_TOP, 0.0085), knuckle(ELBOW, 0.0095), knuckle(HEADJ, 0.0095)]),
-      // Viền cyan hai bên mỗi khớp
+      // Viền xanh ngọc hai bên mỗi khớp
       rings: merged(
         'lamp-rings',
         [ELBOW, HEADJ].flatMap((p) => [-1, 1].map((k) => ({ geo: new TorusGeometry(0.0096, 0.0011, 5, 24), at: [p.x, p.y, p.z + 0.0101 * k] as V3 })))
@@ -109,19 +109,19 @@ export function Lamp(): React.JSX.Element {
   const panelMat = useMemo(() => new MeshBasicMaterial({ toneMapped: false }), [])
   const panelOff = useMemo(() => new Color('#3a4450'), [])
   const panelOn = useMemo(() => new Color(LAMP.panel), [])
-  // Vòng sáng quanh nút cảm ứng: tắt thì mờ, bật thì cyan
+  // Vòng sáng quanh nút cảm ứng: tắt thì mờ, bật thì xanh ngọc
   const ringMat = useMemo(() => new MeshBasicMaterial({ toneMapped: false }), [])
-  const ringOff = useMemo(() => new Color('#123440'), [])
-  const ringOn = useMemo(() => new Color('#5fe6ff'), [])
+  const ringOff = useMemo(() => new Color('#10302d'), [])
+  const ringOn = useMemo(() => new Color('#56e0d6'), [])
 
   useFrame(() => {
     const l = stage.layout
     group.current?.position.set(l.lamp.x, 0, l.lamp.z)
     if (sw.current) sw.current.position.y = 0.0185 - 0.0015 * env.press
-    // Rê chuột lên đèn: đế và đầu đèn ánh xanh
+    // Rê chuột lên đèn: đế và đầu đèn ánh xanh ngọc
     const glow = env.lampHover ? 1 : 0
-    bodyMat.emissive.setRGB(0.01 * glow, 0.05 * glow, 0.07 * glow)
-    headMat.emissive.setRGB(0.01 * glow, 0.05 * glow, 0.07 * glow)
+    bodyMat.emissive.setRGB(0.01 * glow, 0.06 * glow, 0.055 * glow)
+    headMat.emissive.setRGB(0.01 * glow, 0.06 * glow, 0.055 * glow)
     panelMat.color.lerpColors(panelOff, panelOn, env.bulb)
     ringMat.color.lerpColors(ringOff, ringOn, env.bulb)
     if (halo.current) {

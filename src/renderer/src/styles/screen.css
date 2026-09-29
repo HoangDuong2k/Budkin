@@ -60,7 +60,7 @@ button {
   padding: 4px 10px;
 }
 
-/* Nút chính: chữ in hoa trên nền cyan; khi mất điện thì phát sáng */
+/* Nút chính: chữ in hoa trên nền xanh ngọc; khi mất điện thì phát sáng */
 .btn.primary {
   background: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 70%, #000);

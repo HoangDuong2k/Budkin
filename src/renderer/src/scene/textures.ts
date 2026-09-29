@@ -1,5 +1,5 @@
-// Texture vẽ bằng canvas lúc chạy (không tải file, CSP không phải nới) — thế giới hiện đại hậu tận thế, tông lạnh:
-// tường bê tông đúc sẵn nứt, loang vệt nước; mặt bàn thép xước mờ; nhôm xước tóc; bụi phủ trên thiết bị; kính nứt;
+// Texture vẽ bằng canvas lúc chạy (không tải file, CSP không phải nới) — thế giới hiện đại hậu tận thế:
+// tường bê tông đúc sẵn nứt, loang vệt nước; mặt bàn gỗ óc chó sẫm; nhôm xước tóc; bụi phủ trên thiết bị; kính nứt;
 // bản đồ địa hình trên máy tính bảng; dấu sơn xịt và hình vẽ sơn dạ quang.
 import { CanvasTexture, RepeatWrapping, SRGBColorSpace } from 'three'
 
@@ -138,34 +138,34 @@ function streak(g: Ctx, x: number, y: number, len: number, width: number, color:
   g.restore()
 }
 
-/** Tường bê tông đúc sẵn xám lạnh: tấm 1 m × 0,5 m, lỗ ty cốp pha, vết nứt, vệt nước chảy, vết cháy — 1 ô = 1 m */
+/** Tường bê tông đúc sẵn xám trung tính: tấm 1 m × 0,5 m, lỗ ty cốp pha, vết nứt, vệt nước chảy, vết cháy — 1 ô = 1 m */
 export function concreteTexture(): CanvasTexture {
   return make(
     'concrete',
     512,
     512,
     (g, rnd) => {
-      g.fillStyle = '#62676c'
+      g.fillStyle = '#656462'
       g.fillRect(0, 0, 512, 512)
-      blotches(g, rnd, 512, 512, ['#6d7277', '#575c61', '#747a80', '#505559'], 70, [20, 90], 0.35)
+      blotches(g, rnd, 512, 512, ['#6f6e6b', '#5a5957', '#777673', '#53524f'], 70, [20, 90], 0.35)
       // Vân ván khuôn đổ bê tông: dải ngang ~12 cm
       for (let y = 0; y < 512; y += 64) {
         g.globalAlpha = 0.05
         g.fillStyle = (y / 64) % 2 ? '#ffffff' : '#000000'
         g.fillRect(0, y, 512, 64)
         g.globalAlpha = 0.1
-        g.fillStyle = '#2f3337'
+        g.fillStyle = '#31302e'
         g.fillRect(0, y, 512, 1)
       }
       g.globalAlpha = 1
       // Vệt nước chảy từ mép trên mỗi tấm
       for (const top of [0, 256])
-        for (let i = 0; i < 14; i++) streak(g, rnd() * 512, top + 3, 50 + rnd() * 170, 4 + rnd() * 14, '#2c3136', 0.14 + rnd() * 0.14)
+        for (let i = 0; i < 14; i++) streak(g, rnd() * 512, top + 3, 50 + rnd() * 170, 4 + rnd() * 14, '#2f2e2c', 0.14 + rnd() * 0.14)
       // Khe nối giữa các tấm (ở mép ô ảnh: lặp thành lưới)
-      g.fillStyle = '#2d3135'
+      g.fillStyle = '#2f2e2c'
       for (const y of [0, 256, 512]) g.fillRect(0, y - 2, 512, 4)
       for (const x of [0, 512]) g.fillRect(x - 2, 0, 4, 512)
-      g.fillStyle = 'rgba(150,158,166,0.5)'
+      g.fillStyle = 'rgba(160,158,154,0.5)'
       for (const y of [0, 256]) g.fillRect(0, y + 2, 512, 1)
       // Lỗ ty: lỗ tối, viền sáng, vệt nước chảy xuống
       for (const top of [0, 256])
@@ -173,29 +173,29 @@ export function concreteTexture(): CanvasTexture {
           for (const hy of [64, 192]) {
             const x = hx + (rnd() - 0.5) * 4
             const y = top + hy + (rnd() - 0.5) * 4
-            streak(g, x, y + 4, 40 + rnd() * 110, 7, '#2a2f34', 0.35)
-            g.fillStyle = 'rgba(160,168,176,0.6)'
+            streak(g, x, y + 4, 40 + rnd() * 110, 7, '#2c2b29', 0.35)
+            g.fillStyle = 'rgba(168,166,162,0.6)'
             g.beginPath()
             g.arc(x, y + 1, 8, 0, Math.PI * 2)
             g.fill()
-            g.fillStyle = '#25292d'
+            g.fillStyle = '#272624'
             g.beginPath()
             g.arc(x, y, 6.5, 0, Math.PI * 2)
             g.fill()
-            g.fillStyle = '#121416'
+            g.fillStyle = '#131211'
             g.beginPath()
             g.arc(x, y - 0.5, 3.5, 0, Math.PI * 2)
             g.fill()
           }
       // Vết nứt
-      g.strokeStyle = '#26292d'
+      g.strokeStyle = '#292826'
       g.globalAlpha = 0.85
       g.lineCap = 'round'
       for (let i = 0; i < 5; i++) crack(g, rnd, 40 + rnd() * 430, 40 + rnd() * 430, 90 + rnd() * 150, rnd() * Math.PI * 2, 1.6)
       g.globalAlpha = 1
       // Vết cháy xém, rỗ bề mặt
-      blotches(g, rnd, 512, 512, ['#1a1c1f'], 2, [60, 110], 0.35)
-      g.fillStyle = '#303438'
+      blotches(g, rnd, 512, 512, ['#1c1b1a'], 2, [60, 110], 0.35)
+      g.fillStyle = '#33322f'
       for (let i = 0; i < 260; i++) {
         g.globalAlpha = 0.4 + rnd() * 0.5
         g.beginPath()
@@ -209,27 +209,42 @@ export function concreteTexture(): CanvasTexture {
   )
 }
 
-/** Mặt bàn thép xám xanh: vân chải ngang, bụi, vết xước sáng, vài vệt bẩn */
+/** Mặt bàn gỗ óc chó sẫm, một tấm liền: vân thẳng mảnh chạy ngang, vài đường vân lượn, bụi và xước nhẹ */
 export function deskTexture(): CanvasTexture {
   return make(
     'desk',
     512,
     512,
     (g, rnd) => {
-      g.fillStyle = '#3a4047'
+      g.fillStyle = '#3a2b21'
       g.fillRect(0, 0, 512, 512)
-      // Vân chải: vạch ngang mảnh chạy hết bề ngang (nối liền khi lặp)
-      for (let i = 0; i < 420; i++) {
-        g.globalAlpha = 0.04 + rnd() * 0.08
-        g.fillStyle = rnd() < 0.5 ? '#6a737c' : '#23282d'
-        g.fillRect(0, rnd() * 512, 512, 0.5 + rnd())
+      // Dải màu gỗ rộng, rất nhẹ
+      for (let i = 0; i < 12; i++) {
+        g.globalAlpha = 0.08 + rnd() * 0.08
+        g.fillStyle = rnd() < 0.5 ? '#4a372a' : '#2b1f17'
+        g.fillRect(0, rnd() * 512, 512, 10 + rnd() * 40)
       }
-      blotches(g, rnd, 512, 512, ['#4a525a', '#30363c'], 26, [30, 90], 0.25)
-      blotches(g, rnd, 512, 512, ['#1c2024'], 8, [10, 34], 0.35)
-      scratches(g, rnd, 512, 512, '#9aa6b2', 60, 0.28, [20, 110], 0.7)
-      scratches(g, rnd, 512, 512, '#15181b', 30, 0.3, [8, 30], 0.8)
+      // Vân: sóng tuần hoàn theo bề ngang (nối liền khi lặp)
+      for (let i = 0; i < 90; i++) {
+        const y = rnd() * 512
+        const k = 1 + Math.floor(rnd() * 2)
+        const ph = rnd() * Math.PI * 2
+        const amp = 0.5 + rnd() * 2.5
+        g.globalAlpha = 0.1 + rnd() * 0.2
+        g.strokeStyle = rnd() < 0.6 ? '#1f160f' : '#5c4535'
+        g.lineWidth = 0.5 + rnd() * 1.2
+        g.beginPath()
+        for (let x = 0; x <= 512; x += 16) {
+          const yy = y + Math.sin((x / 512) * Math.PI * 2 * k + ph) * amp
+          if (x === 0) g.moveTo(x, yy)
+          else g.lineTo(x, yy)
+        }
+        g.stroke()
+      }
+      blotches(g, rnd, 512, 512, ['#6a5a4c'], 14, [20, 70], 0.08)
+      scratches(g, rnd, 512, 512, '#8c7a68', 36, 0.22, [20, 90], 0.6)
       g.globalAlpha = 1
-      speckle(g, 512, 512, rnd, 10)
+      speckle(g, 512, 512, rnd, 8)
     },
     true
   )
@@ -242,11 +257,11 @@ export function dustTexture(): CanvasTexture {
     256,
     256,
     (g, rnd) => {
-      g.fillStyle = '#eef0f2'
+      g.fillStyle = '#efeeec'
       g.fillRect(0, 0, 256, 256)
-      blotches(g, rnd, 256, 256, ['#d3d8dc', '#dfe2e5'], 24, [10, 50], 0.18)
+      blotches(g, rnd, 256, 256, ['#d7d5d1', '#e1dfdc'], 24, [10, 50], 0.18)
       scratches(g, rnd, 256, 256, '#ffffff', 26, 0.35, [10, 60], 0.6)
-      scratches(g, rnd, 256, 256, '#a9b0b7', 14, 0.2, [6, 26], 0.6)
+      scratches(g, rnd, 256, 256, '#acaaa6', 14, 0.2, [6, 26], 0.6)
       g.globalAlpha = 1
       speckle(g, 256, 256, rnd, 8)
     },
@@ -261,11 +276,11 @@ export function brushedTexture(): CanvasTexture {
     256,
     256,
     (g, rnd) => {
-      g.fillStyle = '#e6e9ec'
+      g.fillStyle = '#e8e8e6'
       g.fillRect(0, 0, 256, 256)
       for (let i = 0; i < 360; i++) {
         g.globalAlpha = 0.05 + rnd() * 0.12
-        g.fillStyle = rnd() < 0.5 ? '#ffffff' : '#9da5ad'
+        g.fillStyle = rnd() < 0.5 ? '#ffffff' : '#a3a3a0'
         g.fillRect(0, rnd() * 256, 256, 0.5 + rnd())
       }
       g.globalAlpha = 1
@@ -278,10 +293,10 @@ export function brushedTexture(): CanvasTexture {
 /** Ô kính nứt còn trên khung (nền trong suốt): lớp kính mờ bụi, vết rạn hình mạng nhện */
 export function crackedPaneTexture(): CanvasTexture {
   return make('pane', 256, 256, (g, rnd) => {
-    g.fillStyle = 'rgba(150,172,190,0.16)'
+    g.fillStyle = 'rgba(160,166,170,0.16)'
     g.fillRect(0, 0, 256, 256)
-    blotches(g, rnd, 256, 256, ['rgba(40,48,56,1)'], 10, [20, 60], 0.25, false)
-    g.strokeStyle = 'rgba(225,238,248,0.85)'
+    blotches(g, rnd, 256, 256, ['rgba(44,46,48,1)'], 10, [20, 60], 0.25, false)
+    g.strokeStyle = 'rgba(232,236,238,0.85)'
     g.lineCap = 'round'
     const cx = 90 + rnd() * 80
     const cy = 90 + rnd() * 80
@@ -301,14 +316,14 @@ export function crackedPaneTexture(): CanvasTexture {
   })
 }
 
-/** Bản đồ địa hình trên máy tính bảng (vừa là màu vừa là ánh sáng tự phát): đường đồng mức cyan, sông, đường,
+/** Bản đồ địa hình trên máy tính bảng (vừa là màu vừa là ánh sáng tự phát): đường đồng mức xanh ngọc, sông, đường,
  *  vùng nguy hiểm khoanh đỏ, lộ trình đứt nét, vị trí hiện tại, thanh trạng thái */
 export function tabletMapTexture(): CanvasTexture {
   return make('tablet-map', 512, 336, (g, rnd) => {
-    g.fillStyle = '#061018'
+    g.fillStyle = '#081211'
     g.fillRect(0, 0, 512, 336)
     // Lưới toạ độ
-    g.strokeStyle = 'rgba(80,150,180,0.12)'
+    g.strokeStyle = 'rgba(80,170,160,0.12)'
     g.lineWidth = 1
     for (let x = 0; x < 512; x += 32) {
       g.beginPath()
@@ -329,7 +344,7 @@ export function tabletMapTexture(): CanvasTexture {
       const f1 = rnd() * 6
       const f2 = rnd() * 6
       for (let k = 1; k <= 7; k++) {
-        g.strokeStyle = `rgba(63,214,234,${0.18 + 0.05 * (k % 3)})`
+        g.strokeStyle = `rgba(63,208,196,${0.18 + 0.05 * (k % 3)})`
         g.lineWidth = k % 4 === 0 ? 1.6 : 0.9
         g.beginPath()
         for (let a = 0; a <= Math.PI * 2 + 0.05; a += 0.1) {
@@ -350,7 +365,7 @@ export function tabletMapTexture(): CanvasTexture {
     g.bezierCurveTo(120, 210, 210, 320, 330, 270)
     g.bezierCurveTo(420, 235, 470, 290, 530, 262)
     g.stroke()
-    g.strokeStyle = 'rgba(220,235,245,0.55)'
+    g.strokeStyle = 'rgba(228,230,226,0.55)'
     g.lineWidth = 1.5
     for (let i = 0; i < 4; i++) {
       g.beginPath()
@@ -366,7 +381,7 @@ export function tabletMapTexture(): CanvasTexture {
     g.arc(370, 120, 44, 0, Math.PI * 2)
     g.fill()
     g.stroke()
-    g.strokeStyle = 'rgba(79,224,255,0.95)'
+    g.strokeStyle = 'rgba(79,224,212,0.95)'
     g.lineWidth = 2.5
     g.setLineDash([9, 7])
     g.beginPath()
@@ -375,25 +390,25 @@ export function tabletMapTexture(): CanvasTexture {
     g.lineTo(300, 140)
     g.stroke()
     g.setLineDash([])
-    g.fillStyle = '#4fe0ff'
+    g.fillStyle = '#4fe0d4'
     g.beginPath()
     g.arc(90, 300, 6, 0, Math.PI * 2)
     g.fill()
-    g.strokeStyle = 'rgba(79,224,255,0.5)'
+    g.strokeStyle = 'rgba(79,224,212,0.5)'
     g.beginPath()
     g.arc(90, 300, 14, 0, Math.PI * 2)
     g.stroke()
     // Thanh trạng thái trên cùng: khối chữ giả, pin, sóng
-    g.fillStyle = '#0d1d28'
+    g.fillStyle = '#0e1c1b'
     g.fillRect(0, 0, 512, 24)
-    g.fillStyle = 'rgba(207,231,245,0.8)'
+    g.fillStyle = 'rgba(221,229,227,0.8)'
     for (const [x, w] of [
       [12, 60],
       [80, 34],
       [124, 46]
     ])
       g.fillRect(x, 9, w, 6)
-    g.fillStyle = '#4fe0ff'
+    g.fillStyle = '#4fe0d4'
     for (let i = 0; i < 4; i++) g.fillRect(452 + i * 11, 16 - i * 3, 7, 4 + i * 3)
   })
 }
@@ -403,10 +418,10 @@ export function powerDisplayTexture(): CanvasTexture {
   return make('power-display', 128, 64, (g) => {
     g.fillStyle = '#04090d'
     g.fillRect(0, 0, 128, 64)
-    g.strokeStyle = '#4fe0ff'
+    g.strokeStyle = '#4fe0d4'
     g.lineWidth = 3
     g.strokeRect(10, 16, 46, 30)
-    g.fillStyle = '#4fe0ff'
+    g.fillStyle = '#4fe0d4'
     g.fillRect(56, 25, 5, 12)
     for (let i = 0; i < 3; i++) g.fillRect(15 + i * 13, 21, 9, 20)
     g.globalAlpha = 0.35
@@ -479,7 +494,7 @@ export function markingsTexture(): CanvasTexture {
     g.clearRect(0, 0, 512, 256)
     // Sơn đã phai
     g.globalAlpha = 0.6
-    const white = '#d5dde4'
+    const white = '#d9d8d4'
     // Mã X: ngày / đội / nguy hiểm / số người
     spray(g, white, 7, () => {
       g.moveTo(60, 60)
@@ -517,9 +532,9 @@ export function markingsTexture(): CanvasTexture {
       g.lineTo(392, 80)
     })
     for (const x of [400, 430, 455]) g.fillRect(x, 64, 2, 16 + rnd() * 22)
-    // Hình vẽ sơn dạ quang: ban ngày là lớp sơn xanh xám nhạt
+    // Hình vẽ sơn dạ quang: ban ngày là lớp sơn xanh ngọc xám nhạt
     g.globalAlpha = 0.85
-    glowDoodle(g, '#7f98a6', 3)
+    glowDoodle(g, '#8ca39f', 3)
     g.globalAlpha = 1
   })
 }
@@ -529,11 +544,11 @@ export function markingsGlowTexture(): CanvasTexture {
   return make('markings-glow', 512, 256, (g) => {
     g.fillStyle = '#000000'
     g.fillRect(0, 0, 512, 256)
-    glowDoodle(g, '#2fe4ff', 14)
+    glowDoodle(g, '#35e0d0', 14)
   })
 }
 
-/** Những vệt sáng lạnh lọt qua ô kính vỡ: 3 dải mềm, mờ dần xuống dưới, lấm tấm bụi */
+/** Những vệt nắng chiều nhạt lọt qua ô kính vỡ: 3 dải mềm, mờ dần xuống dưới, lấm tấm bụi */
 export function beamTexture(): CanvasTexture {
   return make('beam', 128, 256, (g, rnd) => {
     for (const [cx, w, a] of [
@@ -542,13 +557,13 @@ export function beamTexture(): CanvasTexture {
       [102, 9, 0.35]
     ]) {
       const grad = g.createLinearGradient(cx - w, 0, cx + w, 0)
-      grad.addColorStop(0, 'rgba(170,205,240,0)')
-      grad.addColorStop(0.5, `rgba(170,205,240,${a})`)
-      grad.addColorStop(1, 'rgba(170,205,240,0)')
+      grad.addColorStop(0, 'rgba(235,215,190,0)')
+      grad.addColorStop(0.5, `rgba(235,215,190,${a})`)
+      grad.addColorStop(1, 'rgba(235,215,190,0)')
       g.fillStyle = grad
       g.fillRect(cx - w, 0, w * 2, 256)
       for (let i = 0; i < 26; i++) {
-        g.fillStyle = `rgba(220,235,255,${0.3 + rnd() * 0.5})`
+        g.fillStyle = `rgba(245,235,220,${0.3 + rnd() * 0.5})`
         g.fillRect(cx + (rnd() - 0.5) * w * 1.2, rnd() * 256, 1, 1)
       }
     }
@@ -593,9 +608,9 @@ export function haloTexture(): CanvasTexture {
 /** Vignette: giữa trong suốt, tối nhanh ra mép khung hình — không khí ngột ngạt, u tối */
 export function vignetteTexture(): CanvasTexture {
   return radial('vignette', 256, [
-    [0, 'rgba(2,3,6,0)'],
-    [0.5, 'rgba(2,3,6,0)'],
-    [0.78, 'rgba(2,3,6,0.42)'],
-    [1, 'rgba(2,3,6,0.82)']
+    [0, 'rgba(3,3,3,0)'],
+    [0.5, 'rgba(3,3,3,0)'],
+    [0.78, 'rgba(3,3,3,0.42)'],
+    [1, 'rgba(3,3,3,0.82)']
   ])
 }

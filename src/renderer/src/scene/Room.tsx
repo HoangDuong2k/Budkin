@@ -1,7 +1,7 @@
 // Căn phòng: tường bê tông đúc sẵn nứt, loang vệt nước; cửa sổ khung thép hiện đại, ô kính nứt, ô vỡ — nhìn ra thành phố
-// đổ nát trong sương xanh lạnh (bật đèn: giờ xanh cuối ngày, mặt trời nhạt sau khói; tắt đèn: trăng, sao, vài ánh đèn
-// LED của người sống sót), vệt sáng lạnh lọt qua ô vỡ, dấu sơn xịt của đội cứu hộ và hình vẽ sơn dạ quang phát sáng
-// khi mất điện, bàn thép xước mờ.
+// đổ nát trong sương bụi (bật đèn: chạng vạng, chân trời còn ấm, mặt trời nhạt sau khói; tắt đèn: trăng, sao, vài ánh
+// đèn của người sống sót), vệt nắng chiều nhạt lọt qua ô vỡ, dấu sơn xịt của đội cứu hộ và hình vẽ sơn dạ quang phát
+// sáng khi mất điện, bàn gỗ óc chó sẫm.
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import {
@@ -72,17 +72,17 @@ const CITY_FRAG = /* glsl */ `
   void main() {
     vec2 uv = vUv;
     float n = uNight;
-    // Trời: giờ xanh cuối ngày xám thép / đêm xanh đen
-    vec3 duskLow = vec3(0.45, 0.53, 0.63), duskTop = vec3(0.1, 0.14, 0.23);
-    vec3 nightLow = vec3(0.045, 0.06, 0.09), nightTop = vec3(0.01, 0.015, 0.03);
+    // Trời: chạng vạng ấm ở chân trời, lạnh dần lên cao / đêm xanh đen
+    vec3 duskLow = vec3(0.62, 0.52, 0.45), duskTop = vec3(0.13, 0.15, 0.2);
+    vec3 nightLow = vec3(0.05, 0.055, 0.07), nightTop = vec3(0.012, 0.015, 0.025);
     vec3 col = mix(mix(duskLow, duskTop, smoothstep(0.05, 0.9, uv.y)), mix(nightLow, nightTop, smoothstep(0.0, 0.7, uv.y)), n);
     // Mặt trời nhạt sau lớp khói / trăng lạnh (đặt ở chỗ ô kính vỡ, nhìn thấy được)
     float dSun = distance(uv, vec2(0.7, 0.36));
-    col += (1.0 - n) * vec3(0.22, 0.28, 0.36) * smoothstep(0.45, 0.0, dSun);
-    col = mix(col, vec3(0.86, 0.91, 0.96), (1.0 - n) * smoothstep(0.06, 0.048, dSun));
+    col += (1.0 - n) * vec3(0.3, 0.24, 0.18) * smoothstep(0.45, 0.0, dSun);
+    col = mix(col, vec3(0.97, 0.9, 0.8), (1.0 - n) * smoothstep(0.06, 0.048, dSun));
     float dMoon = distance(uv, vec2(0.62, 0.28));
-    col += n * vec3(0.3, 0.34, 0.42) * 0.3 * smoothstep(0.3, 0.0, dMoon);
-    col = mix(col, vec3(0.72, 0.76, 0.8), n * smoothstep(0.05, 0.04, dMoon));
+    col += n * vec3(0.3, 0.33, 0.4) * 0.3 * smoothstep(0.3, 0.0, dMoon);
+    col = mix(col, vec3(0.8, 0.82, 0.86), n * smoothstep(0.05, 0.04, dMoon));
     col += n * step(0.992, hash2(floor(uv * vec2(110.0, 90.0)))) * smoothstep(0.5, 0.9, uv.y) * 0.5;
     // Khói bốc lên từ các đám cháy, trôi sang phải
     float smoke = 0.0;
@@ -93,29 +93,29 @@ const CITY_FRAG = /* glsl */ `
       float w = 0.015 + 0.2 * max(y, 0.0);
       smoke += smoothstep(w, 0.0, abs(dx)) * smoothstep(0.0, 0.06, y) * (1.0 - smoothstep(0.55, 1.0, uv.y)) * fbm(vec2(uv.x * 7.0, uv.y * 5.0 - float(i)));
     }
-    col = mix(col, mix(vec3(0.17, 0.2, 0.25), vec3(0.025, 0.03, 0.04), n), clamp(smoke * 1.3, 0.0, 0.85));
+    col = mix(col, mix(vec3(0.2, 0.2, 0.22), vec3(0.03, 0.03, 0.04), n), clamp(smoke * 1.3, 0.0, 0.85));
     // Toà xa mờ trong bụi, toà gần tối, sàn trơ ra thành vệt ngang, ô cửa trống
     float sk;
     float far = ruins(uv, 13.0, 0.26, 0.2, 3.0, sk);
-    col = mix(col, mix(vec3(0.3, 0.36, 0.45), vec3(0.035, 0.045, 0.062), n), far * 0.85);
+    col = mix(col, mix(vec3(0.36, 0.35, 0.38), vec3(0.04, 0.045, 0.055), n), far * 0.85);
     float nearB = ruins(uv, 6.0, 0.12, 0.3, 11.0, sk);
-    vec3 nearCol = mix(vec3(0.07, 0.09, 0.12), vec3(0.01, 0.012, 0.018), n);
+    vec3 nearCol = mix(vec3(0.08, 0.085, 0.1), vec3(0.01, 0.012, 0.016), n);
     vec2 wg = vec2(uv.x * 58.0, uv.y * 40.0);
     float holes = step(0.35, fract(wg.x)) * step(fract(wg.x), 0.75) * step(0.35, fract(wg.y)) * step(fract(wg.y), 0.8);
     nearCol *= 1.0 - 0.35 * holes * (1.0 - sk);
     nearCol += 0.03 * (1.0 - n) * step(0.9, fract(uv.y * 40.0)) * (1.0 - sk);
     col = mix(col, nearCol, nearB);
-    // Vài ô cửa còn ánh đèn LED của người sống sót (rõ hơn khi trời tối)
+    // Vài ô cửa còn ánh đèn của người sống sót (rõ hơn khi trời tối)
     float lit = step(0.975, hash2(floor(wg) + 3.0)) * holes * nearB * (1.0 - sk);
-    col = mix(col, vec3(0.55, 0.85, 1.0), lit * mix(0.35, 0.9, n));
+    col = mix(col, vec3(1.0, 0.84, 0.62), lit * mix(0.35, 0.9, n));
     // Vài đám cháy nhỏ âm ỉ sát chân trời (điểm ấm duy nhất, rất nhỏ)
     for (int i = 0; i < 3; i++) {
       vec2 p = vec2(0.18 + 0.33 * float(i), 0.06);
       float d = length((uv - p) * vec2(1.0, 1.8));
       col += vec3(1.0, 0.45, 0.2) * (0.06 + 0.22 * n) * smoothstep(0.08, 0.0, d) * (0.6 + 0.4 * fbm(uv * 30.0));
     }
-    // Sương bụi lạnh sát mặt đất
-    col = mix(col, mix(vec3(0.38, 0.46, 0.55), vec3(0.05, 0.07, 0.1), n), 0.35 * smoothstep(0.3, 0.0, uv.y));
+    // Sương bụi sát mặt đất
+    col = mix(col, mix(vec3(0.5, 0.46, 0.43), vec3(0.05, 0.06, 0.08), n), 0.35 * smoothstep(0.3, 0.0, uv.y));
     gl_FragColor = vec4(col, 1.0);
   }
 `
@@ -205,7 +205,7 @@ export function Room(): React.JSX.Element {
   const deskMat = useMemo(() => {
     const map = deskTexture()
     map.repeat.set(4, 1)
-    return new MeshStandardMaterial({ map, metalness: 0.55, roughness: 0.55 })
+    return new MeshStandardMaterial({ map, roughness: 0.5 })
   }, [])
   // Dấu sơn xịt: chịu ánh sáng như sơn thường; phần sơn dạ quang tự sáng khi mất điện
   const markMat = useMemo(
@@ -231,7 +231,7 @@ export function Room(): React.JSX.Element {
     deskTint.apply(deskMat.color, t)
     markMat.emissiveIntensity = 2 * Math.max(0, 1 - t * 1.4)
     marks.current?.position.set(l.screenW / 2 + 0.2, 0.44, WALL_Z + 0.003)
-    // Vệt sáng qua ô kính vỡ: chỉ lúc còn ánh trời
+    // Vệt nắng qua ô kính vỡ: chỉ lúc còn ánh trời
     beamMat.opacity = t * 0.5
     beam.current?.position.set(-(l.screenW / 2 + 0.13), 0.3, -0.17)
   })
@@ -247,7 +247,7 @@ export function Room(): React.JSX.Element {
       <mesh ref={beam} material={beamMat} rotation={[0.25, 0.45, 0.95]}>
         <planeGeometry args={[0.26, 0.95]} />
       </mesh>
-      {/* Mặt bàn thép, nẹp nhôm ở cạnh trước */}
+      {/* Mặt bàn gỗ óc chó, nẹp nhôm ở cạnh trước */}
       <mesh geometry={roundedBox(4, 0.05, 0.92, 0.006, 2)} position={[0, -0.025, 0.05]} material={deskMat} receiveShadow />
       <mesh position={[0, -0.012, 0.512]} material={materials().aluminium}>
         <boxGeometry args={[4, 0.026, 0.008]} />

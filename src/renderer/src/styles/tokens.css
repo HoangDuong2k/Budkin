@@ -1,7 +1,6 @@
-/* Màu theo theme — thế giới hiện đại hậu tận thế, tông tối và lạnh; cả hai theme đều nền tối:
-   bật đèn = giờ xanh lúc chạng vạng: xám xanh than, chữ trắng lạnh, điểm nhấn cyan;
-   tắt đèn = mất điện ban đêm: gần như đen, màn hình chạy nguồn dự phòng phát sáng cyan.
-   Màu ấm chỉ dùng cho nghĩa (quá hạn đỏ, cảnh báo hổ phách).
+/* Màu theo theme — thế giới hiện đại hậu tận thế, tông tối; nền xám than trung tính, điểm nhấn xanh ngọc,
+   cân lại bằng chút ấm (tiêu đề hổ phách):
+   bật đèn = chạng vạng dưới đèn LED trắng ấm; tắt đèn = mất điện ban đêm, màn hình chạy nguồn dự phòng phát sáng.
    Chỉ dựa vào [data-theme] (đèn bàn), không dùng prefers-color-scheme: theme hệ thống đổi không đồng bộ với
    khung hình 3D. Không dùng CSS transition cho các màu này (đổi theme phải khớp khung hình với cảnh 3D). */
 
@@ -80,51 +79,52 @@
 }
 
 :root[data-theme='light'] {
-  --bg: #11161c;
-  --screen-bg: #131920;
-  --panel: #18202a;
-  --panel-2: #1f2935;
-  --line: #2b3845;
-  --text: #dae5ee;
-  --muted: #8a9cac;
-  --faint: #536371;
-  --accent: #3cc4da;
-  --accent-soft: #12303a;
-  --accent-text: #03141a;
-  /* Điểm nhấn phụ: xanh thép nhạt */
-  --accent-2: #9dbad8;
-  --glow: #3cc4da;
-  --danger: #f0625a;
-  --danger-soft: #3a1a1e;
-  --ok: #4fd1a8;
-  --prio-1: #6fa8ff;
-  --prio-2: #e8b44c;
-  --prio-3: #f0625a;
+  --bg: #151618;
+  --screen-bg: #17181b;
+  --panel: #1c1e21;
+  --panel-2: #24272b;
+  --line: #34373c;
+  --text: #e7e4de;
+  --muted: #9e9b95;
+  --faint: #605e5a;
+  --accent: #3fc2b8;
+  --accent-soft: #15332f;
+  --accent-text: #041413;
+  /* Điểm nhấn phụ: hổ phách */
+  --accent-2: #d9a863;
+  --glow: #3fc2b8;
+  --danger: #ec6a5c;
+  --danger-soft: #3b1d1a;
+  --ok: #6fcf97;
+  --prio-1: #74b0e2;
+  --prio-2: #e3b04b;
+  --prio-3: #ec6a5c;
   --shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
-  /* Ánh sáng màn hình loang từ mép trên */
-  --screen-light: radial-gradient(120% 70% at 50% 0%, rgba(60, 196, 218, 0.05), transparent 70%);
+  /* Ánh đèn bàn loang nhẹ trên mép trên màn hình */
+  --screen-light: radial-gradient(120% 70% at 50% 0%, rgba(255, 214, 160, 0.035), transparent 70%);
 }
 
 :root[data-theme='dark'] {
-  --bg: #06080b;
-  --screen-bg: #080b0f;
-  --panel: #0c1117;
-  --panel-2: #111a24;
-  --line: #1b2835;
-  --text: #cfe7f5;
-  --muted: #6f8899;
-  --faint: #3a4c5b;
-  --accent: #4fe0ff;
-  --accent-soft: #0b2b37;
-  --accent-text: #02121a;
-  --accent-2: #86a9ff;
-  --glow: #4fe0ff;
-  --danger: #ff5a5f;
-  --danger-soft: #36121a;
-  --ok: #4fe3b4;
-  --prio-1: #86a9ff;
-  --prio-2: #ffc15e;
-  --prio-3: #ff5a5f;
+  --bg: #08090a;
+  --screen-bg: #0a0b0d;
+  --panel: #0f1113;
+  --panel-2: #161a1c;
+  --line: #22282b;
+  --text: #dde5e3;
+  --muted: #7c8886;
+  --faint: #434b4b;
+  --accent: #4fe0d4;
+  --accent-soft: #0e2e2b;
+  --accent-text: #021311;
+  --accent-2: #e3b567;
+  --glow: #4fe0d4;
+  --danger: #ff6257;
+  --danger-soft: #37140f;
+  --ok: #5fe0a0;
+  --prio-1: #82bdf2;
+  --prio-2: #f0bd55;
+  --prio-3: #ff6257;
   --shadow: 0 10px 28px rgba(0, 0, 0, 0.8);
-  --screen-light: radial-gradient(120% 70% at 50% 0%, rgba(79, 224, 255, 0.07), transparent 70%);
+  /* Màn hình chạy nguồn dự phòng: ánh xanh ngọc loang từ mép trên */
+  --screen-light: radial-gradient(120% 70% at 50% 0%, rgba(79, 224, 212, 0.06), transparent 70%);
 }

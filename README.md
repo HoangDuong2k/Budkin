@@ -6,12 +6,12 @@
 - **Robot nhỏ bên trái** — luôn nhìn theo con trỏ chuột, báo hiệu khi có việc sắp đến hạn / đến hạn.
 - **Đèn bàn bên phải** — bật / tắt đèn để đổi giữa hai theme.
 
-Phong cách: thế giới hiện đại hậu tận thế, tông tối và lạnh — tường bê tông nứt, cửa sổ vỡ nhìn ra thành phố đổ nát
-trong sương xanh, còn đồ trên bàn là thiết bị hiện đại (graphite, nhôm, kính đen, đèn LED cyan). **Bật đèn** là giờ xanh
-cuối ngày dưới ánh đèn LED trắng lạnh; **tắt đèn** là mất điện ban đêm — chỉ còn màn hình, đèn nền bàn phím và mắt
+Phong cách: thế giới hiện đại hậu tận thế, tông tối — tường bê tông nứt, cửa sổ vỡ nhìn ra thành phố đổ nát, còn đồ
+trên bàn là thiết bị hiện đại (graphite, nhôm, kính đen, đèn LED xanh ngọc) trên mặt bàn gỗ óc chó sẫm. **Bật đèn** là
+chạng vạng dưới ánh đèn LED trắng ấm; **tắt đèn** là mất điện ban đêm — chỉ còn màn hình, đèn nền bàn phím và mắt
 robot phát sáng.
 
-| Bật đèn (giờ xanh) | Tắt đèn (mất điện) |
+| Bật đèn (chạng vạng) | Tắt đèn (mất điện) |
 |---|---|
 | ![Bàn làm việc khi bật đèn](docs/screenshots/desk-day.png) | ![Bàn làm việc khi tắt đèn](docs/screenshots/desk-night.png) |
 

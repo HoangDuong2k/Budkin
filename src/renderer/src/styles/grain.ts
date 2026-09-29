@@ -12,9 +12,9 @@ export function installGrain(): void {
   const rnd = (): number => ((seed = (seed * 16807) % 2147483647) / 2147483647)
   for (let i = 0; i < size * size; i++) {
     const light = rnd() < 0.5
-    img.data[i * 4] = light ? 210 : 0
-    img.data[i * 4 + 1] = light ? 228 : 0
-    img.data[i * 4 + 2] = light ? 240 : 0
+    img.data[i * 4] = light ? 226 : 0
+    img.data[i * 4 + 1] = light ? 225 : 0
+    img.data[i * 4 + 2] = light ? 221 : 0
     // Thỉnh thoảng một hạt bụi rõ hơn
     img.data[i * 4 + 3] = rnd() < 0.004 ? 40 : Math.floor(rnd() * 14)
   }

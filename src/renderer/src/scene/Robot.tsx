@@ -1,4 +1,4 @@
-// Robot nhỏ bên trái (robot hiện đại: vỏ gốm xám lạnh, mặt kính đen, mắt LED cyan, bánh xe gọn): nhìn theo con trỏ,
+// Robot nhỏ bên trái (robot hiện đại: vỏ gốm trắng ngà, mặt kính đen, mắt LED xanh ngọc, bánh xe gọn): nhìn theo con trỏ,
 // chớp mắt, buồn ngủ rồi ngủ khi lâu không thao tác, bị chọc thì bẹp-giãn, báo động khi có việc đến hạn (đèn trạng thái
 // chuyển đỏ nhấp nháy, nhún nhảy), ăn mừng khi hoàn thành việc.
 // Khớp: root (xoay về phía màn hình) › fx (nhảy / bẹp / xoay) › body › neck › headYaw › headPitch › eyes
@@ -61,10 +61,10 @@ export function Robot(): React.JSX.Element {
   const eyeHalo = useRef<Sprite>(null)
   const blink = useRef({ start: -1, double: false })
 
-  // Robot hiện đại: vỏ gốm xám lạnh, đai và khớp graphite, mặt kính đen bóng, mắt LED cyan, vòng sáng ở cổ, bánh xe gọn
+  // Robot hiện đại: vỏ gốm trắng ngà, đai và khớp graphite, mặt kính đen bóng, mắt LED xanh ngọc, vòng sáng ở cổ, bánh xe gọn
   const m = materials()
   const eyeMat = useMemo(() => new MeshBasicMaterial({ color: ROBOT.eye, toneMapped: false }), [])
-  // Đèn trạng thái (vạch pin, dải đèn trước, vòng cổ, đầu ăng-ten): cyan, đỏ nhấp nháy khi báo động
+  // Đèn trạng thái (vạch pin, dải đèn trước, vòng cổ, đầu ăng-ten): xanh ngọc, đỏ nhấp nháy khi báo động
   const ledMat = useMemo(() => new MeshBasicMaterial({ color: ROBOT.led, toneMapped: false }), [])
   const ledNormal = useMemo(() => new Color(ROBOT.led), [])
   const ledAlert = useMemo(() => new Color(ROBOT.alert), [])
@@ -82,7 +82,7 @@ export function Robot(): React.JSX.Element {
       hands: merged('robot-hands', [-1, 1].map((s) => ({ geo: new SphereGeometry(0.009, 14, 10), at: side(s, 0.0605, 0.031, 0.004) }))),
       // Ba vạch pin trên ngực
       bars: merged('robot-bars', [-0.009, 0, 0.009].map((x) => ({ geo: new BoxGeometry(0.0055, 0.015, 0.001), at: [x, 0, 0] as V3 }))),
-      // Tai: hai khối tròn graphite, nắp nhôm anod cyan
+      // Tai: hai khối tròn graphite, nắp nhôm anod xanh ngọc
       ears: merged('robot-ears', [-1, 1].map((s) => ({ geo: new CylinderGeometry(0.013, 0.013, 0.008, 24), at: side(s, 0.058, 0.046, 0), rot: [0, 0, Math.PI / 2] as V3 }))),
       earCaps: merged('robot-ear-caps', [-1, 1].map((s) => ({ geo: new CylinderGeometry(0.008, 0.008, 0.002, 20), at: side(s, 0.0625, 0.046, 0), rot: [0, 0, Math.PI / 2] as V3 }))),
       eyes: merged('robot-eyes', [-1, 1].map((s) => ({ geo: eye, at: side(s, 0.02, 0, 0) }))),

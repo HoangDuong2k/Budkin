@@ -1,5 +1,5 @@
 // Màn hình máy tính hiện đại: viền graphite bóng mảnh (ghép từ khối hộp + 4 trụ ở góc — co giãn theo bề ngang màn hình
-// trong cùng khung hình khi đổi cỡ cửa sổ), camera nhỏ ở cạnh trên, đèn nguồn cyan, chân nhôm xước tóc, dây cáp thả xuống bàn.
+// trong cùng khung hình khi đổi cỡ cửa sổ), camera nhỏ ở cạnh trên, đèn nguồn xanh ngọc, chân nhôm xước tóc, dây cáp thả xuống bàn.
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import { AdditiveBlending, CylinderGeometry, Euler, Matrix4, MeshBasicMaterial, Quaternion, Vector3, type Group, type InstancedMesh, type Mesh, type Sprite } from 'three'
@@ -103,17 +103,17 @@ export function Monitor(): React.JSX.Element {
           <mesh rotation-x={Math.PI / 2} material={m.glass}>
             <cylinderGeometry args={[0.0034, 0.0034, 0.001, 16]} />
           </mesh>
-          <mesh position-x={0.008} material={m.ledCyan}>
+          <mesh position-x={0.008} material={m.led}>
             <boxGeometry args={[0.0014, 0.0014, 0.0012]} />
           </mesh>
         </group>
-        {/* Đèn nguồn cyan */}
+        {/* Đèn nguồn xanh ngọc */}
         <group ref={led}>
-          <mesh material={m.ledCyan}>
+          <mesh material={m.led}>
             <boxGeometry args={[0.009, 0.0016, 0.0012]} />
           </mesh>
           <sprite ref={halo} position-z={0.003} scale={[0.03, 0.03, 1]}>
-            <spriteMaterial map={haloTexture()} color="#5fe6ff" blending={AdditiveBlending} depthWrite={false} transparent toneMapped={false} fog={false} />
+            <spriteMaterial map={haloTexture()} color="#56e0d6" blending={AdditiveBlending} depthWrite={false} transparent toneMapped={false} fog={false} />
           </sprite>
         </group>
         <mesh ref={lip} position-z={0.0003} material={lipMat} renderOrder={VIGNETTE_ORDER + 1}>

@@ -1,4 +1,4 @@
-// Ánh sáng chung: trời, ánh sáng lạnh cuối ngày / ánh trăng qua cửa sổ vỡ, ánh viền phía sau, đèn dự phòng xanh khi
+// Ánh sáng chung: trời, ánh chạng vạng / ánh trăng qua cửa sổ vỡ, ánh viền phía sau, đèn dự phòng xanh ngọc khi
 // mất điện, ánh màn hình, môi trường phản chiếu cho kim loại và kính, sương bụi tạo chiều sâu.
 // Mọi đèn luôn được mount, chỉ đổi cường độ và màu (thêm / bớt đèn bắt biên dịch lại shader — giật hình).
 import { useFrame, useThree } from '@react-three/fiber'
@@ -17,7 +17,7 @@ const fogColor = pair('fog')
 const glowColor = pair('glow')
 /** Cường độ (candela, đơn vị mét) */
 const GLOW = 0.22
-const BACKUP = 0.14
+const BACKUP = 0.1
 
 export function Lighting(): React.JSX.Element {
   const gl = useThree((s) => s.gl)
@@ -28,7 +28,7 @@ export function Lighting(): React.JSX.Element {
   const backup = useRef<PointLight>(null)
   const glow = useRef<SpotLight>(null)
   const glowTarget = useRef<Object3D>(null)
-  const fog = useMemo(() => new FogExp2('#1b2633', 0.2), [])
+  const fog = useMemo(() => new FogExp2('#232427', 0.2), [])
 
   // Môi trường phản chiếu dựng bằng code (không tải ảnh HDR): kim loại cần có gì để phản chiếu
   useEffect(() => {
@@ -84,8 +84,8 @@ export function Lighting(): React.JSX.Element {
       <directionalLight ref={sun} position={[-1.4, 1.5, 0.6]} />
       {/* Ánh viền từ phía sau bên phải — viền sáng quanh robot, đèn, màn hình */}
       <directionalLight ref={rim} position={[0.8, 0.12, -1.6]} />
-      {/* Đèn dự phòng xanh đâu đó phía trên bên phải, ngoài khung hình */}
-      <pointLight ref={backup} color="#2f7bff" distance={1.4} decay={2} />
+      {/* Đèn dự phòng xanh ngọc mờ đâu đó phía trên bên phải, ngoài khung hình */}
+      <pointLight ref={backup} color="#39b3a8" distance={1.4} decay={2} />
       <spotLight ref={glow} angle={1.2} penumbra={1} distance={2} decay={2} />
       <object3D ref={glowTarget} />
     </>

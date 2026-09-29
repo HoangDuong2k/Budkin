@@ -1,4 +1,4 @@
-// Đồ trên bàn — thiết bị hiện đại của người sống sót: bàn phím nhôm mỏng có đèn nền cyan (mọi phím vẽ một lần bằng
+// Đồ trên bàn — thiết bị hiện đại của người sống sót: bàn phím nhôm mỏng có đèn nền xanh ngọc (mọi phím vẽ một lần bằng
 // InstancedMesh), chuột, chậu thuỷ canh kính có mầm cây, máy tính bảng hiện bản đồ địa hình, trạm sạc di động nuôi
 // màn hình — kèm bóng mờ bên dưới.
 import { useFrame } from '@react-three/fiber'
@@ -33,18 +33,18 @@ function Blob({ w, d, at, opacity = 0.7 }: { w: number; d: number; at: [number, 
 const ROWS = [12, 12, 11, 10]
 const KEYS = ROWS.reduce((a, b) => a + b, 0)
 const PITCH = 0.027
-const KEY_COLOR = '#22262c'
+const KEY_COLOR = '#252629'
 /** Phím Esc màu nhấn */
 const ACCENT_KEY = 0
 
-/** Bàn phím nhôm mỏng, phím graphite, đèn nền cyan lọt qua khe phím (sáng rõ khi mất điện) */
+/** Bàn phím nhôm mỏng, phím graphite, đèn nền xanh ngọc lọt qua khe phím (sáng rõ khi mất điện) */
 function Keyboard(): React.JSX.Element {
   const keys = useRef<InstancedMesh>(null)
   const m = materials()
   // Màu từng phím nằm trong instanceColor → vật liệu để trắng
   const capMat = useMemo(() => new MeshStandardMaterial({ color: '#ffffff', roughness: 0.55, metalness: 0.2, map: dustTexture() }), [])
   const backlight = useMemo(
-    () => new MeshBasicMaterial({ color: '#4fe0ff', transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false }),
+    () => new MeshBasicMaterial({ color: '#46d9cf', transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false }),
     []
   )
   useLayoutEffect(() => {
@@ -59,7 +59,7 @@ function Keyboard(): React.JSX.Element {
       for (let c = 0; c < n; c++) {
         mat.makeTranslation((c - (n - 1) / 2) * PITCH + offset - 0.008, 0.0185, z)
         k.setMatrixAt(i, mat)
-        k.setColorAt(i, color.set(i === ACCENT_KEY ? '#2ba3b8' : KEY_COLOR))
+        k.setColorAt(i, color.set(i === ACCENT_KEY ? '#2c9e97' : KEY_COLOR))
         i++
       }
     })
@@ -67,7 +67,7 @@ function Keyboard(): React.JSX.Element {
     if (k.instanceColor) k.instanceColor.needsUpdate = true
   }, [])
   useFrame(() => {
-    backlight.opacity = 0.1 + 0.45 * (1 - env.env)
+    backlight.opacity = 0.08 + 0.42 * (1 - env.env)
   })
   return (
     <group position={[0, 0, 0.08]}>
@@ -161,7 +161,7 @@ export function Props(): React.JSX.Element {
         <mesh position-y={0.011} scale={[0.022, 0.012, 0.034]} material={m.graphiteGloss} castShadow>
           <sphereGeometry args={[1, 20, 12]} />
         </mesh>
-        <mesh position={[0, 0.0225, -0.012]} rotation-z={Math.PI / 2} material={m.ledCyan}>
+        <mesh position={[0, 0.0225, -0.012]} rotation-z={Math.PI / 2} material={m.led}>
           <cylinderGeometry args={[0.0035, 0.0035, 0.004, 12]} />
         </mesh>
         <Blob w={0.08} d={0.1} at={[0, 0]} />
@@ -171,7 +171,7 @@ export function Props(): React.JSX.Element {
         <mesh position-y={0.005} material={m.aluminium} castShadow>
           <cylinderGeometry args={[0.028, 0.029, 0.01, 28]} />
         </mesh>
-        <mesh position-y={0.0105} rotation-x={Math.PI / 2} material={m.ledCyan}>
+        <mesh position-y={0.0105} rotation-x={Math.PI / 2} material={m.led}>
           <torusGeometry args={[0.0262, 0.0011, 5, 32]} />
         </mesh>
         <mesh position-y={0.019} material={soil}>
@@ -190,7 +190,7 @@ export function Props(): React.JSX.Element {
         <mesh position={[-0.02, 0.046, 0.0377]} material={displayMat}>
           <planeGeometry args={[0.046, 0.023]} />
         </mesh>
-        <mesh position={[0.024, 0.046, 0.0376]} material={m.ledCyan}>
+        <mesh position={[0.024, 0.046, 0.0376]} material={m.led}>
           <boxGeometry args={[0.022, 0.0022, 0.001]} />
         </mesh>
         <mesh geometry={geo.cord} material={m.rubber} />
