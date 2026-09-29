@@ -2,7 +2,7 @@
 import { addDays, daysBetween, isoWeekday, parseYmd } from '../../../shared/datetime'
 import { getLang, tr, trKey } from '../../../shared/i18n'
 import { COLOR_KEYS, type ColorKey } from '../../../shared/palette'
-import type { Task } from '../../../shared/types'
+import type { RecurrenceRule, Task } from '../../../shared/types'
 
 const VI_DAYS = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ nhật']
 const VI_DAYS_SHORT = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
@@ -113,4 +113,38 @@ export function quickDates(today: string): Array<{ label: string; date: string }
     { label: tr('Ngày mai'), date: addDays(today, 1) },
     { label: tr('Thứ Hai tới'), date: addDays(today, toMonday) }
   ]
+}
+
+/** Ngày trong năm: "29/2" / "Feb 29" */
+function dayOfYear(date: string): string {
+  const { m, d } = parseYmd(date)
+  return getLang() === 'en' ? `${EN_MONTHS_SHORT[m - 1]} ${d}` : `${d}/${m}`
+}
+
+/** Mô tả quy tắc lặp: "Hằng tuần vào T2, T4 · đến 31/12" / "Weekly on Mon, Wed · until Dec 31" */
+export function describeRule(rule: RecurrenceRule | null, dueDate: string | null): string {
+  if (!rule) return tr('Không lặp')
+  const n = rule.interval
+  let base: string
+  if (rule.freq === 'daily') base = n === 1 ? tr('Hằng ngày') : tr('Mỗi {n} ngày', { n })
+  else if (rule.freq === 'weekly') {
+    const days = rule.byWeekday?.length ? [...rule.byWeekday].sort((a, b) => a - b) : dueDate ? [isoWeekday(dueDate)] : []
+    if (n === 1 && days.join() === '1,2,3,4,5') base = tr('Ngày làm việc (T2–T6)')
+    else {
+      const names = days.map((d) => weekdayName(d, true)).join(', ')
+      base = n === 1 ? tr('Hằng tuần vào {days}', { days: names }) : tr('Mỗi {n} tuần vào {days}', { n, days: names })
+    }
+  } else if (n % 12 === 0 && dueDate) {
+    const years = n / 12
+    base = years === 1 ? tr('Hằng năm vào {date}', { date: dayOfYear(dueDate) }) : tr('Mỗi {n} năm vào {date}', { n: years, date: dayOfYear(dueDate) })
+  } else {
+    const day = rule.monthDay ?? (dueDate ? parseYmd(dueDate).d : 1)
+    if (day === -1) base = n === 1 ? tr('Hằng tháng vào ngày cuối tháng') : tr('Mỗi {n} tháng vào ngày cuối tháng', { n })
+    else base = n === 1 ? tr('Hằng tháng vào ngày {d}', { d: day }) : tr('Mỗi {n} tháng vào ngày {d}', { n, d: day })
+  }
+  const extra: string[] = []
+  if (rule.until) extra.push(tr('đến {date}', { date: dayOfYear(rule.until) }))
+  if (rule.count) extra.push(tr('{n} lần', { n: rule.count }))
+  if (rule.basis === 'completion') extra.push(tr('tính từ ngày hoàn thành'))
+  return [base, ...extra].join(' · ')
 }

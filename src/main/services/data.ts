@@ -1,6 +1,8 @@
 // Nghiệp vụ dữ liệu: đọc/ghi task, dự án, nhãn, checklist, thiết lập. Mọi thao tác ghi chạy trong một giao dịch
 // rồi phát bản đầy đủ của các đối tượng đã đổi (ChangeSet) cho renderer — renderer không phải tải lại.
 import type { StatusResult } from '../../shared/api'
+import { localDateOf } from '../../shared/datetime'
+import { nextDue } from '../../shared/recurrence'
 import { normalizeText, searchTerms, taskSearchText } from '../../shared/search'
 import { ORDER_STEP, orderBetween, renumber } from '../../shared/ordering'
 import {
@@ -304,12 +306,104 @@ export class DataService {
     })
   }
 
-  /** Đổi trạng thái (bấm hoàn thành, chuyển cột): task sang cột mới thì nằm cuối cột */
+  /** Đổi trạng thái (bấm hoàn thành, chuyển cột): task sang cột mới thì nằm cuối cột. Việc lặp lại: xong thì tạo lần sau */
   setStatus(id: string, status: TaskStatus): StatusResult {
     return this.mutate('user', () => {
       const row = this.taskRow(id)
-      if (row.status !== status) this.writeStatus(row, status, this.endOfColumn(status, id))
-      return { task: this.getTask(id), spawned: null, removedSpawnId: null }
+      const change = row.status !== status ? this.applyStatus(row, status, this.endOfColumn(status, id)) : { spawned: null, removed: null }
+      return { task: this.getTask(id), spawned: change.spawned ? this.getTask(change.spawned) : null, removedSpawnId: change.removed }
+    })
+  }
+
+  /** Ghi trạng thái mới; việc lặp lại: vừa xong thì tạo lần kế tiếp, bỏ hoàn thành thì gỡ lần đó (nếu chưa bị sửa) */
+  private applyStatus(row: TaskRow, status: TaskStatus, sortOrder: number): { spawned: string | null; removed: string | null } {
+    const wasDone = row.status === 'done'
+    this.writeStatus(row, status, sortOrder)
+    if (!row.recurrence || !row.series_id || !row.due_date) return { spawned: null, removed: null }
+    if (!wasDone && status === 'done') return { spawned: this.spawnNext(row), removed: null }
+    if (wasDone && status !== 'done') return { spawned: null, removed: this.unspawn(row) }
+    return { spawned: null, removed: null }
+  }
+
+  /** Tạo lần kế tiếp của việc lặp lại vừa xong: cùng chuỗi, chép nhãn, checklist về chưa xong, nằm cuối cột Cần làm */
+  private spawnNext(row: TaskRow): string | null {
+    // Đã tạo rồi (bấm Xong, bỏ, rồi Xong lại): không tạo thêm
+    if (row.next_spawned_id && this.db.get('SELECT 1 FROM tasks WHERE id = ? AND deleted_at IS NULL', row.next_spawned_id)) return null
+    const today = localDateOf(this.clock.now())
+    const index = row.occurrence_index ?? 0
+    const due = nextDue({ rule: JSON.parse(row.recurrence!) as RecurrenceRule, due: row.due_date!, index, today })
+    // Chuỗi đã hết; hoặc lần kế tiếp đã có sẵn (khôi phục từ thùng rác…) — unique (series_id, occurrence_index)
+    if (!due || this.db.get('SELECT 1 FROM tasks WHERE series_id = ? AND occurrence_index = ? AND deleted_at IS NULL', row.series_id, index + 1)) return null
+    const id = crypto.randomUUID()
+    const now = this.stamp()
+    this.db.run(
+      `INSERT INTO tasks(id, project_id, title, notes, status, priority, due_date, due_time, remind_before_min, recurrence,
+         series_id, occurrence_index, sort_order, search_text, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id,
+      row.project_id,
+      row.title,
+      row.notes,
+      row.priority,
+      due,
+      row.due_time,
+      row.remind_before_min,
+      row.recurrence,
+      row.series_id,
+      index + 1,
+      this.endOfColumn('todo'),
+      taskSearchText(row.title, row.notes),
+      now,
+      now
+    )
+    this.db.run('INSERT INTO task_tags(task_id, tag_id) SELECT ?, tag_id FROM task_tags WHERE task_id = ?', id, row.id)
+    for (const c of this.db.all<{ text: string; sort_order: number }>('SELECT text, sort_order FROM checklist_items WHERE task_id = ? AND deleted_at IS NULL ORDER BY sort_order', row.id))
+      this.db.run(
+        'INSERT INTO checklist_items(id, task_id, text, done, sort_order, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?, ?)',
+        crypto.randomUUID(),
+        id,
+        c.text,
+        c.sort_order,
+        now,
+        now
+      )
+    this.db.run('UPDATE tasks SET next_spawned_id = ? WHERE id = ?', id, row.id)
+    this.touched.tasks.add(id)
+    return id
+  }
+
+  /** Bỏ hoàn thành việc lặp lại: gỡ lần kế tiếp vừa tạo nếu chưa bị đụng tới; đã sửa / đã bắt đầu thì giữ cho người dùng */
+  private unspawn(row: TaskRow): string | null {
+    const id = row.next_spawned_id
+    if (!id) return null
+    const next = this.db.get<{ status: string; created_at: number; updated_at: number }>('SELECT status, created_at, updated_at FROM tasks WHERE id = ? AND deleted_at IS NULL', id)
+    if (next && (next.status !== 'todo' || next.updated_at !== next.created_at)) return null
+    this.db.run('UPDATE tasks SET next_spawned_id = NULL WHERE id = ?', row.id)
+    if (!next) return null
+    const now = this.stamp(next.updated_at)
+    this.db.run('UPDATE tasks SET deleted_at = ?, updated_at = ? WHERE id = ?', now, now, id)
+    this.touched.tasks.add(id)
+    return id
+  }
+
+  /** Bỏ qua lần này của việc lặp lại: dời sang lần kế tiếp; chuỗi đã hết thì bỏ luôn việc này */
+  skipOccurrence(id: string): Task {
+    return this.mutate('user', () => {
+      const row = this.taskRow(id)
+      if (!row.recurrence || !row.series_id || !row.due_date || row.status === 'done') throw new AppError('VALIDATION', 'Chỉ bỏ qua được lần chưa xong của việc lặp lại')
+      const index = row.occurrence_index ?? 0
+      const due = nextDue({ rule: JSON.parse(row.recurrence) as RecurrenceRule, due: row.due_date, index, today: localDateOf(this.clock.now()) })
+      const now = this.stamp(row.updated_at)
+      if (!due) this.db.run('UPDATE tasks SET deleted_at = ?, updated_at = ? WHERE id = ?', now, now, id)
+      else {
+        try {
+          this.db.run('UPDATE tasks SET due_date = ?, occurrence_index = ?, updated_at = ? WHERE id = ?', due, index + 1, now, id)
+        } catch {
+          throw new AppError('CONFLICT', 'Chuỗi lặp lại đã có lần kế tiếp')
+        }
+      }
+      this.touched.tasks.add(id)
+      return this.tasksByIds([id], true)[0]
     })
   }
 
@@ -339,7 +433,7 @@ export class DataService {
         // Vẫn không có chỗ: hai hàng xóm ngược thứ tự (giao diện còn dữ liệu cũ) — đặt xuống cuối cột
         order = place() ?? this.endOfColumn(status, id)
       }
-      if (status !== row.status) this.writeStatus(row, status, order)
+      if (status !== row.status) this.applyStatus(row, status, order)
       else {
         this.db.run('UPDATE tasks SET sort_order = ?, updated_at = ? WHERE id = ?', order, this.stamp(row.updated_at), id)
         this.touched.tasks.add(id)

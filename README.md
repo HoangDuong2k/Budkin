@@ -16,7 +16,7 @@ robot phát sáng.
 | ![Bàn làm việc khi bật đèn](docs/screenshots/desk-day.png) | ![Bàn làm việc khi tắt đèn](docs/screenshots/desk-night.png) |
 
 > Đang phát triển theo từng mốc (M0 → M8). Đã xong: khung dự án, dữ liệu (SQLite), giao diện quản lý việc trên màn hình,
-> cảnh 3D (robot nhìn theo chuột, đèn đổi theme), nhắc việc và chạy nền, Kanban & Lịch. Tiếp theo: task lặp lại,
+> cảnh 3D (robot nhìn theo chuột, đèn đổi theme), nhắc việc và chạy nền, Kanban & Lịch, việc lặp lại. Tiếp theo:
 > quản lý dữ liệu & cài đặt, đóng gói.
 
 ## Danh sách, Kanban, Lịch
@@ -34,6 +34,18 @@ robot phát sáng.
 
 Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm · **F** Mở rộng · **Esc** đóng / thoát ·
 **Ctrl+Shift+L** bật / tắt đèn · **Ctrl+Q** thoát hẳn.
+
+## Việc lặp lại
+
+- Ô **Lặp lại** trong khung sửa (việc cần có hạn): hằng ngày, ngày làm việc (T2–T6), hằng tuần, hằng tháng (hoặc ngày
+  cuối tháng), hằng năm, hay **Tuỳ chỉnh…**: mỗi N ngày / tuần / tháng / năm, chọn các thứ trong tuần, kết thúc vào một
+  ngày hoặc sau N lần, tính lần sau từ hạn của lần này hay từ ngày hoàn thành.
+- Hoàn thành một lần (bấm ô tròn, "Xong" trên nhắc việc, kéo sang cột "Đã xong") là lần kế tiếp tự xuất hiện, kèm toast
+  "Lần tới: …" có nút **Hoàn tác**. Hạn ngày 31 không bị trôi (31/1 → 28/2 → 31/3); việc quá hạn lâu thì lần kế tiếp là
+  lần gần nhất tính từ hôm nay.
+- **Bỏ qua lần này** dời việc sang lần kế tiếp; khi xoá thì chọn xoá riêng lần này hay cả chuỗi (các lần đã xong vẫn
+  giữ lại).
+- Lịch hiện mờ các lần lặp sắp tới.
 
 ## Nhắc việc, chạy nền
 

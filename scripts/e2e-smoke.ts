@@ -299,6 +299,57 @@ async function uiFlow(page: Page): Promise<void> {
   assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Hôm nay'), 'đổi lại tiếng Việt')
 }
 
+/** Việc lặp lại (M6): đặt "Hằng ngày" trong khung sửa → hoàn thành → lần ngày mai xuất hiện → hoàn tác → bỏ qua lần này → Lịch hiện mờ các lần sắp tới */
+async function recurrenceFlow(page: Page): Promise<void> {
+  const title = 'Tập thể dục buổi sáng'
+  const row = (): ReturnType<Page['locator']> => page.locator('.task-row', { hasText: title }).first()
+  const instances = async (): Promise<Task[]> => (await tasksNow(page)).filter((t) => t.title === title)
+  await page.locator('.sidebar .nav-main').first().click()
+  await page.locator('.list-head').click()
+  await page.keyboard.press('n')
+  await page.keyboard.type(title)
+  await page.keyboard.press('Enter')
+  await until(async () => (await row().count()) === 1)
+  const today = (await taskTitled(page, title))?.dueDate ?? ''
+  const tomorrow = addDays(today, 1)
+
+  await row().click()
+  await page.locator('.editor [data-field="repeat"] .value-btn').click()
+  await page.locator('.popover .menu-item', { hasText: 'Hằng ngày' }).click()
+  assert(await until(async () => (await taskTitled(page, title))?.recurrence?.freq === 'daily'), 'khung sửa: đặt lặp lại "Hằng ngày"')
+  assert(/Hằng ngày/.test((await page.locator('.editor [data-field="repeat"] .value-btn').textContent()) ?? ''), 'ô Lặp lại hiện "Hằng ngày"')
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape')
+
+  await row().locator('.check').click()
+  assert(
+    await until(async () => {
+      const list = await instances()
+      return list.some((t) => t.status === 'done' && t.dueDate === today) && list.some((t) => t.status === 'todo' && t.dueDate === tomorrow && t.occurrenceIndex === 1)
+    }),
+    'hoàn thành việc hằng ngày: lần ngày mai tự xuất hiện'
+  )
+  assert(await until(async () => /Lần tới: Ngày mai/.test((await page.locator('.toast').first().textContent()) ?? '')), 'toast báo "Lần tới: Ngày mai"')
+  await page.locator('.toast .toast-action').first().click()
+  assert(
+    await until(async () => {
+      const list = await instances()
+      return list.length === 1 && list[0].status === 'todo' && list[0].dueDate === today
+    }),
+    'bấm "Hoàn tác": việc về chưa xong, lần ngày mai bị gỡ'
+  )
+
+  await row().click()
+  await page.locator('.editor [aria-label="Bỏ qua lần này"]').click()
+  assert(await until(async () => (await instances())[0]?.dueDate === tomorrow), 'bỏ qua lần này: dời sang ngày mai')
+  await page.keyboard.press('Escape')
+
+  const id = (await instances())[0].id
+  await page.keyboard.press('3')
+  assert(await until(async () => (await page.locator(`.cal-chip.ghost[data-ghost-of="${id}"]`).count()) > 0), 'Lịch hiện mờ các lần lặp sắp tới')
+  await page.keyboard.press('1')
+}
+
 /** Cảnh 3D: robot nhìn theo chuột, bấm đèn đổi theme, chọc robot, không vẽ khi đứng yên, ngủ, mất WebGL → 2D */
 async function sceneFlow(page: Page): Promise<void> {
   const num = async (expr: string): Promise<number> => Number(await page.evaluate(expr))
@@ -522,18 +573,18 @@ async function boardFlow(app: ElectronApplication, page: Page): Promise<string> 
   assert((await page.locator(`.board-col.col-in_progress .task-card[data-task-id="${card.id}"]`).count()) === 1, 'thẻ nằm trong cột "Đang làm"')
   await page.screenshot({ path: join(OUT, '14-kanban.png') })
 
-  // Lịch: việc hạn ngày mai, nhắc trước 1 ngày (báo ngay) → kéo sang ngày kia → nhắc việc đặt lại theo hạn mới
-  // (robot thôi báo). Không dùng ô hôm nay: đã nhiều việc, có thể bị gộp vào "+N"
+  // Lịch: việc hạn 3 ngày nữa, nhắc trước 3 ngày (báo ngay) → kéo sang ngày hôm sau nữa → nhắc việc đặt lại theo hạn
+  // mới (robot thôi báo). Tránh các ô đã có việc thật khác (ô nhỏ chỉ vừa một việc, còn lại gộp vào "+N")
   const now = await mainNow(app)
-  const tomorrow = addDays(localDateOf(now), 1)
-  const later = addDays(localDateOf(now), 2)
-  const due = await value(page, 'tasks:create', { title: 'Gửi hợp đồng cho đối tác', ...dueOf(now + 24 * 3600_000), remindBeforeMin: 1440 })
+  const from = addDays(localDateOf(now), 3)
+  const later = addDays(localDateOf(now), 4)
+  const due = await value(page, 'tasks:create', { title: 'Gửi hợp đồng cho đối tác', ...dueOf(now + 3 * 24 * 3600_000), remindBeforeMin: 3 * 1440 })
   const alerted = async (): Promise<boolean> => (await probe(page, (p) => (p as unknown as { alerts: { getState(): { active: Array<{ taskId: string }> } } }).alerts.getState().active)).some((a) => a.taskId === due.id)
-  assert(await until(alerted), 'việc nhắc trước 1 ngày: có nhắc việc đang chờ')
+  assert(await until(alerted), 'việc nhắc trước 3 ngày: có nhắc việc đang chờ')
   await page.keyboard.press('3')
   assert(await until(async () => (await page.locator('.cal-grid').count()) === 1), 'phím 3: chuyển sang Lịch (tháng)')
-  await dragTo(page, await centerOf(page, `.cal-cell[data-date="${tomorrow}"] .cal-chip[data-task-id="${due.id}"]`), await centerOf(page, `.cal-cell[data-date="${later}"]`))
-  assert(await until(async () => (await taskTitled(page, due.title))?.dueDate === later), 'kéo việc trên Lịch sang ngày kia: đổi hạn')
+  await dragTo(page, await centerOf(page, `.cal-cell[data-date="${from}"] .cal-chip[data-task-id="${due.id}"]`), await centerOf(page, `.cal-cell[data-date="${later}"]`))
+  assert(await until(async () => (await taskTitled(page, due.title))?.dueDate === later), 'kéo việc trên Lịch sang ngày hôm sau: đổi hạn')
   assert(await until(async () => !(await alerted())), 'đổi hạn trên Lịch: nhắc việc đặt lại theo hạn mới (robot thôi báo)')
   await page.screenshot({ path: join(OUT, '15-calendar.png') })
 
@@ -645,6 +696,7 @@ async function main(): Promise<void> {
     'mở lại app: task, checklist, nhãn, dự án còn nguyên'
   )
   await uiFlow(page)
+  await recurrenceFlow(page)
   await sceneFlow(page)
   await app.evaluate(({ app: a }) => a.exit(0))
 

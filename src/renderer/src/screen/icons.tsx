@@ -33,6 +33,7 @@ export type IconName =
   | 'checklist'
   | 'globe'
   | 'grip'
+  | 'skip'
 
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
@@ -71,6 +72,7 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   flag: <path d="M6 21V4M6 4.5h10.5l-2 4 2 4H6" />,
+  skip: <path d="M6 5l8 7-8 7M18 5v14" />,
   folder: <path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" />,
   hash: <path d="M9.5 4 7.5 20M16.5 4l-2 16M5 9h15M4 15h15" />,
   trash: (

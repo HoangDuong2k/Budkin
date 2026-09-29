@@ -29,6 +29,7 @@ type DataChannels =
   | 'tasks:move'
   | 'tasks:delete'
   | 'tasks:restore'
+  | 'tasks:skip'
   | 'projects:list'
   | 'projects:create'
   | 'projects:update'
@@ -54,6 +55,7 @@ export function dataHandlers(data: DataService, onSettings: (s: Settings) => voi
     'tasks:move': { args: z.tuple([idSchema, taskMoveSchema]), run: (id, move) => data.moveTask(id, move) },
     'tasks:delete': { args: z.tuple([idSchema, z.enum(['one', 'series'])]), run: (id, mode) => data.deleteTask(id, mode) },
     'tasks:restore': { args: z.tuple([z.array(idSchema).max(500)]), run: (ids) => data.restoreTasks(ids) },
+    'tasks:skip': { args: z.tuple([idSchema]), run: (id) => data.skipOccurrence(id) },
 
     'projects:list': { args: z.tuple([]), run: () => data.listProjects() },
     'projects:create': { args: z.tuple([projectCreateSchema]), run: (input) => data.createProject(input) },

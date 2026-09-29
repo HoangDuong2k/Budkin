@@ -4,7 +4,8 @@ import { Db } from '../src/main/db/connection'
 import { MIGRATIONS, NewerDatabaseError, SCHEMA_VERSION, migrate, schemaVersion } from '../src/main/db/migrations'
 import { AppError } from '../src/main/errors'
 import { DataService } from '../src/main/services/data'
-import type { ChangeSet } from '../src/shared/types'
+import { addDays, localDateOf } from '../src/shared/datetime'
+import type { ChangeSet, RecurrenceRule } from '../src/shared/types'
 
 let db: Db
 let clock: TestClock
@@ -237,5 +238,80 @@ describe('dự án, nhãn, checklist, thiết lập', () => {
     expect(data.updateSettings({ language: 'en', volume: 0.3 })).toMatchObject({ language: 'en', volume: 0.3, weekStart: 1 })
     db.run("UPDATE settings SET value = '\"klingon\"' WHERE key = 'language'")
     expect(data.getSettings().language).toBe('vi')
+  })
+})
+
+describe('việc lặp lại', () => {
+  const daily: RecurrenceRule = { freq: 'daily', interval: 1, basis: 'due' }
+  const today = (): string => localDateOf(clock.now())
+  const live = (seriesId: string): Array<{ idx: number | null; status: string; due: string | null }> =>
+    data
+      .listTasks({ scope: 'active' })
+      .filter((t) => t.seriesId === seriesId)
+      .sort((a, b) => (a.occurrenceIndex ?? 0) - (b.occurrenceIndex ?? 0))
+      .map((t) => ({ idx: t.occurrenceIndex, status: t.status, due: t.dueDate }))
+
+  it('xong thì tạo lần sau: cùng chuỗi, chép nhãn, checklist về chưa xong; bấm Xong lần nữa không tạo trùng', () => {
+    const tag = data.createTag({ name: 'Nhà', color: 'mint' })
+    const t = data.createTask({ title: 'Tưới cây', dueDate: today(), dueTime: '07:00', remindBeforeMin: 0, recurrence: daily, tagIds: [tag.id], checklist: ['Chậu trước', 'Chậu sau'] })
+    data.updateChecklistItem(t.checklist[0].id, { done: true })
+    const res = data.setStatus(t.id, 'done')
+    expect(res.spawned).toMatchObject({ title: 'Tưới cây', dueDate: addDays(today(), 1), dueTime: '07:00', remindBeforeMin: 0, seriesId: t.id, occurrenceIndex: 1, status: 'todo', tagIds: [tag.id] })
+    expect(res.spawned!.checklist.map((c) => [c.text, c.done])).toEqual([
+      ['Chậu trước', false],
+      ['Chậu sau', false]
+    ])
+    expect(data.getTask(t.id).nextSpawnedId).toBe(res.spawned!.id)
+    // Bấm Xong lần nữa (đã xong): không đổi gì
+    expect(data.setStatus(t.id, 'done').spawned).toBeNull()
+    // Bỏ hoàn thành rồi xong lại: vẫn chỉ một lần kế tiếp
+    data.setStatus(t.id, 'todo')
+    data.setStatus(t.id, 'done')
+    expect(live(t.id)).toEqual([
+      { idx: 0, status: 'done', due: today() },
+      { idx: 1, status: 'todo', due: addDays(today(), 1) }
+    ])
+  })
+
+  it('bỏ hoàn thành: gỡ lần sau nếu chưa bị sửa; đã sửa thì giữ lại', () => {
+    const t = data.createTask({ title: 'Uống thuốc', dueDate: today(), recurrence: daily })
+    const { spawned, removedSpawnId } = data.setStatus(t.id, 'done')
+    expect(removedSpawnId).toBeNull()
+    expect(data.setStatus(t.id, 'todo').removedSpawnId).toBe(spawned!.id)
+    expect(live(t.id)).toEqual([{ idx: 0, status: 'todo', due: today() }])
+
+    const again = data.setStatus(t.id, 'done').spawned!
+    clock.advance(1000)
+    data.updateTask(again.id, { title: 'Uống thuốc (sau ăn)' })
+    expect(data.setStatus(t.id, 'todo').removedSpawnId).toBeNull()
+    expect(live(t.id)).toHaveLength(2)
+  })
+
+  it('kéo sang "Đã xong" trên Kanban cũng tạo lần sau; hết chuỗi thì thôi', () => {
+    const t = data.createTask({ title: 'Nộp báo cáo', dueDate: today(), recurrence: { ...daily, count: 2 } })
+    const next = data.listTasks({ scope: 'active' })
+    expect(next).toHaveLength(1)
+    data.moveTask(t.id, { status: 'done' })
+    const second = data.listTasks({ scope: 'active' }).find((x) => x.occurrenceIndex === 1)!
+    expect(second.dueDate).toBe(addDays(today(), 1))
+    // Lần thứ hai là lần cuối (count 2)
+    expect(data.setStatus(second.id, 'done').spawned).toBeNull()
+  })
+
+  it('bỏ qua lần này: dời hạn sang lần kế tiếp; hết chuỗi thì bỏ việc; việc không lặp thì từ chối', () => {
+    const t = data.createTask({ title: 'Họp tuần', dueDate: today(), recurrence: { freq: 'weekly', interval: 1, basis: 'due' } })
+    const skipped = data.skipOccurrence(t.id)
+    expect(skipped).toMatchObject({ dueDate: addDays(today(), 7), occurrenceIndex: 1, status: 'todo' })
+    const last = data.createTask({ title: 'Lần cuối', dueDate: today(), recurrence: { ...daily, count: 1 } })
+    expect(data.skipOccurrence(last.id).deletedAt).not.toBeNull()
+    const plain = data.createTask({ title: 'Không lặp', dueDate: today() })
+    expectCode(() => data.skipOccurrence(plain.id), 'VALIDATION')
+  })
+
+  it('xoá cả chuỗi: bỏ các lần chưa xong, giữ lịch sử đã xong', () => {
+    const t = data.createTask({ title: 'Chạy bộ', dueDate: today(), recurrence: daily })
+    const next = data.setStatus(t.id, 'done').spawned!
+    data.deleteTask(next.id, 'series')
+    expect(live(t.id)).toEqual([{ idx: 0, status: 'done', due: today() }])
   })
 })

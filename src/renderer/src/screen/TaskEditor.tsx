@@ -9,10 +9,11 @@ import { useNow } from '../clock'
 import { useData } from '../state/dataStore'
 import { useTheme } from '../state/themeStore'
 import { useUi } from '../state/uiStore'
-import { deleteTask, run } from './actions'
+import { completeTask, deleteTask, run, skipOccurrence } from './actions'
 import { DuePicker, type Due } from './DuePicker'
-import { PRIORITY_LABELS, REMIND_ALL_DAY, REMIND_TIMED, dueText, nextColor, reminderText } from './format'
+import { PRIORITY_LABELS, REMIND_ALL_DAY, REMIND_TIMED, describeRule, dueText, nextColor, reminderText } from './format'
 import { Icon } from './icons'
+import { RecurrencePicker } from './RecurrencePicker'
 import { Popover } from './ui'
 
 const STATUSES: Array<{ id: TaskStatus; label: string }> = [
@@ -180,8 +181,14 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
   const [notes, setNotes] = useState(task.notes)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const notesRef = useRef<HTMLTextAreaElement>(null)
-  const [pop, setPop] = useState<null | 'due' | 'remind' | 'project'>(null)
-  const anchors = { due: useRef<HTMLButtonElement>(null), remind: useRef<HTMLButtonElement>(null), project: useRef<HTMLButtonElement>(null) }
+  const [pop, setPop] = useState<null | 'due' | 'remind' | 'repeat' | 'project' | 'delete'>(null)
+  const anchors = {
+    due: useRef<HTMLButtonElement>(null),
+    remind: useRef<HTMLButtonElement>(null),
+    repeat: useRef<HTMLButtonElement>(null),
+    project: useRef<HTMLButtonElement>(null),
+    delete: useRef<HTMLButtonElement>(null)
+  }
   useAutosize(titleRef, title)
   useAutosize(notesRef, notes)
 
@@ -230,9 +237,32 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
           <Icon name="x" />
         </button>
         <div className="grow" />
-        <button className="icon-btn danger" onClick={() => void deleteTask(task)} aria-label={tr('Xoá việc')} title={tr('Xoá việc')}>
+        {task.recurrence && task.status !== 'done' && (
+          <button className="icon-btn" onClick={() => void skipOccurrence(task)} aria-label={tr('Bỏ qua lần này')} title={tr('Bỏ qua lần này')}>
+            <Icon name="skip" />
+          </button>
+        )}
+        <button
+          ref={anchors.delete}
+          className="icon-btn danger"
+          // Việc lặp lại: hỏi xoá lần này hay cả chuỗi
+          onClick={() => (task.seriesId ? setPop(pop === 'delete' ? null : 'delete') : void deleteTask(task))}
+          aria-label={tr('Xoá việc')}
+          title={tr('Xoá việc')}
+        >
           <Icon name="trash" />
         </button>
+        <Popover anchor={anchors.delete.current} open={pop === 'delete'} onClose={() => setPop(null)} align="end">
+          <div className="menu">
+            <button className="menu-item danger" onClick={() => void deleteTask(task, 'one')}>
+              {tr('Chỉ xoá lần này')}
+            </button>
+            <button className="menu-item danger" onClick={() => void deleteTask(task, 'series')}>
+              {tr('Xoá cả chuỗi lặp lại')}
+            </button>
+            <div className="menu-note">{tr('Các lần đã xong vẫn được giữ lại.')}</div>
+          </div>
+        </Popover>
       </div>
       <textarea
         ref={titleRef}
@@ -251,7 +281,14 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
       />
       <div className="segmented" role="radiogroup" aria-label={tr('Trạng thái')}>
         {STATUSES.map((s) => (
-          <button key={s.id} role="radio" aria-checked={task.status === s.id} className={task.status === s.id ? 'on' : ''} onClick={() => void run('tasks:setStatus', task.id, s.id)}>
+          <button
+            key={s.id}
+            role="radio"
+            aria-checked={task.status === s.id}
+            className={task.status === s.id ? 'on' : ''}
+            // Xong: robot ăn mừng, việc lặp lại báo lần tới
+            onClick={() => void (s.id === 'done' && task.status !== 'done' ? completeTask(task) : run('tasks:setStatus', task.id, s.id))}
+          >
             {tr(s.label)}
           </button>
         ))}
@@ -293,6 +330,31 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
             {allDay && <div className="menu-note">{tr('Việc cả ngày nhắc lúc {time}', { time: settings.allDayRemindTime })}</div>}
           </div>
         </Popover>
+      </Field>
+
+      <Field name="repeat" icon="repeat" label={tr('Lặp lại')}>
+        <button
+          ref={anchors.repeat}
+          className={`value-btn ${task.recurrence ? '' : 'empty'}`}
+          disabled={!task.dueDate}
+          title={task.dueDate ? undefined : tr('Đặt hạn trước để lặp lại')}
+          onClick={() => setPop(pop === 'repeat' ? null : 'repeat')}
+        >
+          {task.dueDate ? describeRule(task.recurrence, task.dueDate) : tr('Cần có hạn')}
+        </button>
+        {task.dueDate && (
+          <Popover anchor={anchors.repeat.current} open={pop === 'repeat'} onClose={() => setPop(null)} width={290}>
+            <RecurrencePicker
+              value={task.recurrence}
+              dueDate={task.dueDate}
+              weekStart={settings.weekStart}
+              onChange={(rule) => {
+                patch({ recurrence: rule })
+                setPop(null)
+              }}
+            />
+          </Popover>
+        )}
       </Field>
 
       <Field name="priority" icon="flag" label={tr('Ưu tiên')}>

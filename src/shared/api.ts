@@ -72,6 +72,8 @@ export interface InvokeMap {
   'tasks:move': { args: [id: string, move: TaskMove]; result: Task }
   'tasks:delete': { args: [id: string, mode: 'one' | 'series']; result: void }
   'tasks:restore': { args: [ids: string[]]; result: Task[] }
+  /** Việc lặp lại: bỏ qua lần này, dời sang lần kế tiếp (chuỗi hết thì bỏ luôn việc) */
+  'tasks:skip': { args: [id: string]; result: Task }
 
   'projects:list': { args: []; result: Project[] }
   'projects:create': { args: [input: ProjectCreate]; result: Project }

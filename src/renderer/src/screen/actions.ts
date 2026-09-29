@@ -5,6 +5,7 @@ import { orderBetween } from '../../../shared/ordering'
 import type { TaskPatch } from '../../../shared/schemas'
 import type { Task, TaskStatus } from '../../../shared/types'
 import { now, nowParts } from '../clock'
+import { dueText } from './format'
 import { ApiError, call } from '../ipc'
 import { dispatchRobot } from '../scene/robotState'
 import { useData } from '../state/dataStore'
@@ -37,10 +38,33 @@ function celebrate(): void {
   dispatchRobot({ type: 'celebrate', at: performance.now() })
 }
 
+/** Hoàn thành việc: robot ăn mừng; việc lặp lại thì báo lần tới, kèm nút hoàn tác (gỡ lần tới nếu chưa sửa) */
+export async function completeTask(task: Task): Promise<boolean> {
+  const before = task.status
+  const res = await run('tasks:setStatus', task.id, 'done')
+  if (!res.ok) return false
+  celebrate()
+  const next = res.value.spawned
+  if (next)
+    useUi.getState().toast({
+      text: tr('Lần tới: {date}', { date: dueText(next, nowParts().date) }),
+      action: { label: tr('Hoàn tác'), run: () => void run('tasks:setStatus', task.id, before) }
+    })
+  return true
+}
+
 export async function toggleDone(task: Task): Promise<void> {
-  const status: TaskStatus = task.status === 'done' ? 'todo' : 'done'
-  const res = await run('tasks:setStatus', task.id, status)
-  if (res.ok && status === 'done') celebrate()
+  if (task.status !== 'done') await completeTask(task)
+  else await run('tasks:setStatus', task.id, 'todo')
+}
+
+/** Việc lặp lại: bỏ qua lần này, dời sang lần kế tiếp */
+export async function skipOccurrence(task: Task): Promise<void> {
+  const res = await run('tasks:skip', task.id)
+  if (!res.ok) return
+  const t = res.value
+  if (t.deletedAt !== null) useUi.getState().openEditor(null)
+  useUi.getState().toast({ text: t.deletedAt !== null || !t.dueDate ? tr('Đã bỏ qua lần cuối của chuỗi') : tr('Đã dời sang lần sau: {date}', { date: dueText(t, nowParts().date) }) })
 }
 
 /** Thêm việc nhanh (phím N, nút trên thanh trên, menu khay): "Đã xong" / "Quá hạn" không có ô thêm việc → chuyển sang Hôm nay */
@@ -97,8 +121,9 @@ export async function rescheduleTask(task: Task, dueDate: string | null): Promis
 // ---- Nhắc việc (bong bóng thoại của robot, banner trong màn hình) ----
 
 export async function completeReminder(taskId: string): Promise<void> {
-  const res = await run('tasks:setStatus', taskId, 'done')
-  if (res.ok) celebrate()
+  const task = useData.getState().tasks[taskId]
+  if (task) await completeTask(task)
+  else if ((await run('tasks:setStatus', taskId, 'done')).ok) celebrate()
 }
 
 export async function snoozeReminder(taskId: string, minutes: number): Promise<void> {
@@ -113,14 +138,21 @@ function short(title: string): string {
   return title.length > 40 ? `${title.slice(0, 40)}…` : title
 }
 
-/** Xoá task, kèm nút hoàn tác trên toast */
+/** Xoá task (hoặc mọi lần chưa xong của chuỗi lặp lại), kèm nút hoàn tác trên toast */
 export async function deleteTask(task: Task, mode: 'one' | 'series' = 'one'): Promise<void> {
   const ui = useUi.getState()
   if (ui.editingId === task.id) ui.openEditor(null)
+  // Nhớ các lần sẽ bị xoá để hoàn tác khôi phục đủ (lịch sử đã xong không bị xoá)
+  const ids =
+    mode === 'series' && task.seriesId
+      ? Object.values(useData.getState().tasks)
+          .filter((t) => t.seriesId === task.seriesId && (t.status !== 'done' || t.id === task.id))
+          .map((t) => t.id)
+      : [task.id]
   const res = await run('tasks:delete', task.id, mode)
   if (!res.ok) return
   useUi.getState().toast({
     text: tr('Đã xoá "{title}"', { title: short(task.title) }),
-    action: { label: tr('Hoàn tác'), run: () => void run('tasks:restore', [task.id]) }
+    action: { label: tr('Hoàn tác'), run: () => void run('tasks:restore', ids) }
   })
 }

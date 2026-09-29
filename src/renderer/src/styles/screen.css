@@ -1854,3 +1854,99 @@ button {
   gap: 0;
   padding: 3px 5px;
 }
+
+/* Lần lặp sắp tới trên Lịch: mờ, viền đứt */
+.cal-chip.ghost {
+  opacity: 0.45;
+  background: transparent;
+  border-left-style: dashed;
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer;
+}
+
+.cal-chip.ghost:hover {
+  opacity: 0.8;
+}
+
+/* ---------- Chọn quy tắc lặp lại ---------- */
+
+.recur .menu {
+  min-width: 0;
+}
+
+.recur-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px 6px 4px;
+  border-top: 1px solid var(--line);
+}
+
+.recur-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.recur-row .segmented {
+  margin: 0;
+}
+
+.recur-row .segmented button {
+  padding: 4px 8px;
+}
+
+.recur-n {
+  width: 56px;
+  font-family: var(--font-mono);
+}
+
+.recur-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.recur-days .chip-btn {
+  min-width: 34px;
+}
+
+.recur-label {
+  font-family: var(--font-label);
+  font-size: 11.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.recur-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recur-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.recur-radio input[type='radio'] {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.recur-radio input[type='date'] {
+  padding: 3px 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.recur-actions {
+  display: flex;
+  justify-content: flex-end;
+}

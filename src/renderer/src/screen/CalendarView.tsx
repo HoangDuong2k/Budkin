@@ -5,6 +5,7 @@ import { DndContext, DragOverlay, PointerSensor, pointerWithin, useDraggable, us
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { addMonths, monthGrid, tasksByDate, weekDays } from '../../../shared/board'
+import { upcomingDues } from '../../../shared/recurrence'
 import { addDays, isoWeekday, parseYmd } from '../../../shared/datetime'
 import { compareByDue, matchesTerms } from '../../../shared/filters'
 import { tr } from '../../../shared/i18n'
@@ -30,6 +31,16 @@ function ChipBody({ task }: { task: Task }): React.JSX.Element {
   )
 }
 
+/** Lần lặp sắp tới (chưa có thật): mờ, không kéo được; bấm để mở lần hiện tại */
+function GhostChip({ task }: { task: Task }): React.JSX.Element {
+  const openEditor = useUi((s) => s.openEditor)
+  return (
+    <button className={`cal-chip ghost prio-${task.priority}`} data-ghost-of={task.id} title={tr('Lần lặp sắp tới')} onClick={() => openEditor(task.id)}>
+      <ChipBody task={task} />
+    </button>
+  )
+}
+
 function Chip({ task }: { task: Task }): React.JSX.Element {
   const openEditor = useUi((s) => s.openEditor)
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `task:${task.id}` })
@@ -48,10 +59,28 @@ function Chip({ task }: { task: Task }): React.JSX.Element {
   )
 }
 
-function DayCell({ date, tasks, inMonth, today, max, onMore }: { date: string; tasks: Task[]; inMonth: boolean; today: string; max: number; onMore: (date: string) => void }): React.JSX.Element {
+function DayCell({
+  date,
+  tasks,
+  ghosts,
+  inMonth,
+  today,
+  max,
+  onMore
+}: {
+  date: string
+  tasks: Task[]
+  ghosts: Task[]
+  inMonth: boolean
+  today: string
+  max: number
+  onMore: (date: string) => void
+}): React.JSX.Element {
   const { setNodeRef, isOver } = useDroppable({ id: `day:${date}` })
+  // Việc thật trước, lần lặp sắp tới sau; ô không đủ chỗ thì gộp phần còn lại vào "+N"
   const shown = tasks.slice(0, max)
-  const hidden = tasks.length - shown.length
+  const shownGhosts = ghosts.slice(0, Math.max(0, max - shown.length))
+  const hidden = tasks.length + ghosts.length - shown.length - shownGhosts.length
   const weekend = isoWeekday(date) >= 6
   return (
     <div
@@ -71,11 +100,14 @@ function DayCell({ date, tasks, inMonth, today, max, onMore }: { date: string; t
       {shown.map((t) => (
         <Chip key={t.id} task={t} />
       ))}
+      {shownGhosts.map((t) => (
+        <GhostChip key={`ghost:${t.id}`} task={t} />
+      ))}
     </div>
   )
 }
 
-function WeekColumn({ date, tasks, today }: { date: string; tasks: Task[]; today: string }): React.JSX.Element {
+function WeekColumn({ date, tasks, ghosts, today }: { date: string; tasks: Task[]; ghosts: Task[]; today: string }): React.JSX.Element {
   const { setNodeRef, isOver } = useDroppable({ id: `day:${date}` })
   return (
     <div ref={setNodeRef} className={['cal-week-col', isoWeekday(date) >= 6 ? 'weekend' : '', date === today ? 'today' : '', isOver ? 'over' : ''].join(' ')} data-date={date}>
@@ -86,6 +118,9 @@ function WeekColumn({ date, tasks, today }: { date: string; tasks: Task[]; today
       <div className="cal-week-body">
         {tasks.map((t) => (
           <Chip key={t.id} task={t} />
+        ))}
+        {ghosts.map((t) => (
+          <GhostChip key={`ghost:${t.id}`} task={t} />
         ))}
       </div>
     </div>
@@ -134,6 +169,20 @@ export function CalendarView(): React.JSX.Element {
   const from = days[0]
   const to = days[days.length - 1]
   const byDate = useMemo(() => tasksByDate(visible, from, to), [visible, from, to])
+  // Các lần lặp sắp tới của việc lặp lại (từ hôm nay trở đi — lần đã lỡ không hiện)
+  const ghosts = useMemo(() => {
+    const out = new Map<string, Task[]>()
+    const start = from > now.date ? from : now.date
+    for (const t of visible) {
+      if (!t.recurrence || !t.dueDate || t.status === 'done') continue
+      for (const d of upcomingDues(t.recurrence, t.dueDate, t.occurrenceIndex ?? 0, start, to)) {
+        const list = out.get(d)
+        if (list) list.push(t)
+        else out.set(d, [t])
+      }
+    }
+    return out
+  }, [visible, from, to, now.date])
   const undated = useMemo(() => visible.filter((t) => !t.dueDate && t.status !== 'done').sort(compareByDue), [visible])
 
   // Số việc vừa một ô lịch tháng: đo chiều cao lưới
@@ -203,6 +252,7 @@ export function CalendarView(): React.JSX.Element {
                   key={d}
                   date={d}
                   tasks={byDate.get(d) ?? []}
+                  ghosts={ghosts.get(d) ?? []}
                   inMonth={parseYmd(d).m === m}
                   today={now.date}
                   max={max}
@@ -217,7 +267,7 @@ export function CalendarView(): React.JSX.Element {
         ) : (
           <div className="cal-week">
             {days.map((d) => (
-              <WeekColumn key={d} date={d} tasks={byDate.get(d) ?? []} today={now.date} />
+              <WeekColumn key={d} date={d} tasks={byDate.get(d) ?? []} ghosts={ghosts.get(d) ?? []} today={now.date} />
             ))}
           </div>
         )}
