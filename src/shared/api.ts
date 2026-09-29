@@ -2,6 +2,20 @@
 // Tên kênh và kiểu tham số/kết quả khai báo một chỗ; main thiếu handler nào là lỗi biên dịch (xem main/ipc.ts).
 import type { BootInfo } from './boot'
 import type { Theme } from './palette'
+import type {
+  ChecklistPatch,
+  OrderMove,
+  ProjectCreate,
+  ProjectPatch,
+  SettingsPatch,
+  TagCreate,
+  TagPatch,
+  TaskCreateInput,
+  TaskListScope,
+  TaskMove,
+  TaskPatch
+} from './schemas'
+import type { ChangeReason, ChangeSet, Project, Settings, Tag, Task, TaskStatus } from './types'
 
 export interface AppInfo {
   version: string
@@ -21,11 +35,46 @@ export type ErrorCode = 'VALIDATION' | 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL'
 /** Kết quả mọi lời gọi IPC: lỗi đi kèm mã (Error ném qua contextBridge sẽ mất các trường riêng) */
 export type ApiResponse<T> = { ok: true; value: T } | { ok: false; error: { code: ErrorCode; message: string } }
 
+export interface StatusResult {
+  task: Task
+  /** Lần kế tiếp vừa được tạo (task lặp lại) */
+  spawned: Task | null
+  /** Lần kế tiếp bị gỡ khi bỏ hoàn thành */
+  removedSpawnId: string | null
+}
+
 /** Kênh renderer → main */
 export interface InvokeMap {
   'app:info': { args: []; result: AppInfo }
   /** Đổi theme (bật/tắt đèn): lưu lại, đổi theme hệ thống của cửa sổ và màu nền */
   'app:setTheme': { args: [theme: Theme]; result: void }
+
+  'tasks:list': { args: [scope: TaskListScope]; result: Task[] }
+  'tasks:get': { args: [id: string]; result: Task }
+  'tasks:create': { args: [input: TaskCreateInput]; result: Task }
+  'tasks:update': { args: [id: string, patch: TaskPatch]; result: Task }
+  'tasks:setStatus': { args: [id: string, status: TaskStatus]; result: StatusResult }
+  'tasks:move': { args: [id: string, move: TaskMove]; result: Task }
+  'tasks:delete': { args: [id: string, mode: 'one' | 'series']; result: void }
+  'tasks:restore': { args: [ids: string[]]; result: Task[] }
+
+  'projects:list': { args: []; result: Project[] }
+  'projects:create': { args: [input: ProjectCreate]; result: Project }
+  'projects:update': { args: [id: string, patch: ProjectPatch]; result: Project }
+  'projects:delete': { args: [id: string]; result: void }
+
+  'tags:list': { args: []; result: Tag[] }
+  'tags:create': { args: [input: TagCreate]; result: Tag }
+  'tags:update': { args: [id: string, patch: TagPatch]; result: Tag }
+  'tags:delete': { args: [id: string]; result: void }
+
+  'checklist:add': { args: [taskId: string, text: string]; result: Task }
+  'checklist:update': { args: [id: string, patch: ChecklistPatch]; result: Task }
+  'checklist:delete': { args: [id: string]; result: Task }
+  'checklist:move': { args: [id: string, move: OrderMove]; result: Task }
+
+  'settings:get': { args: []; result: Settings }
+  'settings:update': { args: [patch: SettingsPatch]; result: Settings }
 }
 
 export type Channel = keyof InvokeMap
@@ -35,6 +84,9 @@ export type ResultOf<C extends Channel> = InvokeMap[C]['result']
 /** Sự kiện main → renderer */
 export interface EventMap {
   'theme:changed': Theme
+  /** Dữ liệu đổi (do chính renderer, task lặp lại, nhập dữ liệu…): bản đầy đủ của các đối tượng đã đổi */
+  'data:changed': { changes: ChangeSet; reason: ChangeReason }
+  'settings:changed': Settings
 }
 
 /** window.api — preload mở ra cho renderer */

@@ -1,17 +1,24 @@
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { DatabaseSync } from 'node:sqlite'
-import { BrowserWindow, Menu, app, nativeTheme, shell, type IpcMainInvokeEvent } from 'electron'
+import { BrowserWindow, Menu, app, dialog, nativeTheme, shell, type IpcMainInvokeEvent } from 'electron'
 import { z } from 'zod'
 import type { AppInfo, EventMap } from '../shared/api'
 import { bootArg, normalizeBoot, type BootPrefs } from '../shared/boot'
 import { APP_ID, APP_NAME, DEFAULT_WINDOW, MIN_WINDOW } from '../shared/constants'
+import { setLang, tr } from '../shared/i18n'
 import { WINDOW_BG, type Theme } from '../shared/palette'
+import type { Settings } from '../shared/types'
 import { readBootFile, writeBootFile } from './boot'
+import { TestClock, systemClock, type Clock } from './clock'
+import { Db } from './db/connection'
+import { NewerDatabaseError, migrate } from './db/migrations'
 import { applyGraphicsSwitches } from './gpu'
+import { dataHandlers } from './handlers'
 import { registerAll } from './ipc'
+import { DataService } from './services/data'
 
-/** Kiểm thử tự động: cửa sổ hiện mà không giành focus, thư mục dữ liệu riêng */
+/** Kiểm thử tự động: cửa sổ hiện mà không giành focus, thư mục dữ liệu riêng, đồng hồ đẩy tới được */
 const TEST = process.env.DESKBUDDY_TEST === '1'
 if (process.env.DESKBUDDY_USER_DATA) app.setPath('userData', process.env.DESKBUDDY_USER_DATA)
 
@@ -20,10 +27,13 @@ const storedBoot = readBootFile(bootFile)
 let boot: BootPrefs = normalizeBoot(storedBoot)
 applyGraphicsSwitches(boot)
 
+const clock: Clock = TEST ? new TestClock(Number(process.env.DESKBUDDY_CLOCK_OFFSET ?? 0)) : systemClock
 let mainWindow: BrowserWindow | null = null
+let db: Db | null = null
+let data: DataService
 
-function send<K extends keyof EventMap>(channel: K, data: EventMap[K]): void {
-  mainWindow?.webContents.send(channel, data)
+function send<K extends keyof EventMap>(channel: K, payload: EventMap[K]): void {
+  mainWindow?.webContents.send(channel, payload)
 }
 
 function saveBoot(patch: Partial<BootPrefs>): void {
@@ -36,12 +46,28 @@ function saveBoot(patch: Partial<BootPrefs>): void {
 }
 
 function sqliteVersion(): string {
-  const db = new DatabaseSync(':memory:')
+  const mem = new DatabaseSync(':memory:')
   try {
-    return (db.prepare('select sqlite_version() as v').get() as { v: string }).v
+    return (mem.prepare('select sqlite_version() as v').get() as { v: string }).v
   } finally {
-    db.close()
+    mem.close()
   }
+}
+
+/** Mở DB, nâng cấp schema. Lỗi thì báo và thoát (không bao giờ ghi đè dữ liệu người dùng) */
+function openData(): boolean {
+  const dir = app.getPath('userData')
+  try {
+    db = new Db(join(dir, 'deskbuddy.db'))
+    migrate(db, join(dir, 'backups'))
+  } catch (err) {
+    const detail = err instanceof NewerDatabaseError ? tr('Dữ liệu được tạo bởi phiên bản DeskBuddy mới hơn. Hãy cài bản mới nhất.') : String(err)
+    dialog.showErrorBox(tr('Không mở được dữ liệu'), detail)
+    return false
+  }
+  data = new DataService(db, clock, (changes, reason) => send('data:changed', { changes, reason }))
+  setLang(data.getSettings().language)
+  return true
 }
 
 /** Trang renderer đã đóng gói; IPC chỉ nhận từ đúng trang này (không phải trang lạ lỡ bị nạp vào cửa sổ) */
@@ -59,6 +85,11 @@ function isTrustedSender(event: IpcMainInvokeEvent): boolean {
 function applyTheme(theme: Theme): void {
   nativeTheme.themeSource = theme
   mainWindow?.setBackgroundColor(WINDOW_BG[theme])
+}
+
+function onSettingsChanged(settings: Settings): void {
+  setLang(settings.language)
+  send('settings:changed', settings)
 }
 
 function registerIpc(): void {
@@ -84,7 +115,8 @@ function registerIpc(): void {
           applyTheme(theme)
           send('theme:changed', theme)
         }
-      }
+      },
+      ...dataHandlers(data, onSettingsChanged)
     },
     isTrustedSender
   )
@@ -149,9 +181,18 @@ else {
     if (storedBoot === null) saveBoot({ theme: nativeTheme.shouldUseDarkColors ? 'dark' : 'light' })
     nativeTheme.themeSource = boot.theme
     Menu.setApplicationMenu(null)
+    if (!openData()) {
+      app.quit()
+      return
+    }
     registerIpc()
+    if (TEST) (globalThis as unknown as { __deskbuddy: unknown }).__deskbuddy = { clock, data }
     createWindow()
   })
 
   app.on('window-all-closed', () => app.quit())
+  app.on('will-quit', () => {
+    db?.close()
+    db = null
+  })
 }

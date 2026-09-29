@@ -1,16 +1,7 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { z } from 'zod'
-import type { ApiResponse, ArgsOf, Channel, ErrorCode, ResultOf } from '../shared/api'
-
-/** Lỗi nghiệp vụ trả về renderer kèm mã (renderer hiện thông báo phù hợp) */
-export class AppError extends Error {
-  constructor(
-    readonly code: ErrorCode,
-    message: string
-  ) {
-    super(message)
-  }
-}
+import type { ApiResponse, ArgsOf, Channel, ResultOf } from '../shared/api'
+import { AppError } from './errors'
 
 interface Handler<C extends Channel> {
   /** Kiểm tra toàn bộ tham số renderer gửi lên (renderer không bao giờ được tin tuyệt đối) */
@@ -20,6 +11,9 @@ interface Handler<C extends Channel> {
 
 /** Mỗi kênh trong InvokeMap phải có đúng một handler — thiếu là lỗi biên dịch */
 export type Handlers = { [C in Channel]: Handler<C> }
+
+/** Một nhóm handler (ghép các nhóm lại thành Handlers đầy đủ) */
+export type HandlerGroup<K extends Channel> = Pick<Handlers, K>
 
 export function registerAll(handlers: Handlers, isTrusted: (event: IpcMainInvokeEvent) => boolean): void {
   for (const channel of Object.keys(handlers) as Channel[]) {

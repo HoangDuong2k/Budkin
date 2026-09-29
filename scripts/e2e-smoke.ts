@@ -10,8 +10,9 @@
 import { mkdirSync, rmSync } from 'fs'
 import { join, resolve } from 'path'
 import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core'
-import type { DeskApi } from '../src/shared/api'
+import type { ApiResponse, ArgsOf, Channel, DeskApi, ResultOf } from '../src/shared/api'
 import { SCREEN_BG } from '../src/shared/palette'
+import type { Task } from '../src/shared/types'
 
 const ROOT = resolve(__dirname, '..')
 const OUT = join(ROOT, 'test-output', 'e2e')
@@ -34,7 +35,19 @@ interface Probe {
     webglInfo(): { version: string; renderer: string } | null
     samplePixels(points: Array<{ x: number; y: number }>): Rgb[]
     theme: { getState(): { theme: 'light' | 'dark' } }
+    data: { getState(): { loaded: boolean; tasks: Record<string, Task>; projects: Record<string, { name: string }>; tags: Record<string, { name: string }> } }
   }
+}
+
+/** Gọi IPC từ trang (như renderer gọi) và trả về kết quả gốc { ok, value | error } */
+async function invoke<C extends Channel>(page: Page, channel: C, ...args: ArgsOf<C>): Promise<ApiResponse<ResultOf<C>>> {
+  return page.evaluate(([ch, a]) => (window as unknown as Probe).api.invoke(ch as C, ...(a as ArgsOf<C>)), [channel, args] as const) as Promise<ApiResponse<ResultOf<C>>>
+}
+
+async function value<C extends Channel>(page: Page, channel: C, ...args: ArgsOf<C>): Promise<ResultOf<C>> {
+  const res = await invoke(page, channel, ...args)
+  if (!res.ok) throw new Error(`${channel}: ${res.error.code} ${res.error.message}`)
+  return res.value
 }
 
 /** Cảnh báo đã biết từ thư viện, không phải lỗi của app */
@@ -220,11 +233,42 @@ async function main(): Promise<void> {
   )
   await checkAlignment(page, `theme ${theme1}`, theme1)
   await page.screenshot({ path: join(OUT, `3-theme-${theme1}.png`) })
+
+  // ---- Dữ liệu qua IPC: tạo, sửa, renderer nhận thay đổi qua data:changed ----
+  const project = await value(page, 'projects:create', { name: 'Công ty', color: 'sky' })
+  const tag = await value(page, 'tags:create', { name: 'Gấp', color: 'coral' })
+  const task = await value(page, 'tasks:create', {
+    title: 'Gửi báo cáo tuần',
+    projectId: project.id,
+    tagIds: [tag.id],
+    dueDate: '2026-10-02',
+    dueTime: '10:00',
+    remindBeforeMin: 15,
+    checklist: ['Tổng hợp số liệu']
+  })
+  assert(
+    await until(async () => !!(await probe(page, (p) => p.data.getState().tasks))[task.id]),
+    'tạo task qua IPC → bộ đệm renderer nhận ngay qua data:changed'
+  )
+  await value(page, 'checklist:add', task.id, 'Viết nhận xét')
+  await value(page, 'tasks:setStatus', task.id, 'in_progress')
+  const found = await value(page, 'tasks:list', { scope: 'search', text: 'bao cao' })
+  assert(found.length === 1 && found[0].id === task.id, 'tìm "bao cao" (không dấu) ra "Gửi báo cáo tuần"')
+  const invalid = await invoke(page, 'tasks:create', { title: '   ' })
+  assert(!invalid.ok && invalid.error.code === 'VALIDATION', 'tiêu đề rỗng bị từ chối (VALIDATION)')
+  const badDate = await invoke(page, 'tasks:update', task.id, { dueDate: '2026-02-30' })
+  assert(!badDate.ok && badDate.error.code === 'VALIDATION', 'ngày 30/02 bị từ chối (VALIDATION)')
   await app.evaluate(({ app: a }) => a.exit(0))
 
-  // ---- Mở lại: theme được nhớ ----
+  // ---- Mở lại: theme và dữ liệu được nhớ ----
   ;({ app, page } = await launch())
   assert((await page.evaluate(() => document.documentElement.dataset.theme)) === theme1, `mở lại app vẫn giữ theme ${theme1}`)
+  await until(async () => probe(page, (p) => p.data.getState().loaded), 5000)
+  const saved = (await probe(page, (p) => p.data.getState().tasks))[task.id]
+  assert(
+    saved?.status === 'in_progress' && saved.checklist.length === 2 && saved.tagIds[0] === tag.id && saved.projectId === project.id,
+    'mở lại app: task, checklist, nhãn, dự án còn nguyên'
+  )
   await app.evaluate(({ app: a }) => a.exit(0))
 
   // ---- Máy không có WebGL: chế độ 2D ----

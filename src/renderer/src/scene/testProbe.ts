@@ -1,5 +1,6 @@
 // Cho kiểm thử tự động (DESKBUDDY_TEST=1) đọc trạng thái cảnh và lấy mẫu điểm ảnh của canvas
 import { advance } from '@react-three/fiber'
+import { useData } from '../state/dataStore'
 import { useTheme } from '../state/themeStore'
 import { stage } from './stage'
 
@@ -34,6 +35,7 @@ export function installTestProbe(renderMode: '3d' | '2d'): void {
     renderMode,
     stage,
     theme: useTheme,
+    data: useData,
     webglInfo,
     samplePixels
   }
