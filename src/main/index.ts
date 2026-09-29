@@ -139,8 +139,16 @@ function createWindow(): void {
       nodeIntegration: false,
       // Kiểm thử chế độ 2D: giả lập máy không có WebGL (cờ --disable-webgl không tới được renderer)
       webgl: !(TEST && process.env.DESKBUDDY_E2E_NO_WEBGL === '1'),
-      // Theme, chế độ render… cho preload đọc ngay, trước lần vẽ đầu tiên (không chớp màn hình)
-      additionalArguments: [bootArg({ ...boot, platform: process.platform, test: TEST })]
+      // Theme, ngôn ngữ, chế độ render… cho preload đọc ngay, trước lần vẽ đầu tiên (không chớp màn hình)
+      additionalArguments: [
+        bootArg({
+          ...boot,
+          platform: process.platform,
+          lang: data.getSettings().language,
+          test: TEST,
+          clockOffset: clock instanceof TestClock ? clock.offsetMs : 0
+        })
+      ]
     }
   }))
   win.once('ready-to-show', () => (TEST ? win.showInactive() : win.show()))

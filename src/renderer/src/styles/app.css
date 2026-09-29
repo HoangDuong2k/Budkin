@@ -13,7 +13,7 @@ body,
 
 body {
   font-family: 'Be Vietnam Pro', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   user-select: none;
@@ -42,38 +42,24 @@ body {
   container-name: screen;
 }
 
+/* Thanh cuộn mảnh theo màu theme (thanh mặc định của Chromium quá dày trên màn hình nhỏ) */
+.screen *,
+.popover {
+  scrollbar-width: thin;
+  scrollbar-color: var(--faint) transparent;
+}
+
 /* Chế độ 2D (không có WebGL): giao diện phủ cả cửa sổ */
 .stage[data-mode='2d'] .screen {
   inset: 12px;
   border-radius: 12px;
+  box-shadow: var(--shadow);
 }
 
-.screen-ui {
-  box-sizing: border-box;
-  height: 100%;
-  padding: 18px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  user-select: text;
-}
-
-.screen-ui h1 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.screen-ui .muted {
-  color: var(--muted);
-}
-
-.btn {
-  font: inherit;
-  border: 1px solid var(--line);
-  background: var(--accent);
-  color: var(--accent-text);
-  border-radius: 8px;
-  padding: 6px 12px;
-  cursor: pointer;
-  align-self: flex-start;
+/* Popover, menu nổi: ngoài .screen (container query làm position: fixed bên trong bị tính theo .screen) */
+#portal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
 }

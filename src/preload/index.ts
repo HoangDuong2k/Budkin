@@ -4,7 +4,7 @@ import type { DeskApi, EventMap } from '../shared/api'
 import { DEFAULT_BOOT, parseBootArg } from '../shared/boot'
 
 const api: DeskApi = {
-  boot: parseBootArg(process.argv) ?? { ...DEFAULT_BOOT, platform: process.platform, test: false },
+  boot: parseBootArg(process.argv) ?? { ...DEFAULT_BOOT, platform: process.platform, lang: 'vi', test: false, clockOffset: 0 },
   invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
   on: <K extends keyof EventMap>(channel: K, cb: (data: EventMap[K]) => void) => {
     const listener = (_e: IpcRendererEvent, data: EventMap[K]): void => cb(data)

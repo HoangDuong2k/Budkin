@@ -1,5 +1,6 @@
 /* Màu theo theme. Chỉ dựa vào [data-theme] (đèn bàn bật/tắt), không dùng prefers-color-scheme:
-   theme hệ thống đổi không đồng bộ với khung hình 3D, sẽ làm giao diện và cảnh lệch nhau. */
+   theme hệ thống đổi không đồng bộ với khung hình 3D, sẽ làm giao diện và cảnh lệch nhau.
+   Không dùng CSS transition cho các màu này (đổi theme phải khớp đúng khung hình với cảnh 3D). */
 
 @font-face {
   font-family: 'Be Vietnam Pro';
@@ -22,21 +23,43 @@
   --bg: #f3e7d9;
   --screen-bg: #fffdf8;
   --panel: #f7f2ea;
+  --panel-2: #efe8dc;
   --line: #ebe3d6;
   --text: #2b2a33;
-  --muted: #6f6b7a;
+  --muted: #77727f;
+  --faint: #b3adb9;
   --accent: #7c6cf2;
+  --accent-soft: #ece8ff;
   --accent-text: #ffffff;
+  --danger: #dc4f47;
+  --danger-soft: #fdecea;
+  --warn: #c98a0c;
+  --ok: #2c9c66;
+  --prio-1: #3d9be9;
+  --prio-2: #e0a21b;
+  --prio-3: #dc4f47;
+  --shadow: 0 10px 28px rgba(70, 50, 30, 0.16);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
   --bg: #141824;
   --screen-bg: #1a1e2a;
-  --panel: #202533;
+  --panel: #1f2431;
+  --panel-2: #272d3c;
   --line: #2b3142;
   --text: #e8e6f0;
   --muted: #9a97a8;
+  --faint: #5d6173;
   --accent: #a99bff;
+  --accent-soft: #2e2a4d;
   --accent-text: #15131f;
+  --danger: #ff7b72;
+  --danger-soft: #3a2426;
+  --warn: #f2c14e;
+  --ok: #5fd39a;
+  --prio-1: #7cc0ff;
+  --prio-2: #f2c14e;
+  --prio-3: #ff7b72;
+  --shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
 }

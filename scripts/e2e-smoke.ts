@@ -116,7 +116,7 @@ async function launch(extraEnv: Record<string, string> = {}): Promise<{ app: Ele
   page.on('console', (m) => {
     if ((m.type() === 'error' || m.type() === 'warning') && !KNOWN_WARNINGS.some((re) => re.test(m.text()))) problems.push(`[console.${m.type()}] ${m.text().slice(0, 300)}`)
   })
-  await page.waitForSelector('.screen-ui', { timeout: 20000 })
+  await page.waitForSelector('.screen-app', { timeout: 20000 })
   // Cảnh 3D dựng xong sau giao diện (canvas phải đo kích thước trước)
   const mode = await page.evaluate(() => (window as unknown as Probe).__deskbuddy.renderMode)
   if (mode === '3d') await page.waitForFunction(() => (window as unknown as Probe).__deskbuddy.stage.ready, undefined, { timeout: 20000 })
@@ -187,6 +187,102 @@ async function checkAlignment(page: Page, label: string, theme: 'light' | 'dark'
     px.slice(4).every((c) => !near(c, bg, 2)),
     `${label}: ngay ngoài mép là viền màn hình (${JSON.stringify(px.slice(4))})`
   )
+}
+
+async function tasksNow(page: Page): Promise<Task[]> {
+  return Object.values(await probe(page, (p) => p.data.getState().tasks))
+}
+
+async function taskTitled(page: Page, title: string): Promise<Task | undefined> {
+  return (await tasksNow(page)).find((t) => t.title === title)
+}
+
+/** Giao diện trên màn hình: thêm, sửa, hoàn thành, xoá + hoàn tác, tìm, đổi ngôn ngữ — bằng chuột và bàn phím thật */
+async function uiFlow(page: Page): Promise<void> {
+  const row = (title: string): ReturnType<Page['locator']> => page.locator('.task-row', { hasText: title }).first()
+  await page.locator('.sidebar .nav-main').first().click()
+  await page.locator('.list-head').click()
+  await page.keyboard.press('n')
+  assert(
+    await until(async () => page.evaluate(() => document.activeElement?.classList.contains('quick-add-input') ?? false)),
+    'phím N đưa con trỏ vào ô thêm việc'
+  )
+  await page.keyboard.type('Mua sữa cho mèo')
+  await page.keyboard.press('Enter')
+  assert(await until(async () => (await row('Mua sữa cho mèo').count()) === 1), 'gõ tiếng Việt + Enter: việc mới hiện trong "Hôm nay"')
+  const created = await taskTitled(page, 'Mua sữa cho mèo')
+  assert(created?.dueDate !== null && created?.remindBeforeMin === 0, 'việc thêm ở "Hôm nay" có hạn hôm nay và nhắc trong ngày')
+
+  // Khung sửa: tiêu đề, ưu tiên, giờ, checklist, nhãn mới
+  await row('Mua sữa cho mèo').click()
+  const editor = page.locator('.editor')
+  await editor.waitFor()
+  await editor.locator('.editor-title').click()
+  await page.keyboard.press('Control+A')
+  await page.keyboard.type('Mua sữa và pate cho mèo')
+  await page.keyboard.press('Enter')
+  assert(await until(async () => (await row('Mua sữa và pate cho mèo').count()) === 1), 'sửa tiêu đề trong khung sửa')
+  await editor.locator('.prio-btn.prio-3').click()
+  await editor.locator('[data-field="due"] .value-btn').click()
+  await page.locator('.popover .time-suggest button', { hasText: '18:00' }).click()
+  await page.keyboard.press('Escape')
+  await editor.locator('.checklist-add input').click()
+  await page.keyboard.type('Pate cá hồi')
+  await page.keyboard.press('Enter')
+  await editor.locator('[data-field="tags"] input').click()
+  await page.keyboard.type('Nhà')
+  await page.keyboard.press('Enter')
+  assert(
+    await until(async () => {
+      const t = await taskTitled(page, 'Mua sữa và pate cho mèo')
+      return t?.priority === 3 && t.dueTime === '18:00' && t.checklist.length === 1 && t.tagIds.length === 1
+    }),
+    'khung sửa: ưu tiên cao, giờ 18:00, checklist, nhãn mới đều được lưu'
+  )
+  await page.screenshot({ path: join(OUT, '5-editor.png') })
+
+  // Hoàn thành bằng ô tròn
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape')
+  assert(await until(async () => (await editor.count()) === 0), 'Esc đóng khung sửa')
+  await row('Mua sữa và pate cho mèo').locator('.check').click()
+  assert(await until(async () => (await taskTitled(page, 'Mua sữa và pate cho mèo'))?.status === 'done'), 'bấm ô tròn: việc chuyển sang Đã xong')
+
+  // Xoá rồi hoàn tác
+  await page.locator('.quick-add-input').click()
+  await page.keyboard.type('Việc sẽ bị xoá')
+  await page.keyboard.press('Enter')
+  await until(async () => (await row('Việc sẽ bị xoá').count()) === 1)
+  await row('Việc sẽ bị xoá').click()
+  await editor.locator('.icon-btn.danger').click()
+  assert(await until(async () => (await taskTitled(page, 'Việc sẽ bị xoá')) === undefined), 'xoá việc từ khung sửa')
+  await page.locator('.toast-action').click()
+  assert(await until(async () => (await row('Việc sẽ bị xoá').count()) === 1), 'bấm "Hoàn tác" trên toast: việc quay lại')
+
+  // Tìm kiếm không dấu
+  await page.locator('.list-head').click()
+  await page.keyboard.press('/')
+  await page.keyboard.type('pate')
+  assert(
+    await until(async () => (await page.locator('.list-head h2').textContent()) === 'Kết quả tìm kiếm' && (await row('Mua sữa và pate cho mèo').count()) === 1),
+    'phím / rồi gõ "pate": tìm ra việc'
+  )
+  await page.keyboard.press('Escape')
+  assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Hôm nay'), 'Esc xoá tìm kiếm, quay lại danh sách')
+  await page.screenshot({ path: join(OUT, '6-today-vi.png') })
+
+  // Đổi ngôn ngữ (thanh bên thu gọn ở màn hình nhỏ thì đổi qua store)
+  const langBtn = page.locator('.lang-switch button', { hasText: 'EN' })
+  if (await langBtn.isVisible()) await langBtn.click()
+  else await page.evaluate("window.__deskbuddy.lang.getState().setLang('en')")
+  assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Today'), 'đổi sang tiếng Anh: giao diện hiện "Today"')
+  await page.screenshot({ path: join(OUT, '7-today-en.png') })
+  await page.locator('.theme-toggle').click()
+  await page.waitForTimeout(200)
+  await page.screenshot({ path: join(OUT, '8-today-en-other-theme.png') })
+  await page.locator('.theme-toggle').click()
+  await page.evaluate("window.__deskbuddy.lang.getState().setLang('vi')")
+  assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Hôm nay'), 'đổi lại tiếng Việt')
 }
 
 async function main(): Promise<void> {
@@ -269,6 +365,7 @@ async function main(): Promise<void> {
     saved?.status === 'in_progress' && saved.checklist.length === 2 && saved.tagIds[0] === tag.id && saved.projectId === project.id,
     'mở lại app: task, checklist, nhãn, dự án còn nguyên'
   )
+  await uiFlow(page)
   await app.evaluate(({ app: a }) => a.exit(0))
 
   // ---- Máy không có WebGL: chế độ 2D ----

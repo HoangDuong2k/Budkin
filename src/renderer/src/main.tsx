@@ -1,16 +1,20 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { setLang } from '../../shared/i18n'
 import { App } from './App'
 import { probeWebgl } from './flat/webglProbe'
 import { installTestProbe } from './scene/testProbe'
 import { subscribeData, useData } from './state/dataStore'
 import './styles/tokens.css'
 import './styles/app.css'
+import './styles/screen.css'
 
 const boot = window.api.boot
-// Đặt theme trước lần vẽ đầu tiên (cửa sổ đã có màu nền đúng theme do main đặt)
+// Đặt theme, ngôn ngữ trước lần vẽ đầu tiên (cửa sổ đã có màu nền đúng theme do main đặt)
 document.documentElement.dataset.theme = boot.theme
 document.documentElement.dataset.platform = boot.platform
+document.documentElement.lang = boot.lang
+setLang(boot.lang)
 
 const webgl = boot.render !== '2d' && probeWebgl().webgl2
 installTestProbe(webgl ? '3d' : '2d')

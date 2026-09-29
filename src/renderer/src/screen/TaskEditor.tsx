@@ -1,0 +1,401 @@
+// Khung sửa task (trượt ra bên phải màn hình). Tự lưu: tiêu đề khi rời ô / Enter, ghi chú sau 0,5 s, còn lại lưu ngay.
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { tr, trKey } from '../../../shared/i18n'
+import { LABEL_COLORS } from '../../../shared/palette'
+import type { TaskPatch } from '../../../shared/schemas'
+import { normalizeText } from '../../../shared/search'
+import { DEFAULT_SETTINGS, type Priority, type Task, type TaskStatus } from '../../../shared/types'
+import { useNow } from '../clock'
+import { useData } from '../state/dataStore'
+import { useTheme } from '../state/themeStore'
+import { useUi } from '../state/uiStore'
+import { deleteTask, run } from './actions'
+import { DuePicker, type Due } from './DuePicker'
+import { PRIORITY_LABELS, REMIND_ALL_DAY, REMIND_TIMED, dueText, nextColor, reminderText } from './format'
+import { Icon } from './icons'
+import { Popover } from './ui'
+
+const STATUSES: Array<{ id: TaskStatus; label: string }> = [
+  { id: 'todo', label: trKey('Cần làm') },
+  { id: 'in_progress', label: trKey('Đang làm') },
+  { id: 'done', label: trKey('Xong') }
+]
+
+/** Ô nhập tự giãn theo nội dung */
+function useAutosize(ref: React.RefObject<HTMLTextAreaElement | null>, value: string): void {
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [ref, value])
+}
+
+function Field({ name, icon, label, children }: { name: string; icon: Parameters<typeof Icon>[0]['name']; label: string; children: React.ReactNode }): React.JSX.Element {
+  return (
+    <div className="field" data-field={name}>
+      <span className="field-label">
+        <Icon name={icon} size={14} />
+        {label}
+      </span>
+      <div className="field-value">{children}</div>
+    </div>
+  )
+}
+
+function TagPicker({ task, patch }: { task: Task; patch: (p: TaskPatch) => void }): React.JSX.Element {
+  const tags = useData((s) => s.tags)
+  const theme = useTheme((s) => s.theme)
+  const [q, setQ] = useState('')
+  const norm = normalizeText(q)
+  const suggestions = Object.values(tags)
+    .filter((t) => !task.tagIds.includes(t.id) && normalizeText(t.name).includes(norm))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 6)
+  const add = (id: string): void => {
+    patch({ tagIds: [...task.tagIds, id] })
+    setQ('')
+  }
+  const create = async (): Promise<void> => {
+    const name = q.trim().replace(/^#/, '')
+    if (!name) return
+    const exact = Object.values(tags).find((t) => normalizeText(t.name) === normalizeText(name))
+    if (exact) {
+      if (!task.tagIds.includes(exact.id)) add(exact.id)
+      return
+    }
+    const res = await run('tags:create', { name, color: nextColor(Object.keys(tags).length) })
+    if (res.ok) add(res.value.id)
+  }
+  return (
+    <div className="tag-picker">
+      {task.tagIds.map((id) => {
+        const tag = tags[id]
+        if (!tag) return null
+        return (
+          <span key={id} className="tag-chip removable" style={{ '--c': LABEL_COLORS[tag.color][theme] } as CSSProperties}>
+            #{tag.name}
+            <button aria-label={tr('Gỡ nhãn')} onClick={() => patch({ tagIds: task.tagIds.filter((x) => x !== id) })}>
+              <Icon name="x" size={11} />
+            </button>
+          </span>
+        )
+      })}
+      <input
+        className="inline-input"
+        value={q}
+        maxLength={40}
+        placeholder={task.tagIds.length ? '' : tr('Thêm nhãn…')}
+        onChange={(e) => setQ(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.nativeEvent.isComposing) void create()
+        }}
+      />
+      {q && (
+        <div className="suggest">
+          {suggestions.map((t) => (
+            <button key={t.id} className="suggest-item" onClick={() => add(t.id)}>
+              <span style={{ color: LABEL_COLORS[t.color][theme] }}>#</span>
+              {t.name}
+            </button>
+          ))}
+          {!suggestions.some((t) => normalizeText(t.name) === norm) && (
+            <button className="suggest-item create" onClick={() => void create()}>
+              <Icon name="plus" size={12} />
+              {tr('Tạo nhãn "{name}"', { name: q.trim().replace(/^#/, '') })}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Checklist({ task }: { task: Task }): React.JSX.Element {
+  const [text, setText] = useState('')
+  const add = async (): Promise<void> => {
+    const t = text.trim()
+    if (!t) return
+    setText('')
+    await run('checklist:add', task.id, t)
+  }
+  return (
+    <div className="checklist">
+      {task.checklist.map((item) => (
+        <ChecklistRow key={item.id} id={item.id} text={item.text} done={item.done} />
+      ))}
+      <div className="checklist-add">
+        <Icon name="plus" size={13} />
+        <input
+          className="inline-input"
+          value={text}
+          maxLength={500}
+          placeholder={tr('Thêm mục…')}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.nativeEvent.isComposing) void add()
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function ChecklistRow({ id, text, done }: { id: string; text: string; done: boolean }): React.JSX.Element {
+  const [value, setValue] = useState(text)
+  useEffect(() => setValue(text), [text])
+  const save = (): void => {
+    const t = value.trim()
+    if (!t) setValue(text)
+    else if (t !== text) void run('checklist:update', id, { text: t })
+  }
+  return (
+    <div className={`checklist-item ${done ? 'done' : ''}`}>
+      <button className={`check small ${done ? 'done' : ''}`} aria-label={tr('Đánh dấu xong')} onClick={() => void run('checklist:update', id, { done: !done })}>
+        {done && <Icon name="check" size={10} strokeWidth={3} />}
+      </button>
+      <input
+        className="inline-input"
+        value={value}
+        maxLength={500}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.nativeEvent.isComposing) (e.target as HTMLInputElement).blur()
+        }}
+      />
+      <button className="icon-btn subtle" aria-label={tr('Xoá mục')} onClick={() => void run('checklist:delete', id)}>
+        <Icon name="x" size={12} />
+      </button>
+    </div>
+  )
+}
+
+function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): React.JSX.Element {
+  const now = useNow()
+  const settings = useData((s) => s.settings) ?? DEFAULT_SETTINGS
+  const projects = useData((s) => s.projects)
+  const theme = useTheme((s) => s.theme)
+  const [title, setTitle] = useState(task.title)
+  const [notes, setNotes] = useState(task.notes)
+  const titleRef = useRef<HTMLTextAreaElement>(null)
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+  const [pop, setPop] = useState<null | 'due' | 'remind' | 'project'>(null)
+  const anchors = { due: useRef<HTMLButtonElement>(null), remind: useRef<HTMLButtonElement>(null), project: useRef<HTMLButtonElement>(null) }
+  useAutosize(titleRef, title)
+  useAutosize(notesRef, notes)
+
+  // Dữ liệu đổi từ nơi khác (robot, Kanban…) khi không đang gõ thì cập nhật ô nhập
+  useEffect(() => {
+    if (document.activeElement !== titleRef.current) setTitle(task.title)
+  }, [task.title])
+  useEffect(() => {
+    if (document.activeElement !== notesRef.current) setNotes(task.notes)
+  }, [task.notes])
+  useEffect(() => {
+    if (notes === task.notes) return
+    const h = setTimeout(() => void run('tasks:update', task.id, { notes }), 500)
+    return () => clearTimeout(h)
+  }, [notes, task.id, task.notes])
+  // Mở task: đưa con trỏ vào cuối tiêu đề (chỉ lúc mở, không phải mỗi lần tiêu đề đổi)
+  useEffect(() => {
+    const el = titleRef.current
+    el?.focus({ preventScroll: true })
+    el?.setSelectionRange(el.value.length, el.value.length)
+  }, [task.id])
+
+  const patch = (p: TaskPatch): void => void run('tasks:update', task.id, p)
+  const saveTitle = (): void => {
+    const t = title.replace(/\s+/g, ' ').trim()
+    if (!t) setTitle(task.title)
+    else if (t !== task.title) patch({ title: t })
+  }
+  const setDue = (d: Due): void => {
+    const p: TaskPatch = { dueDate: d.dueDate, dueTime: d.dueDate ? d.dueTime : null }
+    const allDay = !p.dueTime
+    const options = allDay ? REMIND_ALL_DAY : REMIND_TIMED
+    const fallback = allDay ? 0 : (settings.defaultRemindBeforeMin ?? 0)
+    // Lần đầu có hạn: nhắc theo mặc định; đổi giữa cả ngày ↔ có giờ mà mốc cũ không hợp thì về mặc định
+    if (d.dueDate && !task.dueDate) p.remindBeforeMin = allDay ? 0 : settings.defaultRemindBeforeMin
+    else if (d.dueDate && task.remindBeforeMin !== null && !options.includes(task.remindBeforeMin)) p.remindBeforeMin = fallback
+    patch(p)
+  }
+  const allDay = !task.dueTime
+  const project = task.projectId ? projects[task.projectId] : undefined
+
+  return (
+    <aside className="editor" aria-label={tr('Chi tiết việc')}>
+      <div className="editor-top">
+        <button className="icon-btn" onClick={onClose} aria-label={tr('Đóng')}>
+          <Icon name="x" />
+        </button>
+        <div className="grow" />
+        <button className="icon-btn danger" onClick={() => void deleteTask(task)} aria-label={tr('Xoá việc')} title={tr('Xoá việc')}>
+          <Icon name="trash" />
+        </button>
+      </div>
+      <textarea
+        ref={titleRef}
+        className="editor-title"
+        rows={1}
+        value={title}
+        maxLength={500}
+        onChange={(e) => setTitle(e.target.value.replace(/\n/g, ' '))}
+        onBlur={saveTitle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+            e.preventDefault()
+            titleRef.current?.blur()
+          }
+        }}
+      />
+      <div className="segmented" role="radiogroup" aria-label={tr('Trạng thái')}>
+        {STATUSES.map((s) => (
+          <button key={s.id} role="radio" aria-checked={task.status === s.id} className={task.status === s.id ? 'on' : ''} onClick={() => void run('tasks:setStatus', task.id, s.id)}>
+            {tr(s.label)}
+          </button>
+        ))}
+      </div>
+
+      <Field name="due" icon="calendar" label={tr('Hạn')}>
+        <button ref={anchors.due} className={`value-btn ${task.dueDate ? '' : 'empty'}`} onClick={() => setPop(pop === 'due' ? null : 'due')}>
+          {task.dueDate ? dueText(task, now.date) : tr('Thêm hạn')}
+        </button>
+        <Popover anchor={anchors.due.current} open={pop === 'due'} onClose={() => setPop(null)} width={264}>
+          <DuePicker value={{ dueDate: task.dueDate, dueTime: task.dueTime }} today={now.date} weekStart={settings.weekStart} onChange={setDue} />
+        </Popover>
+      </Field>
+
+      <Field name="remind" icon="bell" label={tr('Nhắc')}>
+        <button
+          ref={anchors.remind}
+          className={`value-btn ${task.remindBeforeMin === null ? 'empty' : ''}`}
+          disabled={!task.dueDate}
+          title={task.dueDate ? undefined : tr('Đặt hạn trước để nhắc việc')}
+          onClick={() => setPop(pop === 'remind' ? null : 'remind')}
+        >
+          {task.dueDate ? reminderText(task.remindBeforeMin, allDay) : tr('Cần có hạn')}
+        </button>
+        <Popover anchor={anchors.remind.current} open={pop === 'remind'} onClose={() => setPop(null)}>
+          <div className="menu">
+            {[null, ...(allDay ? REMIND_ALL_DAY : REMIND_TIMED)].map((m) => (
+              <button
+                key={String(m)}
+                className={`menu-item ${task.remindBeforeMin === m ? 'on' : ''}`}
+                onClick={() => {
+                  patch({ remindBeforeMin: m })
+                  setPop(null)
+                }}
+              >
+                {reminderText(m, allDay)}
+              </button>
+            ))}
+            {allDay && <div className="menu-note">{tr('Việc cả ngày nhắc lúc {time}', { time: settings.allDayRemindTime })}</div>}
+          </div>
+        </Popover>
+      </Field>
+
+      <Field name="priority" icon="flag" label={tr('Ưu tiên')}>
+        <div className="prio-picker">
+          {([0, 1, 2, 3] as Priority[]).map((p) => (
+            <button key={p} className={`prio-btn prio-${p} ${task.priority === p ? 'on' : ''}`} title={tr(PRIORITY_LABELS[p])} aria-label={tr(PRIORITY_LABELS[p])} onClick={() => patch({ priority: p })}>
+              <Icon name="flag" size={14} />
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <Field name="project" icon="folder" label={tr('Dự án')}>
+        <button ref={anchors.project} className={`value-btn ${project ? '' : 'empty'}`} onClick={() => setPop(pop === 'project' ? null : 'project')}>
+          {project ? (
+            <>
+              <i className="dot" style={{ background: LABEL_COLORS[project.color][theme] }} />
+              {project.name}
+            </>
+          ) : (
+            tr('Hộp thư')
+          )}
+        </button>
+        <Popover anchor={anchors.project.current} open={pop === 'project'} onClose={() => setPop(null)}>
+          <div className="menu">
+            <button
+              className={`menu-item ${task.projectId === null ? 'on' : ''}`}
+              onClick={() => {
+                patch({ projectId: null })
+                setPop(null)
+              }}
+            >
+              <Icon name="inbox" size={13} />
+              {tr('Hộp thư (không dự án)')}
+            </button>
+            {Object.values(projects)
+              .filter((p) => p.archivedAt === null)
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((p) => (
+                <button
+                  key={p.id}
+                  className={`menu-item ${task.projectId === p.id ? 'on' : ''}`}
+                  onClick={() => {
+                    patch({ projectId: p.id })
+                    setPop(null)
+                  }}
+                >
+                  <i className="dot" style={{ background: LABEL_COLORS[p.color][theme] }} />
+                  {p.name}
+                </button>
+              ))}
+          </div>
+        </Popover>
+      </Field>
+
+      <Field name="tags" icon="hash" label={tr('Nhãn')}>
+        <TagPicker task={task} patch={patch} />
+      </Field>
+
+      <div className="editor-block">
+        <div className="block-title">
+          <Icon name="checklist" size={14} />
+          {tr('Checklist')}
+          {task.checklist.length > 0 && (
+            <span className="muted">
+              {task.checklist.filter((c) => c.done).length}/{task.checklist.length}
+            </span>
+          )}
+        </div>
+        <Checklist task={task} />
+      </div>
+
+      <div className="editor-block">
+        <div className="block-title">
+          <Icon name="note" size={14} />
+          {tr('Ghi chú')}
+        </div>
+        <textarea
+          ref={notesRef}
+          className="notes"
+          rows={3}
+          value={notes}
+          maxLength={20000}
+          placeholder={tr('Thêm ghi chú…')}
+          onChange={(e) => setNotes(e.target.value)}
+          onBlur={() => {
+            if (notes !== task.notes) patch({ notes })
+          }}
+        />
+      </div>
+    </aside>
+  )
+}
+
+export function TaskEditor(): React.JSX.Element | null {
+  const id = useUi((s) => s.editingId)
+  const task = useData((s) => (id ? s.tasks[id] : undefined))
+  const loaded = useData((s) => s.loaded)
+  const close = useUi((s) => s.openEditor)
+  // Task không còn (bị xoá ở nơi khác) → đóng khung sửa
+  useEffect(() => {
+    if (id && loaded && !task) close(null)
+  }, [id, task, loaded, close])
+  if (!id || !task) return null
+  return <EditorBody key={task.id} task={task} onClose={() => close(null)} />
+}
