@@ -16,7 +16,21 @@ robot phát sáng.
 | ![Bàn làm việc khi bật đèn](docs/screenshots/desk-day.png) | ![Bàn làm việc khi tắt đèn](docs/screenshots/desk-night.png) |
 
 > Đang phát triển theo từng mốc (M0 → M8). Đã xong: khung dự án, dữ liệu (SQLite), giao diện quản lý việc trên màn hình,
-> cảnh 3D (robot nhìn theo chuột, đèn đổi theme). Tiếp theo: nhắc việc, Kanban & Lịch, task lặp lại, đóng gói.
+> cảnh 3D (robot nhìn theo chuột, đèn đổi theme), nhắc việc và chạy nền. Tiếp theo: Kanban & Lịch, task lặp lại, đóng gói.
+
+## Nhắc việc, chạy nền
+
+- Mỗi việc có hạn đặt được mức nhắc: không nhắc, đúng giờ, hoặc trước N phút / giờ / ngày (nhắc "sắp đến hạn" rồi
+  nhắc lần nữa lúc "đến hạn"). Việc cả ngày nhắc lúc 9:00.
+- Tới giờ, **Budkin** báo động (đèn đỏ, nhún nhảy, kêu bíp) và hiện bong bóng thoại: **Xong**, **10 phút** (báo lại),
+  **Mở**, **×** (bỏ qua). Cửa sổ thu hẹp hoặc chế độ 2D thì nhắc việc hiện thành banner ngay trong màn hình.
+- Khi đang không dùng app (cửa sổ ẩn / không có focus) thì có thêm thông báo của hệ điều hành. Nhiều việc cùng lúc
+  (từ 3 việc) gộp thành một thông báo; nhắc trễ quá 6 giờ (máy tắt, ngủ qua đêm) thì chỉ ghi nhận, không báo.
+- Bấm nút đóng: lần đầu Budkin hỏi ẩn xuống khay (vẫn nhắc việc) hay thoát hẳn. Thoát hẳn lúc nào cũng được bằng
+  **Ctrl+Q** hoặc menu ở khay. Menu khay còn có: thêm việc nhanh, tắt nhắc 1 giờ, khởi động cùng máy.
+- **Ubuntu không có khay hệ thống** nếu chưa bật tiện ích AppIndicator: khi đó nút đóng chỉ thu nhỏ cửa sổ. Bật khay:
+  `sudo apt install gnome-shell-extension-appindicator`, rồi bật "Ubuntu AppIndicators" trong ứng dụng Extensions
+  (đăng xuất / đăng nhập lại nếu chưa thấy).
 
 ## Cài đặt để phát triển
 
@@ -36,14 +50,17 @@ Electron 44 tải file chạy ở lần dùng đầu tiên (không có script po
 
 ```bash
 npm run typecheck
-npm test                    # vitest: toán khung hình, i18n, cấu hình
+npm test                    # vitest: toán khung hình, nhắc việc, dữ liệu, i18n, cấu hình
 npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột / bàn phím, ảnh chụp trong test-output/e2e/
 ```
 
 - Máy không có GPU (CI, máy ảo): `BUDKIN_E2E_SWIFTSHADER=1 npm run e2e` — WebGL vẽ bằng CPU.
 - Kiểm thử bản đã đóng gói: `BUDKIN_E2E_EXE=release/linux-unpacked/budkin npm run e2e`.
 - Linux không có màn hình (CI): `xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e`. Trên máy có màn hình, cửa sổ app
-  hiện lên trong lúc chạy e2e (không giành focus); cài `xvfb` để chạy ẩn.
+  hiện lên trong lúc chạy e2e (không giành focus); cài `xvfb` để chạy ẩn. Phiên đăng nhập Wayland (Ubuntu mặc định) thì
+  phải bỏ biến Wayland, không thì app vẫn mở lên màn hình thật:
+  `env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 BUDKIN_E2E_SWIFTSHADER=1 xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e`.
+- E2E chạy với đồng hồ của app đặt ở 6:00 sáng hôm nay; phần nhắc việc tự đẩy đồng hồ tới để kiểm tra từng mốc nhắc.
 - Ảnh giới thiệu: `npm run build && npm run screenshots` → `docs/screenshots/`.
 - Đo cảnh 3D (số lần vẽ, số tam giác — ngân sách ≤ 90 lần vẽ mỗi khung): `npm run build && npm run stats:scene`.
 

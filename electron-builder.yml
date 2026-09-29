@@ -7,6 +7,8 @@ directories:
   buildResources: build
 files:
   - out/**
+  # Ảnh dùng trong main process (icon khay), main tham chiếu tới qua đường dẫn ../../resources
+  - resources/**
   - package.json
   - '!**/*.map'
 # AppImage runtime tĩnh (không cần libfuse2 — Ubuntu 24.04+ chỉ còn libfuse3)

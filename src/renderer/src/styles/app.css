@@ -173,6 +173,50 @@ body {
   }
 }
 
+/* Bong bóng thoại của robot: vị trí do cảnh 3D đặt mỗi khung (transform); đuôi chỉ xuống đầu robot (--tail) */
+.bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-9999px, 0);
+  box-sizing: border-box;
+  padding: 9px 10px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 12.5px;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: calc(var(--tail, 30px) - 6px);
+  width: 10px;
+  height: 10px;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+
+:root[data-theme='dark'] .bubble {
+  box-shadow: var(--shadow), 0 0 18px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.bubble.is-summary {
+  border-top-color: var(--accent-2);
+}
+
+.bubble-summary {
+  line-height: 1.45;
+}
+
 /* Popover, menu nổi: ngoài .screen (container query làm position: fixed bên trong bị tính theo .screen) */
 #portal-root {
   position: fixed;

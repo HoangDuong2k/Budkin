@@ -1,12 +1,17 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import type { NavigateTarget } from '../../shared/api'
 import { setLang } from '../../shared/i18n'
 import { decideRenderMode } from '../../shared/renderMode'
 import { App } from './App'
+import { setClockOffset } from './clock'
 import { probeWebgl } from './flat/webglProbe'
 import { renderInfo } from './scene/renderInfo'
 import { installTestProbe } from './scene/testProbe'
+import { openTask, startQuickAdd } from './screen/actions'
+import { subscribeAlerts } from './state/alertStore'
 import { subscribeData, useData } from './state/dataStore'
+import { useUi } from './state/uiStore'
 import { installGrain } from './styles/grain'
 import './styles/tokens.css'
 import './styles/app.css'
@@ -28,6 +33,16 @@ installTestProbe()
 
 subscribeData()
 void useData.getState().load()
+subscribeAlerts()
+
+// Bấm thông báo, menu khay: main bảo chuyển tới đâu
+window.api.on('app:navigate', (target: NavigateTarget) => {
+  if (target.kind === 'task') openTask(target.taskId)
+  else if (target.kind === 'quickAdd') startQuickAdd()
+  else useUi.getState().select({ kind: 'smart', id: 'today' })
+})
+// Kiểm thử đẩy đồng hồ của main tới: renderer theo cùng (danh sách Hôm nay / Quá hạn, nhãn giờ)
+if (boot.test) window.api.on('clock:offset', setClockOffset)
 
 // Thả thứ mà không chỗ nào nhận (đường link, chữ, file…): chặn hành vi mặc định của Chromium là mở luôn
 // thứ đó trong cửa sổ app — làm mất giao diện

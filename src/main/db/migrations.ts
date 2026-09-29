@@ -82,8 +82,24 @@ CREATE TABLE checklist_items(
 CREATE INDEX checklist_task ON checklist_items(task_id, sort_order) WHERE deleted_at IS NULL;
 `
 
+/**
+ * Trạng thái nhắc việc — thuộc riêng máy này: không xuất ra file, không đổi updated_at của task.
+ * schedule_key = hạn|giờ|nhắc trước: sửa hạn là khoá đổi → nhắc việc tự đặt lại từ đầu.
+ * fired_stage: 0 chưa nhắc, 1 đã nhắc "sắp đến hạn", 2 đã nhắc "đến hạn"
+ */
+const V2 = `
+CREATE TABLE reminder_state(
+  task_id TEXT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+  schedule_key TEXT NOT NULL,
+  fired_stage INTEGER NOT NULL DEFAULT 0 CHECK(fired_stage BETWEEN 0 AND 2),
+  fired_at INTEGER,
+  snoozed_until INTEGER,
+  acked_at INTEGER
+) STRICT;
+`
+
 /** Bước i nâng DB từ phiên bản i lên i + 1 */
-export const MIGRATIONS: ReadonlyArray<(db: Db) => void> = [(db) => db.exec(V1)]
+export const MIGRATIONS: ReadonlyArray<(db: Db) => void> = [(db) => db.exec(V1), (db) => db.exec(V2)]
 
 export const SCHEMA_VERSION = MIGRATIONS.length
 

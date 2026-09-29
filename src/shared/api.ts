@@ -2,6 +2,7 @@
 // Tên kênh và kiểu tham số/kết quả khai báo một chỗ; main thiếu handler nào là lỗi biên dịch (xem main/ipc.ts).
 import type { BootInfo } from './boot'
 import type { Theme } from './palette'
+import type { AlertItem } from './reminders'
 import type {
   ChecklistPatch,
   OrderMove,
@@ -43,6 +44,18 @@ export interface StatusResult {
   removedSpawnId: string | null
 }
 
+/** Nhắc việc đang chờ người dùng xử lý + trạng thái tắt nhắc */
+export interface AlertsSnapshot {
+  active: AlertItem[]
+  /** Đang tắt nhắc tới lúc này (null: không tắt) */
+  mutedUntil: number | null
+  /** Lần tới bộ nhắc việc kiểm tra lại */
+  nextAt: number | null
+}
+
+/** Main bảo giao diện chuyển tới đâu (bấm thông báo, menu khay) */
+export type NavigateTarget = { kind: 'task'; taskId: string } | { kind: 'today' } | { kind: 'quickAdd' }
+
 /** Kênh renderer → main */
 export interface InvokeMap {
   'app:info': { args: []; result: AppInfo }
@@ -77,6 +90,14 @@ export interface InvokeMap {
 
   'settings:get': { args: []; result: Settings }
   'settings:update': { args: [patch: SettingsPatch]; result: Settings }
+
+  'reminders:snapshot': { args: []; result: AlertsSnapshot }
+  /** Báo lại sau N phút */
+  'reminders:snooze': { args: [taskId: string, minutes: number]; result: AlertsSnapshot }
+  /** Bỏ qua nhắc hiện tại (robot dịu lại) */
+  'reminders:dismiss': { args: [taskId: string]; result: AlertsSnapshot }
+  /** Tắt nhắc N phút (null: bật lại) */
+  'reminders:mute': { args: [minutes: number | null]; result: AlertsSnapshot }
 }
 
 export type Channel = keyof InvokeMap
@@ -89,6 +110,13 @@ export interface EventMap {
   /** Dữ liệu đổi (do chính renderer, task lặp lại, nhập dữ liệu…): bản đầy đủ của các đối tượng đã đổi */
   'data:changed': { changes: ChangeSet; reason: ChangeReason }
   'settings:changed': Settings
+  /** Danh sách nhắc việc đang chờ đổi */
+  'alerts:changed': AlertsSnapshot
+  /** Vừa tới giờ nhắc (chuông, robot nhún nhảy); snoozed: tất cả là nhắc lại sau khi hoãn */
+  'reminder:fired': { items: AlertItem[]; snoozed: boolean }
+  'app:navigate': NavigateTarget
+  /** Chỉ khi kiểm thử: đồng hồ bị đẩy tới */
+  'clock:offset': number
 }
 
 /** window.api — preload mở ra cho renderer */

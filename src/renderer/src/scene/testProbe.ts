@@ -1,6 +1,8 @@
 // Cho kiểm thử tự động (BUDKIN_TEST=1) đọc trạng thái cảnh, lấy mẫu điểm ảnh, giả lập mất WebGL
 import { advance } from '@react-three/fiber'
+import { useAlerts } from '../state/alertStore'
 import { useData } from '../state/dataStore'
+import { useHud } from '../state/hudStore'
 import { useLang } from '../state/langStore'
 import { useTheme } from '../state/themeStore'
 import { env } from './envState'
@@ -61,6 +63,8 @@ export function installTestProbe(): void {
     data: useData,
     lang: useLang,
     robot,
+    alerts: useAlerts,
+    hudState: useHud,
     env,
     renderStats,
     webglInfo,

@@ -1,10 +1,11 @@
-// Lớp HUD trên cảnh 3D: "Zzz" khi robot ngủ (hoạt ảnh CSS — cảnh không phải vẽ khung nào),
+// Lớp HUD trên cảnh 3D: "Zzz" khi robot ngủ (hoạt ảnh CSS — cảnh không phải vẽ khung nào), bong bóng thoại nhắc việc,
 // và nút ẩn cho đèn / robot để dùng được bằng bàn phím, trình đọc màn hình
 import { useEffect, useState } from 'react'
 import { tr } from '../../../shared/i18n'
 import { useTheme } from '../state/themeStore'
 import { hud } from './hudRefs'
-import { dispatchRobot, onRobotMode, robot } from './robotState'
+import { onRobotMode, pokeRobot, robot } from './robotState'
+import { ReminderBubble } from './ReminderBubble'
 
 export function Hud(): React.JSX.Element {
   const [mode, setMode] = useState(robot.mode)
@@ -28,7 +29,7 @@ export function Hud(): React.JSX.Element {
           }}
           className="hotspot"
           aria-label={tr('Chọc Budkin')}
-          onClick={() => dispatchRobot({ type: 'poke', at: performance.now() })}
+          onClick={pokeRobot}
         />
       </div>
       <div className="scene-hud">
@@ -43,6 +44,7 @@ export function Hud(): React.JSX.Element {
           <span>z</span>
           <span>Z</span>
         </div>
+        <ReminderBubble />
       </div>
     </>
   )

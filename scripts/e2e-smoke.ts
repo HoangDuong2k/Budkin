@@ -11,12 +11,26 @@ import { mkdirSync, rmSync } from 'fs'
 import { join, resolve } from 'path'
 import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core'
 import type { ApiResponse, ArgsOf, Channel, DeskApi, ResultOf } from '../src/shared/api'
+import { localDateOf, pad2 } from '../src/shared/datetime'
 import { SCREEN_BG } from '../src/shared/palette'
 import type { Task } from '../src/shared/types'
 
 const ROOT = resolve(__dirname, '..')
 const OUT = join(ROOT, 'test-output', 'e2e')
 const USER_DATA = join(OUT, 'userdata')
+/** CI / WebGL vẽ bằng CPU: cảnh chỉ được vài khung hình mỗi giây — chờ lâu hơn */
+const SLOW = !!process.env.CI || !!process.env.BUDKIN_E2E_SWIFTSHADER
+const WAIT = SLOW ? 4 : 1
+
+/**
+ * Đồng hồ của app khi kiểm thử: 6:00 sáng hôm nay — việc cả ngày (nhắc lúc 9:00) không bỗng dưng báo động giữa chừng
+ * làm robot thôi nhìn theo chuột / không ngủ. Phần nhắc việc tự đẩy đồng hồ tới.
+ */
+const CLOCK_BASE = ((): number => {
+  const d = new Date()
+  d.setHours(6, 0, 0, 0)
+  return d.getTime() - Date.now()
+})()
 
 type Rgb = [number, number, number]
 interface Rect {
@@ -102,7 +116,7 @@ async function launch(extraEnv: Record<string, string> = {}): Promise<{ app: Ele
   const app = (appRef = await electron.launch({
     executablePath: exe ?? (require('electron') as unknown as string),
     args,
-    env: { ...process.env, BUDKIN_TEST: '1', BUDKIN_USER_DATA: USER_DATA, ...extraEnv } as Record<string, string>
+    env: { ...process.env, BUDKIN_TEST: '1', BUDKIN_USER_DATA: USER_DATA, BUDKIN_CLOCK_OFFSET: String(CLOCK_BASE), ...extraEnv } as Record<string, string>
   }))
   app.process().stderr?.on('data', (d: Buffer) => {
     for (const line of d.toString().split(/\r?\n/))
@@ -288,17 +302,25 @@ async function uiFlow(page: Page): Promise<void> {
 /** Cảnh 3D: robot nhìn theo chuột, bấm đèn đổi theme, chọc robot, không vẽ khi đứng yên, ngủ, mất WebGL → 2D */
 async function sceneFlow(page: Page): Promise<void> {
   const num = async (expr: string): Promise<number> => Number(await page.evaluate(expr))
-  // Cờ "đứng yên" chỉ cập nhật khi vẽ khung: chờ khung hình mới sau khi di chuột rồi mới chờ robot dừng
-  const settled = async (): Promise<boolean> => {
+  // Cờ "đứng yên" chỉ cập nhật khi vẽ khung: chờ khung hình mới sau khi di chuột rồi mới chờ robot dừng.
+  // Trong lúc chờ nhấn Shift để robot không buồn ngủ (kiểm thử rút ngắn còn 4 giây — máy CI chậm có thể chưa quay xong);
+  // Shift không đổi hướng nhìn và không làm gì trong app. Đo lúc robot ngủ thì không nhấn (sẽ đánh thức robot)
+  const settled = async (keepAwake = true): Promise<boolean> => {
     await page.waitForTimeout(250)
-    return until(async () => (await page.evaluate('window.__budkin.robot.settled')) === true, 5000)
+    const end = Date.now() + 5000 * WAIT
+    while (Date.now() < end) {
+      if ((await page.evaluate('window.__budkin.robot.settled')) === true) return true
+      if (keepAwake) await page.keyboard.press('Shift')
+      await page.waitForTimeout(300)
+    }
+    return false
   }
   const vp = await probe(page, (p) => p.stage.viewport)
 
   // Robot quay đầu theo con trỏ (kể cả khi con trỏ nằm trên giao diện trong màn hình).
   // Chờ hết hoạt cảnh đang dở (vd. vừa bật/tắt đèn thì robot quay sang nhìn đèn)
   await page.mouse.move(vp.width / 2, vp.height / 2, { steps: 3 })
-  await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'idle', 3000)
+  await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'idle', 3000 * WAIT)
   await page.mouse.move(4, vp.height / 2, { steps: 6 })
   await settled()
   const yawLeft = await num('window.__budkin.robot.headYaw')
@@ -344,6 +366,8 @@ async function sceneFlow(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 3 && idleFrames < 0; attempt++) {
     await page.mouse.move(vp.width / 2 + attempt * 7, vp.height - 30, { steps: 2 })
     await settled()
+    // Khung hình do lần nhấn Shift cuối (giữ robot thức) yêu cầu phải vẽ xong trước khi bắt đầu đếm
+    await page.waitForTimeout(250 * WAIT)
     const mode0 = await page.evaluate('window.__budkin.robot.mode')
     const f0 = await num('window.__budkin.renderStats.frames')
     await page.waitForTimeout(1200)
@@ -354,12 +378,15 @@ async function sceneFlow(page: Page): Promise<void> {
   assert((await probe(page, (p) => p.renderMode)) === '3d', 'đổi mức chất lượng (tạo lại canvas) vẫn ở chế độ 3D')
 
   // Lâu không thao tác (kiểm thử rút ngắn còn vài giây): robot ngủ, hiện "Zzz", cảnh không vẽ
-  assert(await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'sleep', 8000), 'lâu không thao tác: robot ngủ')
+  assert(await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'sleep', 8000 * WAIT), 'lâu không thao tác: robot ngủ')
   assert(await until(async () => page.locator('.zzz.on').isVisible(), 1500), 'robot ngủ: hiện "Zzz"')
   await page.screenshot({ path: join(OUT, '11-robot-sleep.png') })
+  // Chờ robot gục đầu, nhắm mắt xong (vẽ bằng CPU thì chậm hơn) rồi mới đo
+  await settled(false)
   const s0 = await num('window.__budkin.renderStats.frames')
   await page.waitForTimeout(1500)
-  assert((await num('window.__budkin.renderStats.frames')) === s0, 'robot ngủ: cảnh không vẽ khung nào')
+  const sleepFrames = (await num('window.__budkin.renderStats.frames')) - s0
+  assert(sleepFrames === 0, `robot ngủ: cảnh không vẽ khung nào (${sleepFrames} khung trong 1,5 giây)`)
   await page.mouse.move(vp.width / 2, vp.height - 20, { steps: 4 })
   assert(await until(async () => ['startled', 'idle'].includes(String(await page.evaluate('window.__budkin.robot.mode'))), 1500), 'di chuột: robot tỉnh dậy')
 
@@ -372,15 +399,101 @@ async function sceneFlow(page: Page): Promise<void> {
   await invoke(page, 'settings:update', { quality: 'balanced' })
 }
 
+/** Móc kiểm thử của main process (src/main/index.ts) */
+interface MainHooks {
+  clock: { now(): number }
+  notifications: Array<{ taskId: string | null; title: string; body: string }>
+  advance(ms: number): void
+}
+
+async function mainNow(app: ElectronApplication): Promise<number> {
+  return app.evaluate(() => (globalThis as unknown as { __budkin: MainHooks }).__budkin.clock.now())
+}
+
+async function notices(app: ElectronApplication): Promise<MainHooks['notifications']> {
+  return app.evaluate(() => (globalThis as unknown as { __budkin: MainHooks }).__budkin.notifications.slice())
+}
+
+/** Hạn 'YYYY-MM-DD' + 'HH:mm' theo giờ địa phương của thời điểm `ms` (làm tròn xuống phút) */
+function dueOf(ms: number): { dueDate: string; dueTime: string } {
+  const d = new Date(ms)
+  return { dueDate: localDateOf(ms), dueTime: `${pad2(d.getHours())}:${pad2(d.getMinutes())}` }
+}
+
+/**
+ * Nhắc việc (đẩy đồng hồ của app tới): "sắp đến hạn" → báo lại 10 phút → nhắc lại → "đến hạn" → hai nhắc cùng lúc
+ * (+1, không đè màn hình) → Xong (robot ăn mừng) → bỏ qua (robot dịu lại) → bấm robot: tóm tắt việc hôm nay
+ */
+async function reminderFlow(app: ElectronApplication, page: Page): Promise<void> {
+  const MIN = 60_000
+  const advance = (ms: number): Promise<void> => app.evaluate((_e, v) => (globalThis as unknown as { __budkin: MainHooks }).__budkin.advance(v), ms)
+  const reminder = page.locator('.bubble:not(.is-summary), .reminder-banner')
+  const mode = async (): Promise<string> => String(await page.evaluate('window.__budkin.robot.mode'))
+  const t0 = await mainNow(app)
+  const a = await value(page, 'tasks:create', { title: 'Gọi cho khách hàng', ...dueOf(t0 + 30 * MIN), remindBeforeMin: 15 })
+  await advance(16 * MIN)
+  assert(await until(async () => (await reminder.locator('.reminder-title').textContent().catch(() => '')) === a.title), 'tới giờ "sắp đến hạn": robot hiện nhắc việc')
+  assert(/Sắp đến hạn/.test((await reminder.locator('.reminder-kicker').textContent()) ?? ''), 'nhắc đầu tiên là "sắp đến hạn"')
+  assert(await until(async () => (await mode()) === 'alert'), 'robot báo động (đèn đỏ, nhún nhảy)')
+  const first = await notices(app)
+  assert(first.some((n) => n.taskId === a.id && /Sắp đến hạn/.test(n.body)), 'cửa sổ không có focus: có thông báo hệ điều hành "sắp đến hạn"')
+  // Bong bóng (nếu có — cửa sổ hẹp thì là banner trong màn hình) phải nằm trọn trong khoảng trống bên trái màn hình.
+  // Vị trí do khung hình kế tiếp của cảnh đặt: chờ một chút
+  let where = ''
+  const insideGap = (): Promise<boolean> =>
+    until(async () => {
+      if (!(await page.locator('.bubble').count())) return true
+      const box = await page.locator('.bubble').boundingBox()
+      const rect = await probe(page, (p) => p.stage.screenRect)
+      where = JSON.stringify({ box, screenX: rect.x })
+      return !!box && box.x >= 0 && box.y >= 0 && box.x + box.width <= rect.x
+    })
+  assert(await insideGap(), `bong bóng thoại nằm trong khoảng trống bên trái, không đè lên màn hình ${where}`)
+  await page.screenshot({ path: join(OUT, '12-reminder.png') })
+
+  await reminder.getByRole('button', { name: '10 phút', exact: true }).click()
+  assert(await until(async () => (await reminder.count()) === 0 && (await mode()) !== 'alert'), 'báo lại sau 10 phút: nhắc tạm tắt, robot dịu lại')
+  await advance(10 * MIN)
+  assert(await until(async () => (await reminder.count()) === 1), 'hết 10 phút: nhắc lại')
+  await advance(5 * MIN)
+  assert(await until(async () => /Đến hạn/.test((await reminder.locator('.reminder-kicker').textContent().catch(() => '')) ?? '')), 'tới giờ hạn: chuyển sang "đến hạn"')
+
+  const b = await value(page, 'tasks:create', { title: 'Nộp hồ sơ', ...dueOf(await mainNow(app)), remindBeforeMin: 0 })
+  assert(await until(async () => (await reminder.locator('.reminder-more').textContent().catch(() => '')) === '+1'), 'hai nhắc cùng lúc: hiện việc đầu tiên kèm "+1"')
+  assert(await insideGap(), `có "+1" vẫn không đè lên màn hình ${where}`)
+  await page.screenshot({ path: join(OUT, '13-reminder-two.png') })
+
+  const beforeDone = Number(await page.evaluate('performance.now()'))
+  await reminder.getByRole('button', { name: 'Xong', exact: true }).click()
+  assert(await until(async () => (await taskTitled(page, a.title))?.status === 'done'), 'bấm Xong trên nhắc việc: việc chuyển sang Đã xong')
+  // Hoạt cảnh ăn mừng chỉ dài 0,9 giây: kiểm tra mốc lần ăn mừng cuối thay vì cố bắt đúng lúc đang nhảy
+  assert(await until(async () => Number(await page.evaluate('window.__budkin.robot.state.lastCelebrateAt')) >= beforeDone), 'robot ăn mừng')
+  assert(await until(async () => (await reminder.locator('.reminder-title').textContent().catch(() => '')) === b.title), 'còn lại việc thứ hai')
+  await reminder.locator('.reminder-dismiss').click()
+  assert(
+    await until(async () => (await reminder.count()) === 0 && (await page.evaluate('window.__budkin.robot.state.alert')) === false),
+    'bấm × (bỏ qua): hết nhắc, robot dịu lại'
+  )
+
+  const hit = await probe(page, (p) => (p as unknown as { hit(): { robot: { x: number; y: number } } }).hit())
+  await page.mouse.click(hit.robot.x, hit.robot.y)
+  assert(await until(async () => /Hôm nay còn|Hết việc/.test((await page.locator('.bubble.is-summary').textContent().catch(() => '')) ?? '')), 'bấm vào robot: tóm tắt việc hôm nay')
+
+  // Ba việc sẽ đến hạn trong lúc app tắt (máy tắt / ngủ) — mở lại sau
+  const now = await mainNow(app)
+  for (const [i, title] of ['Việc lúc tắt máy 1', 'Việc lúc tắt máy 2', 'Việc lúc tắt máy 3'].entries())
+    await value(page, 'tasks:create', { title, ...dueOf(now + (i + 1) * 20 * MIN), remindBeforeMin: 0 })
+}
+
 async function main(): Promise<void> {
   // Chống treo (vd. hộp thoại chờ người bấm): quá 5 phút thì báo lỗi, đóng app và thoát
   setTimeout(() => {
-    const msg = `Kiểm thử bị treo quá 5 phút. Đã qua ${passed.length} bước, bước cuối: ${passed[passed.length - 1] ?? '(chưa có)'}`
+    const msg = `Kiểm thử bị treo quá ${SLOW ? 10 : 5} phút. Đã qua ${passed.length} bước, bước cuối: ${passed[passed.length - 1] ?? '(chưa có)'}`
     console.error(msg)
     annotate('error', `E2E ${process.platform} bị treo`, msg)
     appRef?.process().kill()
     process.exit(1)
-  }, 5 * 60_000).unref()
+  }, 5 * 60_000 * (SLOW ? 2 : 1)).unref()
   rmSync(OUT, { recursive: true, force: true })
   mkdirSync(OUT, { recursive: true })
 
@@ -456,6 +569,18 @@ async function main(): Promise<void> {
   )
   await uiFlow(page)
   await sceneFlow(page)
+  await app.evaluate(({ app: a }) => a.exit(0))
+
+  // ---- Nhắc việc ----
+  ;({ app, page } = await launch())
+  await until(async () => probe(page, (p) => p.data.getState().loaded), 5000)
+  await reminderFlow(app, page)
+  await app.evaluate(({ app: a }) => a.exit(0))
+  // Mở lại 2 giờ sau: ba nhắc đã quá giờ (trong vòng 6 giờ) gộp thành đúng một thông báo
+  ;({ app, page } = await launch({ BUDKIN_CLOCK_OFFSET: String(CLOCK_BASE + 2 * 3600_000) }))
+  const summary = await notices(app)
+  assert(summary.length === 1 && summary[0].taskId === null && summary[0].title === 'Bạn có 3 việc cần làm', `mở lại app sau khi tắt: đúng 1 thông báo gộp (${JSON.stringify(summary.map((n) => n.title))})`)
+  assert(await until(async () => (await page.locator('.reminder-more').textContent().catch(() => '')) === '+2'), 'mở lại app: robot vẫn báo các nhắc chưa xử lý (+2)')
   await app.evaluate(({ app: a }) => a.exit(0))
 
   // ---- Máy không có WebGL: chế độ 2D ----

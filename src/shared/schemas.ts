@@ -128,3 +128,6 @@ export const settingsPatchSchema = z.strictObject({
   reducedMotion: z.enum(['auto', 'on', 'off']).optional()
 })
 export type SettingsPatch = z.infer<typeof settingsPatchSchema>
+
+/** Báo lại / tắt nhắc: 1 phút … 1 ngày */
+export const minutesSchema = z.number().int().min(1).max(1440)

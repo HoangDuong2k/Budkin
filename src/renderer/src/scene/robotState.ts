@@ -1,5 +1,6 @@
 // Trạng thái robot đang chạy: máy trạng thái (logic/robotMachine) + hẹn giờ + giá trị cho kiểm thử
 import { TEST_TIMINGS, TIMINGS, initialState, nextDeadline, reduce, visibleMode, type RobotEvent, type VisibleMode } from './logic/robotMachine'
+import { showPokeSummary } from '../state/hudStore'
 import { requestFrame } from './renderLoop'
 import { playChirp } from './sound'
 
@@ -49,6 +50,19 @@ function schedule(): void {
   const at = nextDeadline(robot.state, cfg)
   if (!Number.isFinite(at)) return
   timer = setTimeout(() => dispatchRobot({ type: 'tick', at: performance.now() }), Math.max(0, at - performance.now()) + 5)
+}
+
+/** Có nhắc mới trong lúc đang báo động: nhún nhảy, nháy đèn nhanh lại từ đầu */
+export function pingAlert(): void {
+  if (robot.mode !== 'alert') return
+  robot.since = performance.now()
+  requestFrame()
+}
+
+/** Bấm vào robot: bẹp-giãn; không có nhắc đang chờ thì tóm tắt việc hôm nay */
+export function pokeRobot(): void {
+  dispatchRobot({ type: 'poke', at: performance.now() })
+  if (!robot.state.alert) showPokeSummary()
 }
 
 /** Người dùng thao tác: robot tỉnh (gộp bớt — chuột di liên tục không cần gọi máy trạng thái mỗi lần) */

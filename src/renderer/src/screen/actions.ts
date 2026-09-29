@@ -2,7 +2,10 @@
 import type { ArgsOf, Channel, ResultOf } from '../../../shared/api'
 import { tr } from '../../../shared/i18n'
 import type { Task, TaskStatus } from '../../../shared/types'
+import { nowParts } from '../clock'
 import { ApiError, call } from '../ipc'
+import { dispatchRobot } from '../scene/robotState'
+import { useData } from '../state/dataStore'
 import { useUi } from '../state/uiStore'
 
 export type RunResult<T> = { ok: true; value: T } | { ok: false }
@@ -27,9 +30,46 @@ export async function run<C extends Channel>(channel: C, ...args: ArgsOf<C>): Pr
   }
 }
 
+/** Hoàn thành việc: robot ăn mừng */
+function celebrate(): void {
+  dispatchRobot({ type: 'celebrate', at: performance.now() })
+}
+
 export async function toggleDone(task: Task): Promise<void> {
   const status: TaskStatus = task.status === 'done' ? 'todo' : 'done'
-  await run('tasks:setStatus', task.id, status)
+  const res = await run('tasks:setStatus', task.id, status)
+  if (res.ok && status === 'done') celebrate()
+}
+
+/** Thêm việc nhanh (phím N, nút trên thanh trên, menu khay): "Đã xong" / "Quá hạn" không có ô thêm việc → chuyển sang Hôm nay */
+export function startQuickAdd(): void {
+  const ui = useUi.getState()
+  if (ui.selection.kind === 'smart' && (ui.selection.id === 'done' || ui.selection.id === 'overdue')) ui.select({ kind: 'smart', id: 'today' })
+  if (ui.search) ui.setSearch('')
+  ui.focusQuickAdd()
+}
+
+/** Mở một việc trên màn hình: chọn danh sách có chứa nó rồi mở khung sửa */
+export function openTask(taskId: string): void {
+  const ui = useUi.getState()
+  const task = useData.getState().tasks[taskId]
+  ui.select({ kind: 'smart', id: task?.dueDate && task.dueDate <= nowParts().date ? 'today' : 'all' })
+  ui.openEditor(taskId)
+}
+
+// ---- Nhắc việc (bong bóng thoại của robot, banner trong màn hình) ----
+
+export async function completeReminder(taskId: string): Promise<void> {
+  const res = await run('tasks:setStatus', taskId, 'done')
+  if (res.ok) celebrate()
+}
+
+export async function snoozeReminder(taskId: string, minutes: number): Promise<void> {
+  await run('reminders:snooze', taskId, minutes)
+}
+
+export async function dismissReminder(taskId: string): Promise<void> {
+  await run('reminders:dismiss', taskId)
 }
 
 function short(title: string): string {

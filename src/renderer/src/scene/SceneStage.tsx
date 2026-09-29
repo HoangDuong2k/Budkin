@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import type { RenderReason } from '../../../shared/renderMode'
 import type { Quality } from '../../../shared/types'
 import { useData } from '../state/dataStore'
+import { bubbleWidthFor, useHud } from '../state/hudStore'
 import { Hud } from './Hud'
 import { projectPlaneRect, snapOutward } from './math/framing'
 import { CAMERA, cameraFor, sceneLayout } from './math/layout'
@@ -55,6 +56,9 @@ function StageSync({ stageRef, screenRef, dpr }: StageRefs & { dpr: [number, num
       stage.camera = pos
       stage.screenRect = rect
       stage.viewport = { width, height }
+      // Bong bóng thoại của robot có vừa khoảng trống bên trái màn hình không (không vừa: banner trong màn hình)
+      const bubbleWidth = bubbleWidthFor(rect.x)
+      if (useHud.getState().bubbleWidth !== bubbleWidth) useHud.setState({ bubbleWidth })
       state.setSize(width, height)
       state.setDpr(dpr)
       // Bố cục đổi → bóng của đèn bàn tính lại (bình thường không tính lại mỗi khung)
@@ -70,6 +74,7 @@ function StageSync({ stageRef, screenRef, dpr }: StageRefs & { dpr: [number, num
       ro.disconnect()
       stage.getR3F = null
       stage.ready = false
+      useHud.setState({ bubbleWidth: 0 })
       // Sang chế độ 2D: bỏ vị trí đặt tay để CSS của chế độ 2D có hiệu lực
       for (const k of ['left', 'top', 'width', 'height'] as const) screenEl.style[k] = ''
     }

@@ -1,11 +1,10 @@
 // Phần tử DOM của lớp HUD mà cảnh 3D đặt vị trí trực tiếp mỗi khung (không qua state React)
 export const hud = {
   zzz: null as HTMLElement | null,
-  /** Có phần tử cần bám theo đầu robot (bong bóng thoại) */
-  anchor: false,
-  /** Điểm trên đầu robot (CSS px) */
-  anchorX: 0,
-  anchorY: 0,
+  /** Bong bóng thoại bám theo đầu robot, và kích thước đo được của nó */
+  bubble: null as HTMLElement | null,
+  bubbleW: 0,
+  bubbleH: 0,
   lampButton: null as HTMLElement | null,
   robotButton: null as HTMLElement | null
 }

@@ -5,8 +5,10 @@ import { tr } from '../../../shared/i18n'
 import { useNow } from '../clock'
 import { useTheme } from '../state/themeStore'
 import { useUi } from '../state/uiStore'
+import { startQuickAdd } from './actions'
 import { Icon } from './icons'
 import { ListView } from './ListView'
+import { ReminderBanner } from './ReminderBanner'
 import { Sidebar } from './Sidebar'
 import { TaskEditor } from './TaskEditor'
 
@@ -20,13 +22,6 @@ function TopBar(): React.JSX.Element {
   useEffect(() => {
     if (searchFocus) ref.current?.focus()
   }, [searchFocus])
-  const addTask = (): void => {
-    const ui = useUi.getState()
-    // "Đã xong" / "Quá hạn" không có ô thêm việc: chuyển sang Hôm nay
-    if (ui.selection.kind === 'smart' && (ui.selection.id === 'done' || ui.selection.id === 'overdue')) ui.select({ kind: 'smart', id: 'today' })
-    if (ui.search) ui.setSearch('')
-    ui.focusQuickAdd()
-  }
   return (
     <header className="topbar">
       <button className="icon-btn" onClick={toggleSidebar} aria-label={tr('Ẩn / hiện thanh bên')}>
@@ -56,7 +51,7 @@ function TopBar(): React.JSX.Element {
           </button>
         )}
       </div>
-      <button className="btn primary small add-task" onClick={addTask} title={tr('Thêm việc (N)')}>
+      <button className="btn primary small add-task" onClick={startQuickAdd} title={tr('Thêm việc (N)')}>
         <Icon name="plus" size={14} />
         <span className="label">{tr('Thêm việc')}</span>
       </button>
@@ -118,8 +113,7 @@ function useShortcuts(): void {
       if (typing || e.ctrlKey || e.metaKey || e.altKey) return
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault()
-        if (ui.selection.kind === 'smart' && (ui.selection.id === 'done' || ui.selection.id === 'overdue')) ui.select({ kind: 'smart', id: 'today' })
-        ui.focusQuickAdd()
+        startQuickAdd()
       } else if (e.key === '/') {
         e.preventDefault()
         ui.focusSearch()
@@ -139,6 +133,7 @@ export function Shell(): React.JSX.Element {
       <TopBar />
       <Sidebar />
       <main className="main">
+        <ReminderBanner />
         <ListView />
       </main>
       <TaskEditor />
