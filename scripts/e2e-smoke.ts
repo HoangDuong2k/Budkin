@@ -656,12 +656,15 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
   const advance = (ms: number): Promise<void> => app.evaluate((_e, v) => (globalThis as unknown as { __budkin: MainHooks }).__budkin.advance(v), ms)
   const reminder = page.locator('.bubble:not(.is-summary), .reminder-banner')
   const mode = async (): Promise<string> => String(await page.evaluate('window.__budkin.robot.mode'))
+  // Phần này kiểm tra nhắc việc và bong bóng thoại (hoạt cảnh của robot đã kiểm tra ở sceneFlow / robotsFlow): giảm
+  // chuyển động để máy ảo vẽ bằng CPU khỏi quá tải vì robot nhún nhảy, ăn mừng chồng lên nhau lúc có nhắc việc
+  await value(page, 'settings:update', { reducedMotion: 'on' })
   const t0 = await mainNow(app)
   const a = await value(page, 'tasks:create', { title: 'Gọi cho khách hàng', ...dueOf(t0 + 30 * MIN), remindBeforeMin: 15 })
   await advance(16 * MIN)
   assert(await until(async () => (await reminder.locator('.reminder-title').textContent().catch(() => '')) === a.title), 'tới giờ "sắp đến hạn": robot hiện nhắc việc')
   assert(/Sắp đến hạn/.test((await reminder.locator('.reminder-kicker').textContent()) ?? ''), 'nhắc đầu tiên là "sắp đến hạn"')
-  assert(await until(async () => (await mode()) === 'alert'), 'robot báo động (đèn đỏ, nhún nhảy)')
+  assert(await until(async () => (await mode()) === 'alert'), 'robot vào trạng thái báo động')
   const first = await notices(app)
   assert(first.some((n) => n.taskId === a.id && /Sắp đến hạn/.test(n.body)), 'cửa sổ không có focus: có thông báo hệ điều hành "sắp đến hạn"')
   // Bong bóng (nếu có — cửa sổ hẹp thì là banner trong màn hình) phải nằm trọn trong khoảng trống bên trái màn hình.
@@ -716,6 +719,7 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
   await page.mouse.click(hit.robot.x, hit.robot.y)
   assert(await until(async () => /Hôm nay còn|Hết việc/.test(String(await page.evaluate('window.__summaryText'))), 3000), 'bấm vào robot: tóm tắt việc hôm nay')
 
+  await value(page, 'settings:update', { reducedMotion: 'auto' })
   // Ba việc sẽ đến hạn trong lúc app tắt (máy tắt / ngủ) — mở lại sau
   const now = await mainNow(app)
   for (const [i, title] of ['Việc lúc tắt máy 1', 'Việc lúc tắt máy 2', 'Việc lúc tắt máy 3'].entries())
