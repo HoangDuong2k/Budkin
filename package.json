@@ -23,6 +23,8 @@
     "screenshots": "tsx scripts/screenshots.ts",
     "stats:scene": "tsx scripts/scene-stats.ts",
     "perf:idle": "tsx scripts/perf-idle.ts",
+    "icons": "electron scripts/icons.cjs --no-sandbox",
+    "install-check": "tsx scripts/install-check.ts",
     "dist": "electron-vite build && electron-builder",
     "dist:win": "electron-vite build && electron-builder --win",
     "dist:linux": "electron-vite build && electron-builder --linux"

@@ -23,7 +23,8 @@ import { writeFileAtomicSync } from './fsutil'
 import { dataHandlers } from './handlers'
 import { registerAll } from './ipc'
 import { HIDDEN_ARG, isAutostartOn, setAutostart } from './os/autostart'
-import { AppTray, hasTrayHost, trayIcons } from './os/tray'
+import { appIcon } from './os/icon'
+import { AppTray, hasTrayHost } from './os/tray'
 import { Notifier, canFlash } from './reminders/notifier'
 import { ReminderService } from './reminders/service'
 import { BackupService, applyPendingRestore } from './services/backup'
@@ -211,7 +212,7 @@ function startReminders(): void {
   notifier = new Notifier({
     test: TEST,
     window: () => mainWindow,
-    icon: () => trayIcons().normal,
+    icon: () => appIcon(),
     open: (taskId) => showWindow(taskId ? { kind: 'task', taskId } : { kind: 'today' }),
     act: (taskId, action) => {
       try {
@@ -304,8 +305,24 @@ function applyTheme(theme: Theme): void {
   mainWindow?.setBackgroundColor(WINDOW_BG[theme])
 }
 
+/** Windows: bấm chuột phải vào biểu tượng trên thanh tác vụ có mục "Thêm việc nhanh" (theo ngôn ngữ đang dùng) */
+function setJumpList(): void {
+  if (process.platform !== 'win32' || !app.isPackaged || TEST) return
+  app.setUserTasks([
+    {
+      program: process.execPath,
+      arguments: '--quick-add',
+      iconPath: process.execPath,
+      iconIndex: 0,
+      title: tr('Thêm việc nhanh'),
+      description: tr('Mở Budkin, con trỏ đặt sẵn ở ô thêm việc')
+    }
+  ])
+}
+
 function onSettingsChanged(settings: Settings): void {
   setLang(settings.language)
+  setJumpList()
   send('settings:changed', settings)
   // Giờ nhắc task cả ngày có thể đã đổi; menu khay theo ngôn ngữ mới
   reminders?.poke()
@@ -414,6 +431,8 @@ function createWindow(): void {
     show: false,
     backgroundColor: WINDOW_BG[boot.theme],
     title: APP_NAME,
+    // Windows lấy icon từ file exe; Linux cần icon cho cửa sổ khi chưa có file .desktop (chạy thử, AppImage)
+    ...(process.platform === 'linux' ? { icon: appIcon() } : {}),
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -493,6 +512,7 @@ else {
       return
     }
     registerIpc()
+    setJumpList()
     startReminders()
     // Khay: không tạo khi kiểm thử (khỏi hiện biểu tượng trên máy người chạy test)
     trayHost = !TEST && (await hasTrayHost())

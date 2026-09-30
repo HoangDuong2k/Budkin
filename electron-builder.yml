@@ -15,6 +15,8 @@ files:
 toolsets:
   appimage: '1.0.3'
 win:
+  # Icon (mặt robot) sinh từ build/icon-src bằng npm run icons
+  icon: build/icon.ico
   target:
     - target: nsis
       arch: [x64]
@@ -29,14 +31,33 @@ nsis:
   createDesktopShortcut: always
   createStartMenuShortcut: true
   runAfterFinish: true
+  shortcutName: Budkin
+  uninstallDisplayName: Budkin
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  # Gỡ cài đặt giữ lại dữ liệu người dùng (%APPDATA%\Budkin) — cài lại vẫn còn việc; muốn xoá hẳn thì xoá thư mục đó
   include: build/installer.nsh
   artifactName: ${productName}-Setup-${version}.${ext}
 linux:
   # deb là gói chính cho Ubuntu (tự cài profile AppArmor cho sandbox của Chromium trên Ubuntu 24.04+).
   # Không đặt executableArgs: AppRun của AppImage tự thêm --no-sandbox khi cần, còn deb thì không được thêm.
   target: [deb, AppImage]
+  icon: build/icons
   category: Office
   maintainer: Hoang Duong <hoangdv@stringee.com>
   synopsis: Quản lý công việc trên bàn làm việc 3D
   # Đồng bộ tên file .desktop với app_id trên Wayland (biểu tượng đúng trên thanh dock, thông báo đúng tên app)
   syncDesktopName: true
+  desktop:
+    entry:
+      GenericName: Quản lý công việc
+      GenericName[en]: Task manager
+      Comment[en]: Task manager on a 3D desk — the Budkin robot reminds you when things are due
+      Keywords: task;todo;reminder;kanban;calendar;việc;viec;nhắc việc;nhac viec;lịch;lich;
+      # Bấm chuột phải vào biểu tượng trên dock: Thêm việc nhanh
+      Actions: QuickAdd;
+    desktopActions:
+      QuickAdd:
+        Name: Thêm việc nhanh
+        Name[en]: Quick add a task
+        Exec: /opt/Budkin/budkin --quick-add

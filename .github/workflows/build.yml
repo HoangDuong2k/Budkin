@@ -44,7 +44,7 @@ jobs:
           path: test-output/e2e/*.png
           if-no-files-found: ignore
 
-  # Đóng gói bộ cài, rồi chạy e2e lần nữa trên chính bản đã đóng gói
+  # Đóng gói bộ cài, cài thật rồi chạy e2e trên bản đã cài, gỡ cài đặt
   build:
     needs: test
     strategy:
@@ -60,19 +60,64 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run dist -- --publish never
-      - name: E2E trên bản đóng gói (Windows)
+      # Windows: cài bằng chính bộ cài (im lặng, cho người dùng hiện tại) → e2e trên bản đã cài → lối tắt, "khởi động
+      # cùng máy", --quick-add → gỡ cài đặt: mục tự khởi động, lối tắt, file cài đặt biến mất; dữ liệu người dùng còn
+      - name: Cài Setup.exe, kiểm thử bản đã cài, gỡ cài đặt (Windows)
         if: runner.os == 'Windows'
-        shell: bash
-        run: BUDKIN_E2E_EXE="$PWD/release/win-unpacked/Budkin.exe" BUDKIN_E2E_WINDOW=1000x660 npm run e2e
-      - name: E2E trên bản đóng gói (Linux)
-        if: runner.os == 'Linux'
-        run: BUDKIN_E2E_EXE="$PWD/release/linux-unpacked/budkin" xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e
-      # Ubuntu 24.04+ chặn user namespace: bản deb phải tự cài profile AppArmor thì sandbox của Chromium mới chạy
-      - name: Cài bản .deb rồi kiểm thử mà không tắt sandbox
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Get-ChildItem release\Budkin-Setup-*.exe)[0].FullName
+          Start-Process $setup -ArgumentList '/S' -Wait
+          $dir = "$env:LOCALAPPDATA\Programs\Budkin"
+          $exe = "$dir\Budkin.exe"
+          if (-not (Test-Path $exe)) { throw "Cài xong không thấy $exe" }
+          $links = @("$([Environment]::GetFolderPath('Desktop'))\Budkin.lnk", "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Budkin.lnk")
+          foreach ($l in $links) { if (-not (Test-Path $l)) { throw "Thiếu lối tắt $l" } }
+          Write-Host "Đã cài: $exe, có lối tắt Desktop và Start Menu"
+
+          $env:BUDKIN_E2E_EXE = $exe
+          $env:BUDKIN_E2E_WINDOW = '1000x660'
+          npm run e2e
+          if ($LASTEXITCODE) { throw 'E2E trên bản đã cài thất bại' }
+          npm run install-check -- --keep-autostart
+          if ($LASTEXITCODE) { throw 'Kiểm tra bản đã cài thất bại' }
+
+          $run = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+          Start-Process "$dir\Uninstall Budkin.exe" -ArgumentList '/S' -Wait
+          # Bộ gỡ tự chép ra thư mục tạm rồi mới chạy: chờ tới khi file cài đặt biến mất
+          for ($i = 0; $i -lt 90 -and (Test-Path $exe); $i++) { Start-Sleep 1 }
+          if (Test-Path $exe) { throw 'Gỡ cài đặt xong vẫn còn Budkin.exe' }
+          if (Get-ItemProperty $run -Name 'com.budkin.app' -ErrorAction SilentlyContinue) { throw 'Gỡ cài đặt không xoá mục tự khởi động' }
+          foreach ($l in $links) { if (Test-Path $l) { throw "Gỡ cài đặt còn sót lối tắt $l" } }
+          if (-not (Test-Path "$env:APPDATA\Budkin\budkin.db")) { throw 'Gỡ cài đặt xoá mất dữ liệu người dùng' }
+          Write-Host 'Gỡ cài đặt: hết mục tự khởi động và lối tắt, dữ liệu người dùng vẫn còn'
+      # AppImage: chạy e2e trên chính file AppImage (giải nén rồi chạy — máy CI không chắc có FUSE)
+      - name: E2E trên bản AppImage (Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y ./release/*.deb
+          APPIMAGE_EXTRACT_AND_RUN=1 BUDKIN_E2E_EXE="$(ls "$PWD"/release/Budkin-*.AppImage)" \
+            xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e
+      # Ubuntu 24.04+ chặn user namespace: bản deb phải tự cài profile AppArmor thì sandbox của Chromium mới chạy
+      - name: Cài .deb, kiểm thử không tắt sandbox, gỡ cài đặt (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          set -e
+          sudo apt-get install -y ./release/budkin_*.deb
+          test -x /opt/Budkin/budkin
+          ls -l /etc/apparmor.d/budkin || echo '(không có profile AppArmor: máy không bật AppArmor)'
+          test -f /usr/share/icons/hicolor/256x256/apps/budkin.png
+          grep -q '^Actions=QuickAdd;' /usr/share/applications/budkin.desktop
+          sudo apt-get install -y desktop-file-utils > /dev/null
+          desktop-file-validate /usr/share/applications/budkin.desktop
           BUDKIN_E2E_EXE=/opt/Budkin/budkin BUDKIN_E2E_SANDBOX=1 xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e
+          BUDKIN_E2E_EXE=/opt/Budkin/budkin BUDKIN_E2E_SANDBOX=1 xvfb-run -a -s "-screen 0 1920x1080x24" npm run install-check
+          sudo apt-get remove -y budkin
+          test ! -e /opt/Budkin/budkin
+          test ! -e /usr/share/applications/budkin.desktop
+          test ! -e /etc/apparmor.d/budkin
+          test -f "$HOME/.config/Budkin/budkin.db"
+          echo 'Gỡ cài đặt: hết file cài đặt và profile AppArmor, dữ liệu người dùng vẫn còn'
       - uses: actions/upload-artifact@v4
         with:
           name: budkin-${{ runner.os }}
@@ -81,3 +126,24 @@ jobs:
             release/*.AppImage
             release/*.deb
           if-no-files-found: error
+
+  # Phát hành: đẩy tag v* (vd. git tag v0.1.0 && git push origin v0.1.0) → sau khi build + kiểm thử bản cài đều qua,
+  # tạo GitHub Release kèm bộ cài Windows, .deb, AppImage và mã băm SHA-256
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: budkin-*
+          path: dist
+          merge-multiple: true
+      - name: Mã băm SHA-256
+        run: cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

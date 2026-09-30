@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Icon khay khi có nhắc việc chưa xử lý: đèn ăng-ten đỏ và chấm đỏ góc trên -->
+  <rect x="30" y="9" width="4" height="12" rx="2" fill="#7d838a"/>
+  <circle cx="32" cy="9" r="6" fill="#ff4b4b" stroke="#141517" stroke-width="2"/>
+  <rect x="4" y="19" width="56" height="41" rx="13" fill="#ebe7e0" stroke="#141517" stroke-width="2.5"/>
+  <rect x="10" y="25" width="44" height="29" rx="9" fill="#0e1012"/>
+  <rect x="20" y="30" width="9" height="16" rx="4.5" fill="#5ae3d8"/>
+  <rect x="35" y="30" width="9" height="16" rx="4.5" fill="#5ae3d8"/>
+  <circle cx="51" cy="13" r="11" fill="#ff4b4b" stroke="#141517" stroke-width="3"/>
+</svg>

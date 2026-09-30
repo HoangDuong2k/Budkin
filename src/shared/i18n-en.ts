@@ -189,6 +189,7 @@ export const EN: Record<string, string> = {
   // Khay hệ thống, chạy nền
   'Mở Budkin': 'Open Budkin',
   'Thêm việc nhanh': 'Quick add a task',
+  'Mở Budkin, con trỏ đặt sẵn ở ô thêm việc': 'Opens Budkin with the cursor in the new-task box',
   '{n} việc cần làm hôm nay': '{n} tasks due today',
   'Không có việc đến hạn': 'Nothing due today',
   'Tắt nhắc 1 giờ': 'Mute reminders for 1 hour',

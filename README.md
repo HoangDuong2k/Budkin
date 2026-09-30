@@ -1,8 +1,11 @@
+<p align="center"><img src="build/icons/128x128.png" width="112" alt="Biểu tượng Budkin"></p>
+
 # Budkin
 
-Ứng dụng desktop quản lý công việc (Windows / Ubuntu, giao diện **tiếng Việt / English**) với giao diện là **một bàn làm việc 3D**:
+Ứng dụng desktop quản lý công việc (Windows / Ubuntu, giao diện **tiếng Việt / English**) với giao diện là **một bàn làm
+việc 3D**:
 
-- **Máy tính ở giữa** — màn hình của nó chính là nơi quản lý task (danh sách, Kanban, lịch).
+- **Máy tính ở giữa** — màn hình của nó chính là nơi quản lý việc (danh sách, Kanban, lịch).
 - **Budkin, chú robot nhỏ bên trái** — luôn nhìn theo con trỏ chuột, báo hiệu khi có việc sắp đến hạn / đến hạn.
 - **Đèn bàn bên phải** — bật / tắt đèn để đổi giữa hai theme.
 
@@ -15,9 +18,52 @@ robot phát sáng.
 |---|---|
 | ![Bàn làm việc khi bật đèn](docs/screenshots/desk-day.png) | ![Bàn làm việc khi tắt đèn](docs/screenshots/desk-night.png) |
 
-> Đang phát triển theo từng mốc (M0 → M8). Đã xong: khung dự án, dữ liệu (SQLite), giao diện quản lý việc trên màn hình,
-> cảnh 3D (robot nhìn theo chuột, đèn đổi theme), nhắc việc và chạy nền, Kanban & Lịch, việc lặp lại, Cài đặt, xuất /
-> nhập dữ liệu và sao lưu. Tiếp theo: đóng gói, phát hành.
+Dữ liệu chỉ nằm trên máy của bạn, không cần tài khoản, không gửi đi đâu.
+
+## Tải và cài đặt
+
+Bộ cài có ở trang [Releases](https://github.com/HoangDuong2k/Budkin/releases) (khi đã phát hành), hoặc bản build mới
+nhất trong tab **Actions** → lần chạy xanh gần nhất của nhánh `main` → mục **Artifacts** (`budkin-Windows`,
+`budkin-Linux`; cần đăng nhập GitHub). Muốn tự đóng gói thì xem [Đóng gói bộ cài](#đóng-gói-bộ-cài).
+
+### Windows 10 / 11
+
+1. Chạy `Budkin-Setup-x.y.z.exe`. Bộ cài cho người dùng hiện tại, không cần quyền Administrator; có lối tắt trên
+   Desktop và Start Menu.
+2. Bộ cài chưa ký số nên SmartScreen có thể chặn lần chạy đầu (**"Windows protected your PC"**): bấm **More info**
+   rồi **Run anyway** (Windows tiếng Việt có hai nút tương ứng).
+
+Bấm chuột phải vào biểu tượng Budkin trên thanh tác vụ có mục **Thêm việc nhanh**.
+
+### Ubuntu 24.04 trở lên
+
+```bash
+sudo apt install ./budkin_x.y.z_amd64.deb
+```
+
+Mở Budkin từ danh sách ứng dụng (hoặc lệnh `budkin`). Gói `.deb` tự cài profile AppArmor để sandbox của Chromium chạy
+được trên Ubuntu 24.04+. Bấm chuột phải vào biểu tượng trên dock có mục **Thêm việc nhanh**.
+
+Muốn có biểu tượng ở **khay hệ thống** (chạy nền để nhắc việc, menu nhanh), cần bật tiện ích AppIndicator — xem
+[Xử lý sự cố](#xử-lý-sự-cố).
+
+### AppImage (bản chạy không cần cài, cho các bản Linux khác)
+
+```bash
+chmod +x Budkin-x.y.z.AppImage
+./Budkin-x.y.z.AppImage
+```
+
+Không cần cài `libfuse2`. Máy không có FUSE thì chạy `./Budkin-x.y.z.AppImage --appimage-extract-and-run`.
+
+### Gỡ cài đặt
+
+- **Windows:** Settings → Apps → Budkin → Uninstall. Mục "khởi động cùng Windows" được xoá theo.
+- **Ubuntu:** `sudo apt remove budkin`. Nếu đã bật "Khởi động cùng máy", tắt trong Cài đặt trước khi gỡ (hoặc xoá
+  `~/.config/autostart/budkin.desktop`).
+
+Gỡ cài đặt **không xoá dữ liệu** — cài lại là còn nguyên việc. Muốn xoá hẳn thì xoá thư mục dữ liệu:
+`%APPDATA%\Budkin` (Windows) hoặc `~/.config/Budkin` (Ubuntu).
 
 ## Danh sách, Kanban, Lịch
 
@@ -25,11 +71,13 @@ robot phát sáng.
 |---|---|
 | ![Kanban](docs/screenshots/kanban.png) | ![Lịch](docs/screenshots/calendar.png) |
 
+- **Danh sách:** Hôm nay, Sắp tới, Quá hạn, Tất cả, Đã xong; dự án và nhãn ở thanh bên; tìm kiếm không cần gõ dấu
+  ("bao cao" ra "Báo cáo"). Mỗi việc có hạn, giờ, nhắc việc, ưu tiên, dự án, nhãn, checklist, ghi chú.
 - **Kanban:** 3 cột Cần làm / Đang làm / Đã xong, kéo thả thẻ bằng chuột (hoặc bàn phím: Tab tới thẻ, Space nhấc lên,
   phím mũi tên di chuyển, Space thả). Kéo sang "Đã xong" là Budkin ăn mừng.
 - **Lịch:** tháng hoặc tuần; kéo việc sang ngày khác để đổi hạn (nhắc việc tự đặt lại), kéo lên dải "Chưa có hạn" để bỏ
   hạn, kéo việc chưa có hạn xuống một ngày để xếp lịch.
-- Cả hai đều lọc theo dự án / nhãn đang chọn và ô tìm kiếm.
+- Kanban và Lịch đều lọc theo dự án / nhãn đang chọn và ô tìm kiếm.
 - **Chế độ Mở rộng** (phím **F**): giao diện phủ gần kín cửa sổ, cảnh 3D tạm dừng — tiện khi cửa sổ nhỏ.
 
 Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm · **F** Mở rộng · **Esc** đóng / thoát ·
@@ -50,16 +98,15 @@ Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm 
 ## Nhắc việc, chạy nền
 
 - Mỗi việc có hạn đặt được mức nhắc: không nhắc, đúng giờ, hoặc trước N phút / giờ / ngày (nhắc "sắp đến hạn" rồi
-  nhắc lần nữa lúc "đến hạn"). Việc cả ngày nhắc lúc 9:00.
+  nhắc lần nữa lúc "đến hạn"). Việc cả ngày nhắc lúc 9:00 (đổi được trong Cài đặt).
 - Tới giờ, **Budkin** báo động (đèn đỏ, nhún nhảy, kêu bíp) và hiện bong bóng thoại: **Xong**, **10 phút** (báo lại),
   **Mở**, **×** (bỏ qua). Cửa sổ thu hẹp hoặc chế độ 2D thì nhắc việc hiện thành banner ngay trong màn hình.
 - Khi đang không dùng app (cửa sổ ẩn / không có focus) thì có thêm thông báo của hệ điều hành. Nhiều việc cùng lúc
   (từ 3 việc) gộp thành một thông báo; nhắc trễ quá 6 giờ (máy tắt, ngủ qua đêm) thì chỉ ghi nhận, không báo.
 - Bấm nút đóng: lần đầu Budkin hỏi ẩn xuống khay (vẫn nhắc việc) hay thoát hẳn. Thoát hẳn lúc nào cũng được bằng
   **Ctrl+Q** hoặc menu ở khay. Menu khay còn có: thêm việc nhanh, tắt nhắc 1 giờ, khởi động cùng máy.
-- **Ubuntu không có khay hệ thống** nếu chưa bật tiện ích AppIndicator: khi đó nút đóng chỉ thu nhỏ cửa sổ. Bật khay:
-  `sudo apt install gnome-shell-extension-appindicator`, rồi bật "Ubuntu AppIndicators" trong ứng dụng Extensions
-  (đăng xuất / đăng nhập lại nếu chưa thấy).
+- App mở cả ngày mà gần như không tốn gì: cảnh 3D chỉ vẽ khi có gì đổi; để yên thì robot buồn ngủ rồi ngủ, lúc đó
+  cả cửa sổ không phải vẽ lại.
 
 ## Cài đặt, dữ liệu, sao lưu
 
@@ -74,8 +121,7 @@ Mở **Cài đặt** bằng nút bánh răng ở chân thanh bên hoặc **Ctrl+
   2D; trên Wayland có thêm lựa chọn chạy qua XWayland. Đổi chế độ thì bấm **Khởi động lại** để áp dụng.
 - **Dữ liệu:** xuất / nhập, sao lưu, mở thư mục dữ liệu.
 
-Dữ liệu chỉ nằm trên máy (SQLite trong thư mục dữ liệu của app: `~/.config/Budkin` trên Linux, `%APPDATA%\Budkin`
-trên Windows), không cần tài khoản.
+Dữ liệu (SQLite) nằm trong thư mục dữ liệu của app: `~/.config/Budkin` trên Linux, `%APPDATA%\Budkin` trên Windows.
 
 - **Xuất dữ liệu:** toàn bộ việc, dự án, nhãn, checklist ra một file JSON (kèm các việc đã xoá, để gộp giữa hai máy
   thì việc xoá bên này cũng xoá bên kia). Trạng thái nhắc việc và các thiết lập riêng của máy không đi theo file.
@@ -84,8 +130,39 @@ trên Windows), không cần tài khoản.
   chối mà không ghi gì. Trước mỗi lần nhập Budkin tự sao lưu; nhắc việc đã qua giờ trong file không báo dồn lại.
 - **Sao lưu tự động** mỗi ngày một bản, giữ 7 ngày gần nhất; thêm **Sao lưu ngay** khi cần. **Khôi phục** một bản thì
   Budkin khởi động lại rồi mới thay dữ liệu; dữ liệu ngay trước lúc khôi phục vẫn được giữ trong một bản sao lưu riêng.
+- **Chuyển sang máy khác:** Xuất dữ liệu ở máy cũ → Nhập (Thay thế) ở máy mới.
 
-## Cài đặt để phát triển
+## Xử lý sự cố
+
+**Ubuntu: không thấy biểu tượng Budkin ở khay hệ thống, bấm nút đóng thì cửa sổ chỉ thu nhỏ.** GNOME mặc định không có
+khay. Cài và bật tiện ích AppIndicator rồi đăng xuất / đăng nhập lại:
+
+```bash
+sudo apt install gnome-shell-extension-appindicator
+```
+
+rồi bật **Ubuntu AppIndicators** trong ứng dụng **Extensions**.
+
+**Không thấy thông báo nhắc việc.** Thông báo của hệ điều hành chỉ hiện khi bạn đang không dùng Budkin (cửa sổ ẩn hoặc
+đang ở app khác) — lúc đang dùng thì Budkin báo ngay trên bàn. Kiểm tra: Budkin không bị **Tạm tắt nhắc** (Cài đặt →
+Nhắc việc); hệ điều hành không ở chế độ **Không làm phiền** / **Focus assist**; Budkin được phép gửi thông báo
+(Ubuntu: Settings → Notifications; Windows: Settings → System → Notifications).
+
+**Ubuntu: chạy báo lỗi sandbox** (`The SUID sandbox helper binary was found, but is not configured correctly` hoặc
+`No usable sandbox`). Ubuntu 24.04+ chặn user namespace cho app không có profile AppArmor: dùng bản `.deb` (tự cài
+profile), còn AppImage tự chạy với `--no-sandbox` khi cần. Chạy từ mã nguồn thì dùng `npm run dev:linux`.
+
+**Cảnh 3D đen, giật hoặc app chậm (máy ảo, GPU / driver lỗi).** Cài đặt → Hiển thị → **3D bằng CPU** (máy yếu nên để
+chất lượng Tiết kiệm) hoặc **Chỉ 2D**, rồi Khởi động lại. Budkin tự chuyển sang 2D khi máy không có WebGL, khi cảnh 3D
+lỗi, hoặc khi GPU gặp lỗi 2 lần liên tiếp. Nếu cửa sổ không hiện được gì, đặt `"render": "2d"` trong file `boot.json`
+ở thư mục dữ liệu rồi mở lại.
+
+**Gõ tiếng Việt bị lỗi trên Wayland** (ibus-bamboo, fcitx5-unikey…). Cài đặt → Hiển thị → bật **Chạy qua XWayland** →
+Khởi động lại.
+
+**Muốn quay lại dữ liệu hôm trước.** Cài đặt → Dữ liệu → chọn bản sao lưu → **Khôi phục** (Budkin khởi động lại).
+
+## Phát triển
 
 Yêu cầu: **Node.js 24** (trùng bản Node trong Electron 44 — cần cho `node:sqlite` khi chạy unit test), Git.
 
@@ -99,16 +176,19 @@ npm run dev:linux           # trên Linux nếu gặp lỗi "SUID sandbox helper
 
 Electron 44 tải file chạy ở lần dùng đầu tiên (không có script postinstall).
 
-## Kiểm thử
+### Kiểm thử
 
 ```bash
 npm run typecheck
-npm test                    # vitest: toán khung hình, nhắc việc, dữ liệu, i18n, cấu hình
+npm test                    # vitest: toán khung hình, nhắc việc, dữ liệu, xuất / nhập, sao lưu, i18n, cấu hình
 npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột / bàn phím, ảnh chụp trong test-output/e2e/
 ```
 
 - Máy không có GPU (CI, máy ảo): `BUDKIN_E2E_SWIFTSHADER=1 npm run e2e` — WebGL vẽ bằng CPU.
-- Kiểm thử bản đã đóng gói: `BUDKIN_E2E_EXE=release/linux-unpacked/budkin npm run e2e`.
+- Kiểm thử bản đã đóng gói / đã cài: `BUDKIN_E2E_EXE=release/linux-unpacked/budkin npm run e2e` (hoặc đường dẫn tới
+  file AppImage, `/opt/Budkin/budkin`, `Budkin.exe` đã cài). `npm run install-check` kiểm tra thêm phần chỉ bản cài
+  mới có: `--quick-add`, mục "khởi động cùng máy" của hệ điều hành, thư mục dữ liệu mặc định (dùng dữ liệu thật của
+  máy — chạy trên máy mình thì đặt `XDG_CONFIG_HOME` sang thư mục tạm).
 - Linux không có màn hình (CI): `xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e`. Trên máy có màn hình, cửa sổ app
   hiện lên trong lúc chạy e2e (không giành focus); cài `xvfb` để chạy ẩn. Phiên đăng nhập Wayland (Ubuntu mặc định) thì
   phải bỏ biến Wayland, không thì app vẫn mở lên màn hình thật:
@@ -120,24 +200,34 @@ npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột
   renderer < 2%, GPU < 3%, robot ngủ gần 0): `npm run build && npm run perf:idle`. Chạy dài để tìm rò rỉ bộ nhớ:
   `npm run perf:idle -- --soak 120` (120 phút, mỗi phút ghi bộ nhớ). Kết quả trong `test-output/perf/`.
 
-## Đóng gói bộ cài
+### Đóng gói bộ cài
 
 | Hệ điều hành | Lệnh (chạy trên chính hệ điều hành đó) | Kết quả trong `release/` |
 |---|---|---|
-| **Windows** | `npm ci` rồi `npm run dist:win` | `Budkin-Setup-x.y.z.exe` (cài cho người dùng hiện tại, không cần quyền Administrator) |
-| **Ubuntu** | `npm ci` rồi `npm run dist:linux` | `.deb` (khuyên dùng) và `.AppImage` |
+| **Windows** | `npm ci` rồi `npm run dist:win` | `Budkin-Setup-x.y.z.exe` |
+| **Ubuntu** | `npm ci` rồi `npm run dist:linux` | `budkin_x.y.z_amd64.deb` và `Budkin-x.y.z.AppImage` |
 
-- **deb** tự cài profile AppArmor để sandbox của Chromium chạy được trên Ubuntu 24.04+.
-- **AppImage** dùng runtime tĩnh (không cần `libfuse2`); tự thêm `--no-sandbox` khi hệ điều hành chặn user namespace.
+Icon (mặt robot) vẽ bằng SVG trong `build/icon-src/`; sửa xong thì chạy `npm run icons` (máy không có màn hình:
+`xvfb-run -a npm run icons`) để sinh lại PNG các cỡ, `build/icon.ico` và icon khay.
 
-**GitHub Actions** (`.github/workflows/build.yml`) chạy trên máy Windows và Ubuntu thật: kiểm tra kiểu, unit test, build,
-e2e (WebGL bằng SwiftShader), đóng gói rồi e2e lại trên bản đã đóng gói; trên Ubuntu còn cài bản `.deb` và chạy e2e
-**không** tắt sandbox để chắc chắn profile AppArmor hoạt động.
+**GitHub Actions** (`.github/workflows/build.yml`) chạy trên máy Windows và Ubuntu thật:
 
-## Kiến trúc
+- **test:** kiểm tra kiểu, unit test, build, e2e (WebGL bằng SwiftShader).
+- **build:** đóng gói, rồi kiểm thử trên bản cài thật — Windows: cài `Setup.exe` im lặng, e2e trên bản đã cài, kiểm tra
+  lối tắt, "khởi động cùng máy", rồi gỡ cài đặt (mục tự khởi động và lối tắt phải biến mất, dữ liệu người dùng phải
+  còn). Ubuntu: e2e trên AppImage; cài `.deb`, e2e **không** tắt sandbox (profile AppArmor), kiểm tra file `.desktop`,
+  icon, "khởi động cùng máy", rồi gỡ gói.
+- **release:** đẩy tag `v*` (`git tag v0.1.0 && git push origin v0.1.0`) thì tạo GitHub Release kèm bộ cài và
+  `SHA256SUMS.txt`.
 
-- `src/main` — main process: cửa sổ, IPC (kiểm tra tham số bằng zod), SQLite (`node:sqlite`), nhắc việc, khay hệ thống.
+### Kiến trúc
+
+- `src/main` — main process: cửa sổ, IPC (kiểm tra tham số bằng zod), SQLite (`node:sqlite`), nhắc việc, khay hệ thống,
+  xuất / nhập, sao lưu.
 - `src/preload` — mở `window.api` (sandbox) cho renderer.
 - `src/renderer` — React: cảnh 3D (React Three Fiber) + lớp DOM đặt khít lên màn hình máy tính 3D (chữ sắc nét,
   bộ gõ tiếng Việt chạy bình thường) + chế độ 2D khi máy không có WebGL.
-- `src/shared` — kiểu dữ liệu, hợp đồng IPC, i18n, bảng màu dùng chung.
+- `src/shared` — kiểu dữ liệu, hợp đồng IPC, i18n, bảng màu, định dạng file xuất dùng chung.
+
+Phông chữ Be Vietnam Pro, Oswald, JetBrains Mono dùng theo giấy phép SIL Open Font License
+(`src/renderer/src/assets/fonts/OFL.txt`).
