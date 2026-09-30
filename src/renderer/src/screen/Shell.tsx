@@ -113,10 +113,11 @@ function TopBar(): React.JSX.Element {
 function Toasts(): React.JSX.Element {
   const toasts = useUi((s) => s.toasts)
   const dismiss = useUi((s) => s.dismissToast)
+  const hold = useUi((s) => s.holdToast)
   return (
     <div className="toasts" aria-live="polite">
       {toasts.map((t) => (
-        <div key={t.id} className={`toast ${t.tone ?? ''}`}>
+        <div key={t.id} className={`toast ${t.tone ?? ''}`} onPointerEnter={() => hold(t.id, true)} onPointerLeave={() => hold(t.id, false)}>
           <span>{t.text}</span>
           {t.action && (
             <button

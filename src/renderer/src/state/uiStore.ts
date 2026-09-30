@@ -39,6 +39,8 @@ interface UiState {
   toggleSidebar: () => void
   toast: (t: Omit<Toast, 'id'>) => void
   dismissToast: (id: number) => void
+  /** Con trỏ đang ở trên toast: không tự tắt (đang định bấm "Hoàn tác"); rời ra thì tắt sau một lúc */
+  holdToast: (id: number, hold: boolean) => void
   focusQuickAdd: () => void
   focusSearch: () => void
   setExpanded: (expanded: boolean) => void
@@ -61,6 +63,14 @@ function loadPrefs(): Partial<Pick<UiState, 'view' | 'selection' | 'sidebarOpen'
 
 const prefs = loadPrefs()
 let toastSeq = 0
+const toastTimers = new Map<number, ReturnType<typeof setTimeout>>()
+/** Kiểm thử trên máy ảo chậm: toast ở lâu hơn để kịp bấm */
+const TOAST_SCALE = window.api.boot.test ? 3 : 1
+
+function armToast(id: number, ms: number): void {
+  clearTimeout(toastTimers.get(id))
+  toastTimers.set(id, setTimeout(() => useUi.getState().dismissToast(id), ms * TOAST_SCALE))
+}
 
 export const useUi = create<UiState>((set, get) => ({
   view: prefs.view === 'kanban' || prefs.view === 'calendar' ? prefs.view : 'list',
@@ -85,9 +95,18 @@ export const useUi = create<UiState>((set, get) => ({
   toast: (t) => {
     const id = ++toastSeq
     set({ toasts: [...get().toasts.slice(-2), { ...t, id }] })
-    setTimeout(() => get().dismissToast(id), t.action ? 6000 : 3500)
+    armToast(id, t.action ? 6000 : 3500)
   },
-  dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
+  dismissToast: (id) => {
+    clearTimeout(toastTimers.get(id))
+    toastTimers.delete(id)
+    set({ toasts: get().toasts.filter((t) => t.id !== id) })
+  },
+  holdToast: (id, hold) => {
+    if (!get().toasts.some((t) => t.id === id)) return
+    if (hold) clearTimeout(toastTimers.get(id))
+    else armToast(id, 2500)
+  },
   focusQuickAdd: () => set({ quickAddFocus: get().quickAddFocus + 1, editingId: null, settingsOpen: false }),
   focusSearch: () => set({ searchFocus: get().searchFocus + 1, settingsOpen: false }),
   setExpanded: (expanded) => set({ expanded }),

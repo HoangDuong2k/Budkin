@@ -94,9 +94,9 @@ function annotate(level: 'error' | 'notice', title: string, text: string): void 
   console.log(`::${level} title=${esc(title)}::${esc(text)}`)
 }
 
-/** Chờ điều kiện đúng (giao diện cập nhật sau một nhịp) */
+/** Chờ điều kiện đúng (giao diện cập nhật sau một nhịp). Máy chậm (CI, vẽ bằng CPU) chờ lâu hơn gấp WAIT lần */
 async function until(check: () => Promise<boolean>, timeout = 3000): Promise<boolean> {
-  const end = Date.now() + timeout
+  const end = Date.now() + timeout * WAIT
   while (Date.now() < end) {
     if (await check()) return true
     await new Promise((r) => setTimeout(r, 50))
@@ -442,7 +442,7 @@ async function sceneFlow(page: Page): Promise<void> {
   // Robot quay đầu theo con trỏ (kể cả khi con trỏ nằm trên giao diện trong màn hình).
   // Chờ hết hoạt cảnh đang dở (vd. vừa bật/tắt đèn thì robot quay sang nhìn đèn)
   await page.mouse.move(vp.width / 2, vp.height / 2, { steps: 3 })
-  await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'idle', 3000 * WAIT)
+  await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'idle', 3000)
   await page.mouse.move(4, vp.height / 2, { steps: 6 })
   await settled()
   const yawLeft = await num('window.__budkin.robot.headYaw')
@@ -479,7 +479,7 @@ async function sceneFlow(page: Page): Promise<void> {
   // CPU có khi mất cả trăm ms mỗi khung)
   const beforePoke = Number(await page.evaluate('performance.now()'))
   await page.mouse.click(hit.robot.x, hit.robot.y)
-  assert(await until(async () => Number(await page.evaluate('window.__budkin.robot.lastPokeAt')) >= beforePoke, 1000 * WAIT), 'bấm vào robot: robot bẹp-giãn')
+  assert(await until(async () => Number(await page.evaluate('window.__budkin.robot.lastPokeAt')) >= beforePoke, 1000), 'bấm vào robot: robot bẹp-giãn')
 
   // Chế độ Tiết kiệm: đứng yên thì không vẽ khung nào
   await invoke(page, 'settings:update', { quality: 'saver' })
@@ -502,7 +502,7 @@ async function sceneFlow(page: Page): Promise<void> {
   assert((await probe(page, (p) => p.renderMode)) === '3d', 'đổi mức chất lượng (tạo lại canvas) vẫn ở chế độ 3D')
 
   // Lâu không thao tác (kiểm thử rút ngắn còn vài giây): robot ngủ, hiện "Zzz", cảnh không vẽ
-  assert(await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'sleep', 8000 * WAIT), 'lâu không thao tác: robot ngủ')
+  assert(await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'sleep', 8000), 'lâu không thao tác: robot ngủ')
   assert(await until(async () => page.locator('.zzz.on').isVisible(), 1500), 'robot ngủ: hiện "Zzz"')
   await page.screenshot({ path: join(OUT, '11-robot-sleep.png') })
   // Chờ robot gục đầu, nhắm mắt xong (vẽ bằng CPU thì chậm hơn) rồi mới đo
@@ -610,7 +610,7 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
     obs.observe(document.body, { childList: true, subtree: true, characterData: true })
   })()`)
   await page.mouse.click(hit.robot.x, hit.robot.y)
-  assert(await until(async () => /Hôm nay còn|Hết việc/.test(String(await page.evaluate('window.__summaryText'))), 3000 * WAIT), 'bấm vào robot: tóm tắt việc hôm nay')
+  assert(await until(async () => /Hôm nay còn|Hết việc/.test(String(await page.evaluate('window.__summaryText'))), 3000), 'bấm vào robot: tóm tắt việc hôm nay')
 
   // Ba việc sẽ đến hạn trong lúc app tắt (máy tắt / ngủ) — mở lại sau
   const now = await mainNow(app)
