@@ -597,8 +597,17 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
   )
 
   const hit = await probe(page, (p) => (p as unknown as { hit(): { robot: { x: number; y: number } } }).hit())
+  // Câu tóm tắt chỉ hiện 4 giây — máy ảo chậm có khi bấm xong thì câu đã tắt: ghi lại ngay lúc bong bóng hiện ra
+  await page.evaluate(`(() => {
+    window.__summaryText = ''
+    const obs = new MutationObserver(() => {
+      const t = document.querySelector('.bubble.is-summary')?.textContent
+      if (t) { window.__summaryText = t; obs.disconnect() }
+    })
+    obs.observe(document.body, { childList: true, subtree: true, characterData: true })
+  })()`)
   await page.mouse.click(hit.robot.x, hit.robot.y)
-  assert(await until(async () => /Hôm nay còn|Hết việc/.test((await page.locator('.bubble.is-summary').textContent().catch(() => '')) ?? '')), 'bấm vào robot: tóm tắt việc hôm nay')
+  assert(await until(async () => /Hôm nay còn|Hết việc/.test(String(await page.evaluate('window.__summaryText'))), 3000 * WAIT), 'bấm vào robot: tóm tắt việc hôm nay')
 
   // Ba việc sẽ đến hạn trong lúc app tắt (máy tắt / ngủ) — mở lại sau
   const now = await mainNow(app)
