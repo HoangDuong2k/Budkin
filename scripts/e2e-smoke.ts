@@ -119,6 +119,24 @@ async function press(target: Locator): Promise<void> {
   }
 }
 
+/**
+ * Ảnh chụp để xem lại — không phải phép kiểm tra. Chờ cảnh 3D đứng yên (máy ảo vẽ bằng CPU mà cảnh đang vẽ liên tục thì
+ * chụp màn hình phải chờ rất lâu); chụp không được thì ghi nhận rồi đi tiếp, không làm hỏng cả lượt kiểm thử
+ */
+async function shot(page: Page, name: string): Promise<void> {
+  await until(
+    async () =>
+      (await page.evaluate(
+        "window.__budkin.renderMode !== '3d' || window.__budkin.robot.settled === true || window.__budkin.stage.getR3F?.()?.frameloop === 'never'"
+      )) === true
+  ).catch(() => false)
+  try {
+    await page.screenshot({ path: join(OUT, name), timeout: 15_000 })
+  } catch (err) {
+    problems.push(`[e2e] không chụp được ${name}: ${String((err as Error).message ?? err).split('\n')[0]}`)
+  }
+}
+
 function hex(c: string): Rgb {
   return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)) as Rgb
 }
@@ -274,7 +292,7 @@ async function uiFlow(page: Page): Promise<void> {
     }),
     'khung sửa: ưu tiên cao, giờ 18:00, checklist, nhãn mới đều được lưu'
   )
-  await page.screenshot({ path: join(OUT, '5-editor.png') })
+  await shot(page, '5-editor.png')
 
   // Hoàn thành bằng ô tròn
   await page.keyboard.press('Escape')
@@ -304,17 +322,17 @@ async function uiFlow(page: Page): Promise<void> {
   )
   await page.keyboard.press('Escape')
   assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Hôm nay'), 'Esc xoá tìm kiếm, quay lại danh sách')
-  await page.screenshot({ path: join(OUT, '6-today-vi.png') })
+  await shot(page, '6-today-vi.png')
 
   // Đổi ngôn ngữ (thanh bên thu gọn ở màn hình nhỏ thì đổi qua store)
   const langBtn = page.locator('.lang-switch button', { hasText: 'EN' })
   if (await langBtn.isVisible()) await langBtn.click()
   else await page.evaluate("window.__budkin.lang.getState().setLang('en')")
   assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Today'), 'đổi sang tiếng Anh: giao diện hiện "Today"')
-  await page.screenshot({ path: join(OUT, '7-today-en.png') })
+  await shot(page, '7-today-en.png')
   await page.locator('.theme-toggle').click()
   await page.waitForTimeout(200)
-  await page.screenshot({ path: join(OUT, '8-today-en-other-theme.png') })
+  await shot(page, '8-today-en-other-theme.png')
   await page.locator('.theme-toggle').click()
   await page.evaluate("window.__budkin.lang.getState().setLang('vi')")
   assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Hôm nay'), 'đổi lại tiếng Việt')
@@ -414,7 +432,7 @@ async function settingsFlow(page: Page): Promise<void> {
   assert(await until(async () => /^\d+\.\d+\.\d+/.test((await page.locator('.about-specs dd').first().textContent()) ?? '')), 'Thông tin: hiện phiên bản app')
   await section('data')
   assert(await until(async () => (await page.locator('.backup-list li').count()) >= 1), 'Dữ liệu: có bản sao lưu hằng ngày tự tạo lúc mở app')
-  await page.screenshot({ path: join(OUT, '9-settings.png') })
+  await shot(page, '9-settings.png')
   await page.keyboard.press('Escape')
   assert(await until(async () => (await panel.count()) === 0), 'Esc đóng Cài đặt (lần 2)')
   // Trả lại thiết lập mặc định cho các phần kiểm thử sau
@@ -455,7 +473,7 @@ async function sceneFlow(page: Page): Promise<void> {
   await settled()
   const pitchUp = await num('window.__budkin.robot.headPitch')
   assert(pitchUp > 0.05, `con trỏ ở mép trên: robot ngẩng lên (${pitchUp.toFixed(2)} rad)`)
-  await page.screenshot({ path: join(OUT, '9-scene.png') })
+  await shot(page, '9-scene.png')
 
   // Bấm vào đèn khi đang gõ trong ô tìm kiếm: đổi theme, ô tìm kiếm vẫn giữ con trỏ
   await page.locator('.search input').click()
@@ -470,7 +488,7 @@ async function sceneFlow(page: Page): Promise<void> {
   assert(await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) !== before, 1500), 'bấm vào đèn: đổi theme')
   assert(await page.evaluate(() => document.activeElement === document.querySelector('.search input')), 'bấm đèn không làm mất con trỏ trong ô đang gõ')
   await until(async () => (await page.evaluate('window.__budkin.env.anim === null')) === true, 3000)
-  await page.screenshot({ path: join(OUT, '10-lamp-toggled.png') })
+  await shot(page, '10-lamp-toggled.png')
   await page.keyboard.press('Control+Shift+L')
   assert(await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) === before, 1500), 'Ctrl+Shift+L (đang gõ) bật / tắt đèn trở lại')
   await page.keyboard.press('Escape')
@@ -508,7 +526,7 @@ async function sceneFlow(page: Page): Promise<void> {
   // Lâu không thao tác (kiểm thử rút ngắn còn vài giây): robot ngủ, hiện "Zzz", cảnh không vẽ
   assert(await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'sleep', 8000), 'lâu không thao tác: robot ngủ')
   assert(await until(async () => page.locator('.zzz.on').isVisible(), 1500), 'robot ngủ: hiện "Zzz"')
-  await page.screenshot({ path: join(OUT, '11-robot-sleep.png') })
+  await shot(page, '11-robot-sleep.png')
   // Chờ robot gục đầu, nhắm mắt xong (vẽ bằng CPU thì chậm hơn) rồi mới đo
   await settled(false)
   const s0 = await num('window.__budkin.renderStats.frames')
@@ -577,9 +595,8 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
       return !!box && box.x >= 0 && box.y >= 0 && box.x + box.width <= rect.x
     })
   assert(await insideGap(), `bong bóng thoại nằm trong khoảng trống bên trái, không đè lên màn hình ${where}`)
-  // Chờ hết nhún nhảy: máy vẽ bằng CPU mà cảnh đang vẽ liên tục thì chụp màn hình / bấm chuột phải chờ rất lâu
-  await until(async () => (await page.evaluate('window.__budkin.robot.settled')) === true, 8000)
-  await page.screenshot({ path: join(OUT, '12-reminder.png') })
+  // Chờ hết nhún nhảy (trong shot): máy vẽ bằng CPU mà cảnh đang vẽ liên tục thì bấm chuột cũng phải chờ rất lâu
+  await shot(page, '12-reminder.png')
 
   await press(reminder.getByRole('button', { name: '10 phút', exact: true }))
   assert(await until(async () => (await reminder.count()) === 0 && (await mode()) !== 'alert'), 'báo lại sau 10 phút: nhắc tạm tắt, robot dịu lại')
@@ -591,7 +608,7 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
   const b = await value(page, 'tasks:create', { title: 'Nộp hồ sơ', ...dueOf(await mainNow(app)), remindBeforeMin: 0 })
   assert(await until(async () => (await reminder.locator('.reminder-more').textContent().catch(() => '')) === '+1'), 'hai nhắc cùng lúc: hiện việc đầu tiên kèm "+1"')
   assert(await insideGap(), `có "+1" vẫn không đè lên màn hình ${where}`)
-  await page.screenshot({ path: join(OUT, '13-reminder-two.png') })
+  await shot(page, '13-reminder-two.png')
 
   const beforeDone = Number(await page.evaluate('performance.now()'))
   await press(reminder.getByRole('button', { name: 'Xong', exact: true }))
@@ -659,7 +676,7 @@ async function boardFlow(app: ElectronApplication, page: Page): Promise<string> 
   await dragTo(page, await centerOf(page, cardSel), await centerOf(page, '.board-col.col-in_progress .board-col-body'))
   assert(await until(async () => (await taskTitled(page, card.title))?.status === 'in_progress'), 'kéo thẻ bằng chuột sang "Đang làm": việc chuyển sang Đang làm')
   assert((await page.locator(`.board-col.col-in_progress .task-card[data-task-id="${card.id}"]`).count()) === 1, 'thẻ nằm trong cột "Đang làm"')
-  await page.screenshot({ path: join(OUT, '14-kanban.png') })
+  await shot(page, '14-kanban.png')
 
   // Lịch: việc hạn 3 ngày nữa, nhắc trước 3 ngày (báo ngay) → kéo sang ngày hôm sau nữa → nhắc việc đặt lại theo hạn
   // mới (robot thôi báo). Tránh các ô đã có việc thật khác (ô nhỏ chỉ vừa một việc, còn lại gộp vào "+N")
@@ -674,7 +691,7 @@ async function boardFlow(app: ElectronApplication, page: Page): Promise<string> 
   await dragTo(page, await centerOf(page, `.cal-cell[data-date="${from}"] .cal-chip[data-task-id="${due.id}"]`), await centerOf(page, `.cal-cell[data-date="${later}"]`))
   assert(await until(async () => (await taskTitled(page, due.title))?.dueDate === later), 'kéo việc trên Lịch sang ngày hôm sau: đổi hạn')
   assert(await until(async () => !(await alerted())), 'đổi hạn trên Lịch: nhắc việc đặt lại theo hạn mới (robot thôi báo)')
-  await page.screenshot({ path: join(OUT, '15-calendar.png') })
+  await shot(page, '15-calendar.png')
 
   // Chế độ Mở rộng: giao diện phủ gần kín cửa sổ, cảnh 3D dừng vẽ; F lần nữa thì về lại màn hình máy tính
   const frameloop = (): Promise<string> => page.evaluate('window.__budkin.stage.getR3F().frameloop') as Promise<string>
@@ -687,7 +704,7 @@ async function boardFlow(app: ElectronApplication, page: Page): Promise<string> 
     }),
     'phím F: Mở rộng phủ gần kín cửa sổ, cảnh 3D dừng vẽ'
   )
-  await page.screenshot({ path: join(OUT, '16-expanded.png') })
+  await shot(page, '16-expanded.png')
   await page.keyboard.press('f')
   const rect = await probe(page, (p) => p.stage.screenRect)
   assert(
@@ -755,7 +772,7 @@ async function dataFlow(app: ElectronApplication, page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Chọn file…' }).click()
   const dialog = page.locator('.import-modal')
   assert(await until(async () => /việc/.test((await dialog.locator('.import-meta').textContent().catch(() => '')) ?? '')), 'chọn file: hiện tên file, ngày xuất, số việc')
-  await page.screenshot({ path: join(OUT, '17-import.png') })
+  await shot(page, '17-import.png')
   await dialog.locator('[data-mode="replace"]').click()
   assert(await until(async () => JSON.stringify(await dbCounts(app)) === JSON.stringify(source), 5000), 'nhập vào máy mới (thay thế): số việc, dự án, nhãn khớp')
   assert(await until(async () => Object.keys(await probe(page, (p) => p.data.getState().tasks)).length > 0), 'giao diện tải lại dữ liệu vừa nhập')
@@ -809,14 +826,14 @@ async function main(): Promise<void> {
 
   const theme0 = await probe(page, (p) => p.theme.getState().theme)
   await checkAlignment(page, 'kích thước mặc định', theme0)
-  await page.screenshot({ path: join(OUT, '1-desk.png') })
+  await shot(page, '1-desk.png')
   for (const [w, h] of [
     [1000, 660],
     [1600, 900]
   ]) {
     if (await resize(app, page, w, h)) {
       await checkAlignment(page, `${w}×${h}`, theme0)
-      await page.screenshot({ path: join(OUT, `2-desk-${w}x${h}.png`) })
+      await shot(page, `2-desk-${w}x${h}.png`)
     } else console.log(`  (bỏ qua ${w}×${h}: màn hình không đủ lớn)`)
   }
 
@@ -830,7 +847,7 @@ async function main(): Promise<void> {
   // Chờ căn phòng sáng / tối dần xong (~0,75 s)
   await until(async () => (await page.evaluate('window.__budkin.env.anim === null')) === true, 3000)
   await checkAlignment(page, `theme ${theme1}`, theme1)
-  await page.screenshot({ path: join(OUT, `3-theme-${theme1}.png`) })
+  await shot(page, `3-theme-${theme1}.png`)
 
   // ---- Dữ liệu qua IPC: tạo, sửa, renderer nhận thay đổi qua data:changed ----
   const project = await value(page, 'projects:create', { name: 'Công ty', color: 'sky' })
@@ -897,7 +914,7 @@ async function main(): Promise<void> {
   const box2d = await page.locator('.screen').boundingBox()
   const vp = page.viewportSize() ?? (await page.evaluate(() => ({ width: innerWidth, height: innerHeight })))
   assert(box2d && box2d.width > vp.width * 0.9, 'chế độ 2D: giao diện phủ gần kín cửa sổ')
-  await page.screenshot({ path: join(OUT, '4-flat-2d.png') })
+  await shot(page, '4-flat-2d.png')
 
   const errors = problems.filter((p) => p.startsWith('[renderer]'))
   assert(errors.length === 0, `renderer không có lỗi (${errors.length})`)
