@@ -155,6 +155,15 @@ describe('đèn ăng-ten khi báo động', () => {
     expect(nextLedToggle(3600)).toBe(3602)
   })
 
+  it('vẽ bằng CPU: đèn đổi mỗi giây một lần ngay từ đầu (mỗi khung rất tốn)', () => {
+    expect(nextLedToggle(0, true)).toBe(1)
+    expect(alertLedOn(0.5, true)).toBe(true)
+    expect(alertLedOn(1.5, true)).toBe(false)
+    let draws = 0
+    for (let t = 0; t < 60; t = nextLedToggle(t, true)) draws++
+    expect(draws).toBe(60)
+  })
+
   it('báo động cả đêm: mỗi phút chỉ vẽ lại ~30 lần', () => {
     let draws = 0
     for (let t = 3600; t < 3660; t = nextLedToggle(t)) draws++

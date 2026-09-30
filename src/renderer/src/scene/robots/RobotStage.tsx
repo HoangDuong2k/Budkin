@@ -15,7 +15,7 @@ import { alertLedOn } from '../logic/alertBlink'
 import { materials } from '../materials'
 import { reducedMotion } from '../motion'
 import { ROBOT } from '../palette3d'
-import { requestFrame } from '../renderLoop'
+import { policy, requestFrame } from '../renderLoop'
 import { dispatchRobot, robot, setRobotTransients } from '../robotState'
 import { playChirp } from '../sound'
 import { stage } from '../stage'
@@ -71,7 +71,8 @@ function Pedestal({ flareAt }: { flareAt: React.RefObject<number> }): React.JSX.
     const dark = 1 - env.env
     const flare = Math.max(0, 1 - (performance.now() - (flareAt.current ?? -Infinity)) / FLARE_MS)
     const t = (performance.now() - robot.since) / 1000
-    if (robot.mode === 'alert') ledMat.color.copy(alertLedOn(t) ? colors.alert : colors.led).multiplyScalar(alertLedOn(t) ? 1 : 0.3)
+    const on = alertLedOn(t, policy.software)
+    if (robot.mode === 'alert') ledMat.color.copy(on ? colors.alert : colors.led).multiplyScalar(on ? 1 : 0.3)
     else {
       ledMat.color.copy(colors.led).lerp(colors.white, flare * 0.7)
       ledMat.color.multiplyScalar((0.45 + 0.4 * dark) * (hover.current ? 1.6 : 1) * (1 + flare))

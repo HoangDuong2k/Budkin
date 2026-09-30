@@ -129,11 +129,11 @@ export function useRobotRig(spec: RigSpec, apply: (f: RigFrame) => boolean): voi
     }
 
     // ---- Báo động: đèn nhấp nháy chậm dần — hẹn vẽ đúng lúc đèn đổi, không vẽ liên tục ----
-    const alertOn = mode === 'alert' && alertLedOn(t)
+    const alertOn = mode === 'alert' && alertLedOn(t, policy.software)
     const alertHop = mode === 'alert' && !reduced && t < alertHopSeconds(policy.software)
     if (mode === 'alert') {
       clearTimeout(ledTimer.current)
-      ledTimer.current = setTimeout(requestFrame, Math.max(0, robot.since + nextLedToggle(t) * 1000 - now) + 5)
+      ledTimer.current = setTimeout(requestFrame, Math.max(0, robot.since + nextLedToggle(t, policy.software) * 1000 - now) + 5)
     }
     const ambient = !reduced && !policy.software && policy.quality !== 'saver' && mode !== 'sleep'
 
