@@ -4,6 +4,7 @@ import type { Selection } from '../../../shared/filters'
 
 export type View = 'list' | 'kanban' | 'calendar'
 export type CalendarMode = 'month' | 'week'
+export type SettingsSection = 'general' | 'reminders' | 'display' | 'data' | 'about'
 
 export interface Toast {
   id: number
@@ -28,6 +29,9 @@ interface UiState {
   calendarMode: CalendarMode
   /** Lịch đang xem tháng / tuần chứa ngày này (null: hôm nay) */
   calendarDate: string | null
+  /** Màn hình Cài đặt (phủ lên giao diện trên màn hình máy tính) */
+  settingsOpen: boolean
+  settingsSection: SettingsSection
   setView: (view: View) => void
   select: (selection: Selection) => void
   setSearch: (search: string) => void
@@ -40,6 +44,8 @@ interface UiState {
   setExpanded: (expanded: boolean) => void
   setCalendarMode: (mode: CalendarMode) => void
   setCalendarDate: (date: string | null) => void
+  openSettings: (section?: SettingsSection) => void
+  closeSettings: () => void
 }
 
 const KEY = 'budkin.ui'
@@ -68,10 +74,13 @@ export const useUi = create<UiState>((set, get) => ({
   expanded: false,
   calendarMode: prefs.calendarMode === 'week' ? 'week' : 'month',
   calendarDate: null,
-  setView: (view) => set({ view }),
-  select: (selection) => set({ selection, search: '' }),
+  settingsOpen: false,
+  settingsSection: 'general',
+  setView: (view) => set({ view, settingsOpen: false }),
+  // Chọn danh sách, mở một việc, thêm việc (kể cả từ thông báo / khay): rời màn hình Cài đặt
+  select: (selection) => set({ selection, search: '', settingsOpen: false }),
   setSearch: (search) => set({ search }),
-  openEditor: (editingId) => set({ editingId }),
+  openEditor: (editingId) => set(editingId ? { editingId, settingsOpen: false } : { editingId }),
   toggleSidebar: () => set({ sidebarOpen: !get().sidebarOpen }),
   toast: (t) => {
     const id = ++toastSeq
@@ -79,11 +88,13 @@ export const useUi = create<UiState>((set, get) => ({
     setTimeout(() => get().dismissToast(id), t.action ? 6000 : 3500)
   },
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
-  focusQuickAdd: () => set({ quickAddFocus: get().quickAddFocus + 1, editingId: null }),
-  focusSearch: () => set({ searchFocus: get().searchFocus + 1 }),
+  focusQuickAdd: () => set({ quickAddFocus: get().quickAddFocus + 1, editingId: null, settingsOpen: false }),
+  focusSearch: () => set({ searchFocus: get().searchFocus + 1, settingsOpen: false }),
   setExpanded: (expanded) => set({ expanded }),
   setCalendarMode: (calendarMode) => set({ calendarMode }),
-  setCalendarDate: (calendarDate) => set({ calendarDate })
+  setCalendarDate: (calendarDate) => set({ calendarDate }),
+  openSettings: (section) => set({ settingsOpen: true, editingId: null, settingsSection: section ?? get().settingsSection }),
+  closeSettings: () => set({ settingsOpen: false })
 }))
 
 useUi.subscribe((s, prev) => {

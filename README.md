@@ -16,8 +16,8 @@ robot phát sáng.
 | ![Bàn làm việc khi bật đèn](docs/screenshots/desk-day.png) | ![Bàn làm việc khi tắt đèn](docs/screenshots/desk-night.png) |
 
 > Đang phát triển theo từng mốc (M0 → M8). Đã xong: khung dự án, dữ liệu (SQLite), giao diện quản lý việc trên màn hình,
-> cảnh 3D (robot nhìn theo chuột, đèn đổi theme), nhắc việc và chạy nền, Kanban & Lịch, việc lặp lại. Tiếp theo:
-> quản lý dữ liệu & cài đặt, đóng gói.
+> cảnh 3D (robot nhìn theo chuột, đèn đổi theme), nhắc việc và chạy nền, Kanban & Lịch, việc lặp lại, Cài đặt, xuất /
+> nhập dữ liệu và sao lưu. Tiếp theo: đóng gói, phát hành.
 
 ## Danh sách, Kanban, Lịch
 
@@ -33,7 +33,7 @@ robot phát sáng.
 - **Chế độ Mở rộng** (phím **F**): giao diện phủ gần kín cửa sổ, cảnh 3D tạm dừng — tiện khi cửa sổ nhỏ.
 
 Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm · **F** Mở rộng · **Esc** đóng / thoát ·
-**Ctrl+Shift+L** bật / tắt đèn · **Ctrl+Q** thoát hẳn.
+**Ctrl+Shift+L** bật / tắt đèn · **Ctrl+,** Cài đặt · **Ctrl+Q** thoát hẳn.
 
 ## Việc lặp lại
 
@@ -60,6 +60,30 @@ Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm 
 - **Ubuntu không có khay hệ thống** nếu chưa bật tiện ích AppIndicator: khi đó nút đóng chỉ thu nhỏ cửa sổ. Bật khay:
   `sudo apt install gnome-shell-extension-appindicator`, rồi bật "Ubuntu AppIndicators" trong ứng dụng Extensions
   (đăng xuất / đăng nhập lại nếu chưa thấy).
+
+## Cài đặt, dữ liệu, sao lưu
+
+![Cài đặt](docs/screenshots/settings.png)
+
+Mở **Cài đặt** bằng nút bánh răng ở chân thanh bên hoặc **Ctrl+,**. Đổi là lưu ngay:
+
+- **Chung:** ngôn ngữ, tuần bắt đầu vào thứ Hai hay Chủ nhật, âm thanh và âm lượng, giảm chuyển động.
+- **Nhắc việc:** mức nhắc mặc định, giờ nhắc cho việc cả ngày, tạm tắt nhắc (1 giờ / 4 giờ / 1 ngày), bấm nút đóng
+  cửa sổ thì chạy nền hay thoát, khởi động cùng máy.
+- **Hiển thị:** chất lượng 3D (Cao / Cân bằng / Tiết kiệm); chế độ Tự động, 3D vẽ bằng CPU (máy ảo, GPU lỗi) hoặc chỉ
+  2D; trên Wayland có thêm lựa chọn chạy qua XWayland. Đổi chế độ thì bấm **Khởi động lại** để áp dụng.
+- **Dữ liệu:** xuất / nhập, sao lưu, mở thư mục dữ liệu.
+
+Dữ liệu chỉ nằm trên máy (SQLite trong thư mục dữ liệu của app: `~/.config/Budkin` trên Linux, `%APPDATA%\Budkin`
+trên Windows), không cần tài khoản.
+
+- **Xuất dữ liệu:** toàn bộ việc, dự án, nhãn, checklist ra một file JSON (kèm các việc đã xoá, để gộp giữa hai máy
+  thì việc xoá bên này cũng xoá bên kia). Trạng thái nhắc việc và các thiết lập riêng của máy không đi theo file.
+- **Nhập dữ liệu:** chọn file, xem trước số việc rồi chọn **Gộp** (giữ dữ liệu trên máy, việc nào sửa sau cùng thì lấy
+  bản đó) hoặc **Thay thế** (dùng đúng dữ liệu trong file). File lạ, file hỏng, file của bản Budkin mới hơn đều bị từ
+  chối mà không ghi gì. Trước mỗi lần nhập Budkin tự sao lưu; nhắc việc đã qua giờ trong file không báo dồn lại.
+- **Sao lưu tự động** mỗi ngày một bản, giữ 7 ngày gần nhất; thêm **Sao lưu ngay** khi cần. **Khôi phục** một bản thì
+  Budkin khởi động lại rồi mới thay dữ liệu; dữ liệu ngay trước lúc khôi phục vẫn được giữ trong một bản sao lưu riêng.
 
 ## Cài đặt để phát triển
 
@@ -92,6 +116,9 @@ npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột
 - E2E chạy với đồng hồ của app đặt ở 6:00 sáng hôm nay; phần nhắc việc tự đẩy đồng hồ tới để kiểm tra từng mốc nhắc.
 - Ảnh giới thiệu: `npm run build && npm run screenshots` → `docs/screenshots/`.
 - Đo cảnh 3D (số lần vẽ, số tam giác — ngân sách ≤ 90 lần vẽ mỗi khung): `npm run build && npm run stats:scene`.
+- Đo CPU / bộ nhớ khi để yên (chuyển động nền → đứng yên → robot ngủ → cửa sổ ẩn; mục tiêu: rảnh ở mức Cân bằng
+  renderer < 2%, GPU < 3%, robot ngủ gần 0): `npm run build && npm run perf:idle`. Chạy dài để tìm rò rỉ bộ nhớ:
+  `npm run perf:idle -- --soak 120` (120 phút, mỗi phút ghi bộ nhớ). Kết quả trong `test-output/perf/`.
 
 ## Đóng gói bộ cài
 

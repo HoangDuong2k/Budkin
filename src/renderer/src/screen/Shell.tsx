@@ -12,6 +12,7 @@ import { Icon, type IconName } from './icons'
 import { KanbanView } from './KanbanView'
 import { ListView } from './ListView'
 import { ReminderBanner } from './ReminderBanner'
+import { SettingsPanel } from './SettingsPanel'
 import { Sidebar } from './Sidebar'
 import { TaskEditor } from './TaskEditor'
 
@@ -149,10 +150,18 @@ function useShortcuts(): void {
         return
       }
       const ui = useUi.getState()
+      // Cài đặt: Ctrl+, (kể cả khi đang gõ)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key === ',') {
+        e.preventDefault()
+        if (ui.settingsOpen) ui.closeSettings()
+        else ui.openSettings()
+        return
+      }
       const el = e.target as HTMLElement
       const typing = !!el.closest?.('input, textarea, [contenteditable="true"]')
       if (e.key === 'Escape') {
         if (typing) el.blur()
+        else if (ui.settingsOpen) ui.closeSettings()
         else if (ui.editingId) ui.openEditor(null)
         else if (ui.search) ui.setSearch('')
         else if (ui.expanded) ui.setExpanded(false)
@@ -183,6 +192,7 @@ export function Shell(): React.JSX.Element {
   const sidebarOpen = useUi((s) => s.sidebarOpen)
   const editing = useUi((s) => s.editingId !== null)
   const view = useUi((s) => s.view)
+  const settingsOpen = useUi((s) => s.settingsOpen)
   useShortcuts()
   return (
     <div className={`screen-app ${sidebarOpen ? '' : 'sidebar-closed'} ${editing ? 'editing' : ''}`}>
@@ -193,6 +203,7 @@ export function Shell(): React.JSX.Element {
         {view === 'kanban' ? <KanbanView /> : view === 'calendar' ? <CalendarView /> : <ListView />}
       </main>
       <TaskEditor />
+      {settingsOpen && <SettingsPanel />}
       <Toasts />
     </div>
   )

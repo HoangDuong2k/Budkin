@@ -1,6 +1,7 @@
 // Hợp đồng IPC giữa renderer (window.api) và main process.
 // Tên kênh và kiểu tham số/kết quả khai báo một chỗ; main thiếu handler nào là lỗi biên dịch (xem main/ipc.ts).
-import type { BootInfo } from './boot'
+import type { BootInfo, BootPrefs } from './boot'
+import type { EntityCounts, ImportMode, ImportPreview, ImportResult } from './exportFormat'
 import type { Theme } from './palette'
 import type { AlertItem } from './reminders'
 import type {
@@ -53,6 +54,42 @@ export interface AlertsSnapshot {
   nextAt: number | null
 }
 
+/** Thiết lập khởi động đổi được trong Cài đặt (có hiệu lực từ lần mở sau) */
+export type BootPatch = Partial<Pick<BootPrefs, 'render' | 'xwayland'>>
+
+/** Tình trạng app cho màn hình Cài đặt */
+export interface AppStatus {
+  /** Bản đã cài (bản đang phát triển không đăng ký tự khởi động) */
+  packaged: boolean
+  /** Có khay hệ thống (Ubuntu cần tiện ích AppIndicator) */
+  trayHost: boolean
+  /** Linux đang chạy phiên Wayland (mới có lựa chọn XWayland) */
+  wayland: boolean
+  /** Thiết lập khởi động đã lưu — khác `running` thì cần khởi động lại */
+  boot: Pick<BootPrefs, 'render' | 'xwayland'>
+  /** Thiết lập khởi động của lần chạy này */
+  running: Pick<BootPrefs, 'render' | 'xwayland'>
+  /** Thư mục dữ liệu (DB, bản sao lưu) */
+  dataDir: string
+  /** Lần mở này vừa khôi phục từ bản sao lưu nào (null: không) */
+  restoredFrom: string | null
+}
+
+export type BackupKind = 'daily' | 'manual' | 'before-import' | 'before-restore' | 'pre-migration'
+
+export interface BackupInfo {
+  name: string
+  kind: BackupKind
+  /** Lúc tạo (ms) */
+  createdAt: number
+  size: number
+}
+
+export interface ExportResult {
+  path: string
+  counts: EntityCounts
+}
+
 /** Main bảo giao diện chuyển tới đâu (bấm thông báo, menu khay) */
 export type NavigateTarget = { kind: 'task'; taskId: string } | { kind: 'today' } | { kind: 'quickAdd' }
 
@@ -63,6 +100,11 @@ export interface InvokeMap {
   'app:setTheme': { args: [theme: Theme]; result: void }
   /** Cảnh 3D chạy ổn một lúc: xoá bộ đếm lỗi GPU */
   'app:sceneHealthy': { args: []; result: void }
+  'app:status': { args: []; result: AppStatus }
+  /** Đổi chế độ vẽ / XWayland: lưu vào boot.json, có hiệu lực từ lần mở sau */
+  'app:setBoot': { args: [patch: BootPatch]; result: AppStatus }
+  /** Khởi động lại app */
+  'app:relaunch': { args: []; result: void }
 
   'tasks:list': { args: [scope: TaskListScope]; result: Task[] }
   'tasks:get': { args: [id: string]; result: Task }
@@ -93,6 +135,18 @@ export interface InvokeMap {
   'settings:get': { args: []; result: Settings }
   'settings:update': { args: [patch: SettingsPatch]; result: Settings }
 
+  /** Xuất toàn bộ dữ liệu ra file JSON (hộp thoại chọn nơi lưu); null: người dùng huỷ */
+  'data:export': { args: []; result: ExportResult | null }
+  /** Chọn file để nhập, kiểm tra hợp lệ; null: người dùng huỷ */
+  'data:importPick': { args: []; result: ImportPreview | null }
+  /** Nhập file vừa chọn: gộp (bản mới hơn thắng) hoặc thay thế toàn bộ. Tự sao lưu trước khi nhập */
+  'data:importApply': { args: [token: string, mode: ImportMode]; result: ImportResult }
+  'data:backups': { args: []; result: BackupInfo[] }
+  'data:backupNow': { args: []; result: BackupInfo }
+  /** Khôi phục bản sao lưu: app khởi động lại rồi mới thay dữ liệu */
+  'data:restoreBackup': { args: [name: string]; result: void }
+  'data:openFolder': { args: [which: 'data' | 'backups']; result: void }
+
   'reminders:snapshot': { args: []; result: AlertsSnapshot }
   /** Báo lại sau N phút */
   'reminders:snooze': { args: [taskId: string, minutes: number]; result: AlertsSnapshot }
@@ -111,6 +165,8 @@ export interface EventMap {
   'theme:changed': Theme
   /** Dữ liệu đổi (do chính renderer, task lặp lại, nhập dữ liệu…): bản đầy đủ của các đối tượng đã đổi */
   'data:changed': { changes: ChangeSet; reason: ChangeReason }
+  /** Dữ liệu đổi hàng loạt (nhập file): renderer tải lại toàn bộ */
+  'data:reload': ImportMode
   'settings:changed': Settings
   /** Danh sách nhắc việc đang chờ đổi */
   'alerts:changed': AlertsSnapshot

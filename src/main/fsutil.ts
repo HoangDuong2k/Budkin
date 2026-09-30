@@ -19,15 +19,22 @@ export function writeFileAtomicSync(file: string, data: string): void {
   } finally {
     closeSync(fd)
   }
+  try {
+    renameRetrySync(tmp, file)
+  } catch (err) {
+    rmSync(tmp, { force: true })
+    throw err
+  }
+}
+
+/** Đổi tên (ghi đè file đích); Windows tạm khoá file (antivirus, chương trình khác đang đọc) thì thử lại vài lần */
+export function renameRetrySync(from: string, to: string): void {
   for (let i = 0; ; i++) {
     try {
-      renameSync(tmp, file)
+      renameSync(from, to)
       return
     } catch (err) {
-      if (i >= 5) {
-        rmSync(tmp, { force: true })
-        throw err
-      }
+      if (i >= 5) throw err
       sleepSync(100)
     }
   }

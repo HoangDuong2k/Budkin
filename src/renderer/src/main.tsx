@@ -1,10 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { NavigateTarget } from '../../shared/api'
-import { setLang } from '../../shared/i18n'
+import { setLang, tr } from '../../shared/i18n'
 import { decideRenderMode } from '../../shared/renderMode'
 import { App } from './App'
 import { setClockOffset } from './clock'
+import { call } from './ipc'
 import { probeWebgl } from './flat/webglProbe'
 import { renderInfo } from './scene/renderInfo'
 import { installTestProbe } from './scene/testProbe'
@@ -34,6 +35,10 @@ installTestProbe()
 subscribeData()
 void useData.getState().load()
 subscribeAlerts()
+// Vừa khôi phục bản sao lưu (app tự khởi động lại để thay dữ liệu): báo cho người dùng biết
+void call('app:status')
+  .then((s) => s.restoredFrom && useUi.getState().toast({ text: tr('Đã khôi phục dữ liệu từ bản sao lưu {name}', { name: s.restoredFrom }) }))
+  .catch(() => undefined)
 
 // Bấm thông báo, menu khay: main bảo chuyển tới đâu
 window.api.on('app:navigate', (target: NavigateTarget) => {

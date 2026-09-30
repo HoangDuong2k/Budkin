@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import type { ChangeSet, Project, Settings, Tag, Task } from '../../../shared/types'
 import { call } from '../ipc'
+import { useLang } from './langStore'
 
 interface DataState {
   loaded: boolean
@@ -56,8 +57,20 @@ export const useData = create<DataState>((set, get) => ({
 export function subscribeData(): () => void {
   const offData = window.api.on('data:changed', ({ changes }) => useData.getState().apply(changes))
   const offSettings = window.api.on('settings:changed', (settings) => useData.setState({ settings }))
+  // Nhập dữ liệu: đổi hàng loạt (có thể cả bản cũ hơn bản đang có) — tải lại toàn bộ
+  const offReload = window.api.on('data:reload', () => {
+    void useData
+      .getState()
+      .load()
+      .then(() => {
+        // Thay dữ liệu bằng file có thể đổi cả ngôn ngữ
+        const lang = useData.getState().settings?.language
+        if (lang) useLang.getState().adopt(lang)
+      })
+  })
   return () => {
     offData()
     offSettings()
+    offReload()
   }
 }

@@ -137,6 +137,21 @@ export class ReminderService {
     return snapshot
   }
 
+  /**
+   * Sau khi nhập / khôi phục dữ liệu: nhắc việc đã tới giờ của các task này (null: mọi task) coi như đã báo — không
+   * dồn dập báo lại việc cũ. Gọi run() / poke() sau đó để cập nhật danh sách nhắc
+   */
+  absorb(taskIds: readonly string[] | null): void {
+    const now = this.clock.now()
+    const ids = taskIds ? new Set(taskIds) : null
+    const plan = planReminders(this.tasks(), this.states(), now, this.deps.allDayTime())
+    const past = [...plan.fire, ...plan.silent].filter((f) => !ids || ids.has(f.taskId))
+    if (!past.length) return
+    this.db.tx(() => {
+      for (const f of past) this.writeFired(f, now, true)
+    })
+  }
+
   /** Báo lại sau `minutes` phút */
   snooze(taskId: string, minutes: number): AlertsSnapshot {
     const changed = this.db.run('UPDATE reminder_state SET snoozed_until = ?, acked_at = NULL WHERE task_id = ? AND fired_stage > 0', this.clock.now() + minutes * 60_000, taskId)

@@ -172,6 +172,9 @@ function ItemMenu({ menu, onClose }: { menu: ItemMenuState; onClose: () => void 
 export function Sidebar(): React.JSX.Element {
   const sel = useUi((s) => s.selection)
   const select = useUi((s) => s.select)
+  const settingsOpen = useUi((s) => s.settingsOpen)
+  const openSettings = useUi((s) => s.openSettings)
+  const closeSettings = useUi((s) => s.closeSettings)
   const tasks = useData((s) => s.tasks)
   const projects = useData((s) => s.projects)
   const tags = useData((s) => s.tags)
@@ -274,6 +277,15 @@ export function Sidebar(): React.JSX.Element {
             </button>
           ))}
         </div>
+        <button
+          className={`icon-btn settings-btn ${settingsOpen ? 'on' : ''}`}
+          onClick={() => (settingsOpen ? closeSettings() : openSettings())}
+          aria-pressed={settingsOpen}
+          aria-label={tr('Cài đặt (Ctrl+,)')}
+          title={tr('Cài đặt (Ctrl+,)')}
+        >
+          <Icon name="gear" size={16} />
+        </button>
         <button className="icon-btn theme-toggle" onClick={toggleTheme} aria-label={theme === 'light' ? tr('Tắt đèn') : tr('Bật đèn')} title={theme === 'light' ? tr('Tắt đèn') : tr('Bật đèn')}>
           <Icon name="sun" size={16} />
         </button>

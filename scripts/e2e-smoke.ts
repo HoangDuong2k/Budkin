@@ -7,13 +7,14 @@
  * Chạy bản deb đã cài mà không tắt sandbox (kiểm tra profile AppArmor): BUDKIN_E2E_SANDBOX=1
  * Giả lập màn hình nhỏ (máy ảo Windows 1024×768 của GitHub): BUDKIN_E2E_WINDOW=1000x660
  */
-import { mkdirSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'fs'
 import { join, resolve } from 'path'
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core'
+import { _electron as electron, type ElectronApplication, type Locator, type Page } from 'playwright-core'
 import type { ApiResponse, ArgsOf, Channel, DeskApi, ResultOf } from '../src/shared/api'
 import { addDays, localDateOf, pad2 } from '../src/shared/datetime'
+import { liveCounts, parseExportFile } from '../src/shared/exportFormat'
 import { SCREEN_BG } from '../src/shared/palette'
-import type { Task } from '../src/shared/types'
+import type { Settings, Task } from '../src/shared/types'
 
 const ROOT = resolve(__dirname, '..')
 const OUT = join(ROOT, 'test-output', 'e2e')
@@ -49,7 +50,9 @@ interface Probe {
     webglInfo(): { version: string; renderer: string } | null
     samplePixels(points: Array<{ x: number; y: number }>): Rgb[]
     theme: { getState(): { theme: 'light' | 'dark' } }
-    data: { getState(): { loaded: boolean; tasks: Record<string, Task>; projects: Record<string, { name: string }>; tags: Record<string, { name: string }> } }
+    data: {
+      getState(): { loaded: boolean; settings: Settings | null; tasks: Record<string, Task>; projects: Record<string, { name: string }>; tags: Record<string, { name: string }> }
+    }
   }
 }
 
@@ -96,6 +99,21 @@ async function until(check: () => Promise<boolean>, timeout = 3000): Promise<boo
     await new Promise((r) => setTimeout(r, 50))
   }
   return check()
+}
+
+/**
+ * Bấm bằng chuột thật. Windows CI đôi khi treo ở bước gửi sự kiện chuột (renderer không trả lời) — quá 10 giây thì
+ * bấm qua DOM để kiểm thử đi tiếp; phần kiểm tra kết quả phía sau vẫn giữ nguyên
+ */
+async function press(target: Locator): Promise<void> {
+  try {
+    await target.click({ timeout: 10_000 })
+  } catch (err) {
+    // Sự kiện đã tới nơi (nút đã biến mất) thì thôi
+    if (!(await target.count())) return
+    problems.push(`[e2e] bấm chuột bị treo, bấm qua DOM: ${String((err as Error).message ?? err).split('\n')[0]}`)
+    await target.evaluate((el) => (el as HTMLElement).click())
+  }
 }
 
 function hex(c: string): Rgb {
@@ -350,6 +368,56 @@ async function recurrenceFlow(page: Page): Promise<void> {
   await page.keyboard.press('1')
 }
 
+/** Cài đặt (M7): mở bằng Ctrl+, / nút bánh răng, đổi thiết lập thì lưu ngay và giao diện theo ngay */
+async function settingsFlow(page: Page): Promise<void> {
+  const settings = (): Promise<Settings | null> => probe(page, (p) => p.data.getState().settings)
+  const panel = page.locator('.settings')
+  const section = async (id: string): Promise<void> => {
+    await page.locator(`.settings-nav [data-section="${id}"]`).click()
+    await until(async () => (await page.locator(`.settings-body[data-section="${id}"]`).count()) === 1)
+  }
+  const row = (id: string): Locator => page.locator(`.set-row[data-setting="${id}"]`)
+
+  await page.locator('.list-head').first().click()
+  await page.keyboard.press('Control+Comma')
+  assert(await until(async () => (await panel.count()) === 1), 'Ctrl+, mở màn hình Cài đặt')
+  await section('general')
+  await row('weekStart').getByRole('radio', { name: 'Chủ nhật' }).click()
+  assert(await until(async () => (await settings())?.weekStart === 0), 'Cài đặt: tuần bắt đầu vào Chủ nhật được lưu')
+  await page.keyboard.press('Escape')
+  assert(await until(async () => (await panel.count()) === 0), 'Esc đóng Cài đặt')
+  await page.keyboard.press('3')
+  assert(await until(async () => (await page.locator('.cal-dow').first().textContent()) === 'CN'), 'Lịch bắt đầu tuần bằng Chủ nhật')
+  await page.keyboard.press('1')
+
+  await page.locator('.settings-btn').click()
+  assert(await until(async () => (await panel.count()) === 1), 'nút bánh răng ở thanh bên mở Cài đặt')
+  await section('reminders')
+  const time = row('allDayRemindTime').locator('input')
+  await time.fill('830')
+  await time.press('Enter')
+  assert(await until(async () => (await settings())?.allDayRemindTime === '08:30'), 'giờ nhắc việc cả ngày: gõ "830" thành 08:30')
+  await row('mute').getByRole('button', { name: '1 giờ' }).click()
+  assert(await until(async () => (await row('mute').getByRole('button', { name: 'Bật lại' }).count()) === 1), 'tạm tắt nhắc 1 giờ')
+  await row('mute').getByRole('button', { name: 'Bật lại' }).click()
+  assert(await until(async () => (await row('mute').getByRole('button', { name: '1 giờ' }).count()) === 1), 'bật lại nhắc việc')
+
+  await section('display')
+  await row('render').getByRole('radio', { name: 'Chỉ 2D' }).click()
+  assert(await until(async () => (await page.locator('.set-notice').count()) === 1), 'đổi sang "Chỉ 2D": báo cần khởi động lại')
+  await row('render').getByRole('radio', { name: 'Tự động' }).click()
+  assert(await until(async () => (await page.locator('.set-notice').count()) === 0), 'đổi lại "Tự động": hết báo khởi động lại')
+  await section('about')
+  assert(await until(async () => /^\d+\.\d+\.\d+/.test((await page.locator('.about-specs dd').first().textContent()) ?? '')), 'Thông tin: hiện phiên bản app')
+  await section('data')
+  assert(await until(async () => (await page.locator('.backup-list li').count()) >= 1), 'Dữ liệu: có bản sao lưu hằng ngày tự tạo lúc mở app')
+  await page.screenshot({ path: join(OUT, '9-settings.png') })
+  await page.keyboard.press('Escape')
+  assert(await until(async () => (await panel.count()) === 0), 'Esc đóng Cài đặt (lần 2)')
+  // Trả lại thiết lập mặc định cho các phần kiểm thử sau
+  await value(page, 'settings:update', { weekStart: 1, allDayRemindTime: '09:00' })
+}
+
 /** Cảnh 3D: robot nhìn theo chuột, bấm đèn đổi theme, chọc robot, không vẽ khi đứng yên, ngủ, mất WebGL → 2D */
 async function sceneFlow(page: Page): Promise<void> {
   const num = async (expr: string): Promise<number> => Number(await page.evaluate(expr))
@@ -502,7 +570,7 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
   assert(await insideGap(), `bong bóng thoại nằm trong khoảng trống bên trái, không đè lên màn hình ${where}`)
   await page.screenshot({ path: join(OUT, '12-reminder.png') })
 
-  await reminder.getByRole('button', { name: '10 phút', exact: true }).click()
+  await press(reminder.getByRole('button', { name: '10 phút', exact: true }))
   assert(await until(async () => (await reminder.count()) === 0 && (await mode()) !== 'alert'), 'báo lại sau 10 phút: nhắc tạm tắt, robot dịu lại')
   await advance(10 * MIN)
   assert(await until(async () => (await reminder.count()) === 1), 'hết 10 phút: nhắc lại')
@@ -515,12 +583,12 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
   await page.screenshot({ path: join(OUT, '13-reminder-two.png') })
 
   const beforeDone = Number(await page.evaluate('performance.now()'))
-  await reminder.getByRole('button', { name: 'Xong', exact: true }).click()
+  await press(reminder.getByRole('button', { name: 'Xong', exact: true }))
   assert(await until(async () => (await taskTitled(page, a.title))?.status === 'done'), 'bấm Xong trên nhắc việc: việc chuyển sang Đã xong')
   // Hoạt cảnh ăn mừng chỉ dài 0,9 giây: kiểm tra mốc lần ăn mừng cuối thay vì cố bắt đúng lúc đang nhảy
   assert(await until(async () => Number(await page.evaluate('window.__budkin.robot.state.lastCelebrateAt')) >= beforeDone), 'robot ăn mừng')
   assert(await until(async () => (await reminder.locator('.reminder-title').textContent().catch(() => '')) === b.title), 'còn lại việc thứ hai')
-  await reminder.locator('.reminder-dismiss').click()
+  await press(reminder.locator('.reminder-dismiss'))
   assert(
     await until(async () => (await reminder.count()) === 0 && (await page.evaluate('window.__budkin.robot.state.alert')) === false),
     'bấm × (bỏ qua): hết nhắc, robot dịu lại'
@@ -613,6 +681,89 @@ async function boardFlow(app: ElectronApplication, page: Page): Promise<string> 
   return card.id
 }
 
+/** Số bản ghi chưa xoá trong DB của app (đọc thẳng ở main) */
+async function dbCounts(app: ElectronApplication): Promise<{ tasks: number; projects: number; tags: number }> {
+  // Không khai báo hàm con trong evaluate: tsx chèn __name() mà bên main không có
+  return app.evaluate(() =>
+    (globalThis as unknown as { __budkin: { db: { get<T>(sql: string): T } } }).__budkin.db.get<{ tasks: number; projects: number; tags: number }>(
+      `SELECT (SELECT count(*) FROM tasks WHERE deleted_at IS NULL) AS tasks, (SELECT count(*) FROM projects WHERE deleted_at IS NULL) AS projects,
+         (SELECT count(*) FROM tags WHERE deleted_at IS NULL) AS tags`
+    )
+  )
+}
+
+/** Hộp thoại chọn file của hệ điều hành: kiểm thử trả lời thay người dùng */
+async function stubDialogs(app: ElectronApplication, file: string): Promise<void> {
+  await app.evaluate(({ dialog }, f) => {
+    const d = dialog as unknown as Record<string, unknown>
+    d.showSaveDialog = async () => ({ canceled: false, filePath: f })
+    d.showOpenDialog = async () => ({ canceled: false, filePaths: [f] })
+  }, file)
+}
+
+async function openDataSettings(page: Page): Promise<void> {
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('Control+Comma')
+  await page.locator('.settings-nav [data-section="data"]').click()
+  await until(async () => (await page.locator('.settings-body[data-section="data"]').count()) === 1)
+}
+
+/**
+ * Quản lý dữ liệu (M7): xuất ra file JSON → mở một profile mới tinh, nhập (thay thế) → số việc / dự án / nhãn khớp;
+ * nhập lần nữa (gộp) không tạo trùng; sao lưu ngay → thêm việc → khôi phục: app khởi động lại, dữ liệu về lúc sao lưu
+ */
+async function dataFlow(app: ElectronApplication, page: Page): Promise<void> {
+  const file = join(OUT, 'budkin-export.json')
+  // Trang đổi sau mỗi lần mở lại app: luôn lấy theo `page` hiện tại
+  const toast = (): Locator => page.locator('.toast').last()
+  await stubDialogs(app, file)
+  await openDataSettings(page)
+  await page.getByRole('button', { name: 'Xuất file…' }).click()
+  assert(await until(async () => existsSync(file) && /Đã xuất \d+ việc/.test((await toast().textContent()) ?? ''), 5000), 'xuất dữ liệu ra file JSON (hộp thoại lưu file)')
+  const parsed = parseExportFile(readFileSync(file, 'utf8'))
+  const source = await dbCounts(app)
+  assert(parsed.ok && JSON.stringify(liveCounts(parsed.file)) === JSON.stringify(source), `file xuất hợp lệ, đủ dữ liệu (${JSON.stringify(source)})`)
+  await app.evaluate(({ app: a }) => a.exit(0))
+
+  // Máy mới: profile trống
+  const fresh = join(OUT, 'userdata-import')
+  rmSync(fresh, { recursive: true, force: true })
+  ;({ app, page } = await launch({ BUDKIN_USER_DATA: fresh }))
+  await until(async () => probe(page, (p) => p.data.getState().loaded), 5000)
+  await stubDialogs(app, file)
+  await openDataSettings(page)
+  await page.getByRole('button', { name: 'Chọn file…' }).click()
+  const dialog = page.locator('.import-modal')
+  assert(await until(async () => /việc/.test((await dialog.locator('.import-meta').textContent().catch(() => '')) ?? '')), 'chọn file: hiện tên file, ngày xuất, số việc')
+  await page.screenshot({ path: join(OUT, '17-import.png') })
+  await dialog.locator('[data-mode="replace"]').click()
+  assert(await until(async () => JSON.stringify(await dbCounts(app)) === JSON.stringify(source), 5000), 'nhập vào máy mới (thay thế): số việc, dự án, nhãn khớp')
+  assert(await until(async () => Object.keys(await probe(page, (p) => p.data.getState().tasks)).length > 0), 'giao diện tải lại dữ liệu vừa nhập')
+  await page.getByRole('button', { name: 'Chọn file…' }).click()
+  await dialog.locator('[data-mode="merge"]').click()
+  assert(await until(async () => /Đã gộp: 0 việc mới, 0 việc được cập nhật/.test((await toast().textContent()) ?? '')), 'nhập lại cùng file (gộp): không thêm, không đổi gì')
+  assert(JSON.stringify(await dbCounts(app)) === JSON.stringify(source), 'gộp lần nữa không tạo trùng')
+  const kinds = (await value(page, 'data:backups')).map((b) => b.kind)
+  assert(kinds.filter((k) => k === 'before-import').length === 2, 'mỗi lần nhập đều tự sao lưu trước')
+
+  // Sao lưu ngay → thêm việc → khôi phục bản vừa sao lưu
+  await page.getByRole('button', { name: 'Sao lưu ngay' }).click()
+  const manual = page.locator('.backup-list li', { hasText: 'Tự sao lưu' })
+  assert(await until(async () => (await manual.count()) === 1), 'sao lưu ngay: bản mới hiện trong danh sách')
+  await value(page, 'tasks:create', { title: 'Việc thêm sau khi sao lưu' })
+  await manual.getByRole('button', { name: 'Khôi phục' }).click()
+  const closed = app.waitForEvent('close')
+  await page.locator('.modal').getByRole('button', { name: 'Khôi phục' }).click()
+  await closed
+  assert(true, 'khôi phục: Budkin đóng lại để thay dữ liệu')
+  ;({ app, page } = await launch({ BUDKIN_USER_DATA: fresh }))
+  await until(async () => probe(page, (p) => p.data.getState().loaded), 5000)
+  assert(JSON.stringify(await dbCounts(app)) === JSON.stringify(source), 'mở lại sau khi khôi phục: dữ liệu về đúng lúc sao lưu (không còn việc thêm sau)')
+  assert(await until(async () => /Đã khôi phục dữ liệu từ bản sao lưu/.test((await page.locator('.toast').first().textContent().catch(() => '')) ?? '')), 'báo đã khôi phục')
+  assert((await value(page, 'data:backups')).some((b) => b.kind === 'before-restore'), 'dữ liệu trước khi khôi phục được giữ trong một bản sao lưu riêng')
+  await app.evaluate(({ app: a }) => a.exit(0))
+}
+
 async function main(): Promise<void> {
   // Chống treo (vd. hộp thoại chờ người bấm): quá 5 phút thì báo lỗi, đóng app và thoát
   setTimeout(() => {
@@ -697,6 +848,7 @@ async function main(): Promise<void> {
   )
   await uiFlow(page)
   await recurrenceFlow(page)
+  await settingsFlow(page)
   await sceneFlow(page)
   await app.evaluate(({ app: a }) => a.exit(0))
 
@@ -715,7 +867,8 @@ async function main(): Promise<void> {
     await until(async () => (await page.locator(`.board-col.col-in_progress .task-card[data-task-id="${movedCard}"]`).count()) === 1, 5000),
     'mở lại app: vẫn đang xem Kanban, thẻ đã kéo vẫn ở cột "Đang làm"'
   )
-  await app.evaluate(({ app: a }) => a.exit(0))
+  // ---- Xuất / nhập, sao lưu / khôi phục (đóng app này, mở profile mới) ----
+  await dataFlow(app, page)
 
   // ---- Máy không có WebGL: chế độ 2D ----
   ;({ app, page } = await launch({ BUDKIN_E2E_NO_WEBGL: '1' }))

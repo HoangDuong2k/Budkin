@@ -1,5 +1,5 @@
 // Hiển thị ngày giờ theo ngôn ngữ giao diện (tự viết để giống nhau trên mọi máy, không phụ thuộc locale hệ điều hành)
-import { addDays, daysBetween, isoWeekday, parseYmd } from '../../../shared/datetime'
+import { addDays, daysBetween, isoWeekday, localDateOf, localMinutesOf, pad2, parseYmd } from '../../../shared/datetime'
 import { getLang, tr, trKey } from '../../../shared/i18n'
 import { COLOR_KEYS, type ColorKey } from '../../../shared/palette'
 import type { RecurrenceRule, Task } from '../../../shared/types'
@@ -81,6 +81,24 @@ export function dueText(t: Pick<Task, 'dueDate' | 'dueTime'>, today: string): st
   if (!t.dueDate) return ''
   const d = shortDate(t.dueDate, today)
   return t.dueTime ? `${d} ${t.dueTime}` : d
+}
+
+/** Giờ phút 'HH:mm' của mốc thời gian (giờ địa phương) */
+export function clockTime(ms: number): string {
+  const min = localMinutesOf(ms)
+  return `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`
+}
+
+/** Ngày giờ ngắn: "Hôm nay 08:15", "T6, 26/9 09:00" */
+export function shortDateTime(ms: number, today: string): string {
+  return `${shortDate(localDateOf(ms), today)} ${clockTime(ms)}`
+}
+
+/** Dung lượng file: 812 KB, 3,4 MB */
+export function fileSize(bytes: number): string {
+  const dec = (n: number): string => (getLang() === 'en' ? n.toFixed(1) : n.toFixed(1).replace('.', ','))
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  return `${dec(bytes / 1024 / 1024)} MB`
 }
 
 /** Mốc nhắc có sẵn (phút trước hạn); task cả ngày dùng mốc theo ngày */

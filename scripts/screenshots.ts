@@ -1,5 +1,5 @@
 /**
- * Ảnh chụp giới thiệu (README): tạo dữ liệu mẫu rồi chụp bàn làm việc lúc bật đèn và tắt đèn, Kanban và Lịch.
+ * Ảnh chụp giới thiệu (README): tạo dữ liệu mẫu rồi chụp bàn làm việc lúc bật đèn và tắt đèn, Kanban, Lịch, Cài đặt.
  * Chạy: npm run build && npm run screenshots   → docs/screenshots/*.png
  */
 import { mkdirSync, rmSync } from 'fs'
@@ -93,6 +93,15 @@ async function main(): Promise<void> {
     await page.screenshot({ path: join(OUT, `${name}.png`) })
     console.log(`  ✓ ${name}.png`)
   }
+  // Cài đặt, mục Dữ liệu (có bản sao lưu hằng ngày + một bản vừa sao lưu), trên màn hình máy tính
+  await page.keyboard.press('f')
+  await call(page, 'data:backupNow')
+  await page.keyboard.press('Control+Comma')
+  await page.locator('.settings-nav [data-section="data"]').click()
+  await page.mouse.move(820, 330, { steps: 6 })
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: join(OUT, 'settings.png') })
+  console.log('  ✓ settings.png')
   await app.evaluate(({ app: a }) => a.exit(0))
 }
 

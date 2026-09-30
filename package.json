@@ -22,6 +22,7 @@
     "e2e": "tsx scripts/e2e-smoke.ts",
     "screenshots": "tsx scripts/screenshots.ts",
     "stats:scene": "tsx scripts/scene-stats.ts",
+    "perf:idle": "tsx scripts/perf-idle.ts",
     "dist": "electron-vite build && electron-builder",
     "dist:win": "electron-vite build && electron-builder --win",
     "dist:linux": "electron-vite build && electron-builder --linux"

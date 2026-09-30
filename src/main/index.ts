@@ -1,13 +1,15 @@
-import { join } from 'path'
+import { mkdirSync, readFileSync, statSync } from 'fs'
+import { basename, join } from 'path'
 import { pathToFileURL } from 'url'
 import { DatabaseSync } from 'node:sqlite'
 import { BrowserWindow, Menu, app, dialog, nativeTheme, powerMonitor, shell, type IpcMainInvokeEvent } from 'electron'
 import { z } from 'zod'
-import type { AlertsSnapshot, AppInfo, EventMap, NavigateTarget } from '../shared/api'
+import type { AlertsSnapshot, AppInfo, AppStatus, EventMap, ExportResult, NavigateTarget } from '../shared/api'
 import { bootArg, normalizeBoot, type BootPrefs } from '../shared/boot'
 import { APP_ID, APP_NAME, DEFAULT_WINDOW, MIN_WINDOW } from '../shared/constants'
 import { localDateOf } from '../shared/datetime'
-import { setLang, tr } from '../shared/i18n'
+import { EXPORT_MAX_BYTES, liveCounts, parseExportFile, type ExportFile, type ImportPreview } from '../shared/exportFormat'
+import { setLang, tr, trKey } from '../shared/i18n'
 import { WINDOW_BG, type Theme } from '../shared/palette'
 import { idSchema, minutesSchema } from '../shared/schemas'
 import type { Settings } from '../shared/types'
@@ -16,13 +18,17 @@ import { TestClock, systemClock, type Clock } from './clock'
 import { Db } from './db/connection'
 import { NewerDatabaseError, migrate } from './db/migrations'
 import { applyGraphicsSwitches } from './gpu'
+import { AppError } from './errors'
+import { writeFileAtomicSync } from './fsutil'
 import { dataHandlers } from './handlers'
 import { registerAll } from './ipc'
 import { HIDDEN_ARG, isAutostartOn, setAutostart } from './os/autostart'
 import { AppTray, hasTrayHost, trayIcons } from './os/tray'
 import { Notifier, canFlash } from './reminders/notifier'
 import { ReminderService } from './reminders/service'
+import { BackupService, applyPendingRestore } from './services/backup'
 import { DataService } from './services/data'
+import { exportData, importData } from './services/transfer'
 
 /** Kiểm thử tự động: cửa sổ hiện mà không giành focus, thư mục dữ liệu riêng, đồng hồ đẩy tới được */
 const TEST = process.env.BUDKIN_TEST === '1'
@@ -32,6 +38,8 @@ const bootFile = join(app.getPath('userData'), 'boot.json')
 const storedBoot = readBootFile(bootFile)
 let boot: BootPrefs = normalizeBoot(storedBoot)
 applyGraphicsSwitches(boot)
+/** Chế độ vẽ / XWayland của lần chạy này (đổi trong Cài đặt thì lần mở sau mới có hiệu lực) */
+const runningBoot = { render: boot.render, xwayland: boot.xwayland }
 
 const clock: Clock = TEST ? new TestClock(Number(process.env.BUDKIN_CLOCK_OFFSET ?? 0)) : systemClock
 let mainWindow: BrowserWindow | null = null
@@ -43,6 +51,11 @@ let tray: AppTray | null = null
 /** Máy có khay hệ thống (GNOME cần tiện ích AppIndicator) */
 let trayHost = false
 let alerts: AlertsSnapshot = { active: [], mutedUntil: null, nextAt: null }
+let backups: BackupService
+/** Lần mở này vừa khôi phục từ bản sao lưu nào */
+let restoredFrom: string | null = null
+/** File đã chọn để nhập, chờ người dùng chọn Gộp / Thay thế */
+let pendingImport: { token: string; file: ExportFile } | null = null
 /** Đang thoát thật (không phải bấm nút đóng để ẩn xuống khay) */
 let quitting = false
 /** Tự khởi động cùng máy: chạy ẩn dưới khay */
@@ -70,11 +83,20 @@ function sqliteVersion(): string {
   }
 }
 
-/** Mở DB, nâng cấp schema. Lỗi thì báo và thoát (không bao giờ ghi đè dữ liệu người dùng) */
+/** File đánh dấu "lần mở sau khôi phục bản sao lưu này" */
+const restoreMarker = (): string => join(app.getPath('userData'), 'restore.json')
+
+/** Mở DB (trước đó khôi phục bản sao lưu nếu có hẹn), nâng cấp schema. Lỗi thì báo và thoát (không ghi đè dữ liệu) */
 function openData(): boolean {
   const dir = app.getPath('userData')
+  const file = join(dir, 'budkin.db')
   try {
-    db = new Db(join(dir, 'budkin.db'))
+    restoredFrom = applyPendingRestore({ marker: restoreMarker(), db: file, backups: join(dir, 'backups') }, clock.now())
+  } catch (err) {
+    console.error('[khôi phục] lỗi, mở dữ liệu đang có', err)
+  }
+  try {
+    db = new Db(file)
     migrate(db, join(dir, 'backups'))
   } catch (err) {
     const detail = err instanceof NewerDatabaseError ? tr('Dữ liệu được tạo bởi phiên bản Budkin mới hơn. Hãy cài bản mới nhất.') : String(err)
@@ -87,8 +109,88 @@ function openData(): boolean {
     reminders?.poke()
     refreshTray()
   })
+  backups = new BackupService(db, join(dir, 'backups'), clock)
   setLang(data.getSettings().language)
   return true
+}
+
+/** Sao lưu hằng ngày: ngay sau khi mở app (để app khởi động nhanh thì chờ một chút) rồi kiểm tra mỗi giờ */
+function scheduleBackups(): void {
+  const daily = (): void => {
+    try {
+      backups.runDaily()
+    } catch (err) {
+      console.error('[sao lưu]', err)
+    }
+  }
+  setTimeout(daily, TEST ? 0 : 20_000).unref()
+  setInterval(daily, 3600_000).unref()
+}
+
+/** Khởi động lại app (áp dụng chế độ vẽ mới, khôi phục bản sao lưu). Kiểm thử: chỉ thoát — script tự mở lại */
+function relaunch(): void {
+  if (!TEST) {
+    const args = process.argv.slice(1).filter((a) => a !== HIDDEN_ARG)
+    // AppImage chạy từ thư mục mount tạm (mất khi thoát): mở lại bằng chính file .AppImage
+    app.relaunch(process.env.APPIMAGE ? { execPath: process.env.APPIMAGE, args } : { args })
+  }
+  quit()
+}
+
+function appStatus(): AppStatus {
+  return {
+    packaged: app.isPackaged,
+    trayHost,
+    wayland: process.platform === 'linux' && (process.env.XDG_SESSION_TYPE === 'wayland' || !!process.env.WAYLAND_DISPLAY),
+    boot: { render: boot.render, xwayland: boot.xwayland },
+    running: runningBoot,
+    dataDir: app.getPath('userData'),
+    restoredFrom
+  }
+}
+
+const IMPORT_ERRORS = {
+  'not-json': trKey('File không phải định dạng JSON.'),
+  'not-budkin': trKey('File này không phải dữ liệu xuất từ Budkin.'),
+  newer: trKey('File được tạo bởi phiên bản Budkin mới hơn. Hãy cập nhật app rồi nhập lại.'),
+  invalid: trKey('File dữ liệu bị hỏng hoặc đã bị sửa tay ({detail}).'),
+  duplicate: trKey('File dữ liệu bị hỏng hoặc đã bị sửa tay ({detail}).')
+} as const
+
+async function exportToFile(): Promise<ExportResult | null> {
+  const opts = {
+    title: tr('Xuất dữ liệu'),
+    defaultPath: join(app.getPath('documents'), `budkin-${localDateOf(clock.now())}.json`),
+    filters: [{ name: 'JSON', extensions: ['json'] }]
+  }
+  const res = mainWindow ? await dialog.showSaveDialog(mainWindow, opts) : await dialog.showSaveDialog(opts)
+  if (res.canceled || !res.filePath) return null
+  const file = exportData(db!, data.getSettings(), clock.now(), app.getVersion())
+  writeFileAtomicSync(res.filePath, JSON.stringify(file, null, 2))
+  return { path: res.filePath, counts: liveCounts(file) }
+}
+
+async function pickImport(): Promise<ImportPreview | null> {
+  const opts = {
+    title: tr('Nhập dữ liệu'),
+    properties: ['openFile' as const],
+    filters: [
+      { name: 'JSON', extensions: ['json'] },
+      { name: tr('Mọi file'), extensions: ['*'] }
+    ]
+  }
+  const res = mainWindow ? await dialog.showOpenDialog(mainWindow, opts) : await dialog.showOpenDialog(opts)
+  const path = res.filePaths[0]
+  if (res.canceled || !path) return null
+  if (statSync(path).size > EXPORT_MAX_BYTES) throw new AppError('VALIDATION', tr('File quá lớn, không phải dữ liệu Budkin.'))
+  const parsed = parseExportFile(readFileSync(path, 'utf8').replace(/^\uFEFF/, ''))
+  if (!parsed.ok) throw new AppError('VALIDATION', tr(IMPORT_ERRORS[parsed.error], { detail: parsed.detail ?? '' }))
+  pendingImport = { token: crypto.randomUUID(), file: parsed.file }
+  return importPreview(pendingImport.token, parsed.file, basename(path))
+}
+
+function importPreview(token: string, file: ExportFile, fileName: string): ImportPreview {
+  return { token, fileName, exportedAt: file.exportedAt, appVersion: file.appVersion ?? null, counts: liveCounts(file) }
 }
 
 /** Việc chưa xong đến hạn hôm nay hoặc đã quá hạn (số trên khay) */
@@ -130,6 +232,8 @@ function startReminders(): void {
       refreshTray()
     }
   })
+  // Vừa khôi phục bản sao lưu: nhắc việc cũ trong bản đó coi như đã báo
+  if (restoredFrom) reminders.absorb(null)
   reminders.start()
   // Máy vừa thức dậy / mở khoá: nhắc những việc tới giờ trong lúc ngủ
   powerMonitor.on('resume', () => reminders?.poke())
@@ -245,7 +349,53 @@ function registerIpc(): void {
           if (boot.gpuCrashes > 0) saveBoot({ gpuCrashes: 0 })
         }
       },
+      'app:status': { args: z.tuple([]), run: () => appStatus() },
+      'app:setBoot': {
+        args: z.tuple([z.strictObject({ render: z.enum(['auto', '2d', 'software']).optional(), xwayland: z.boolean().optional() })]),
+        run: (patch) => {
+          saveBoot(patch)
+          return appStatus()
+        }
+      },
+      'app:relaunch': { args: z.tuple([]), run: () => void setTimeout(relaunch, 150) },
       ...dataHandlers(data, onSettingsChanged),
+      'data:export': { args: z.tuple([]), run: () => exportToFile() },
+      'data:importPick': { args: z.tuple([]), run: () => pickImport() },
+      'data:importApply': {
+        args: z.tuple([z.uuid(), z.enum(['merge', 'replace'])]),
+        run: (token, mode) => {
+          const pending = pendingImport
+          if (!pending || pending.token !== token) throw new AppError('NOT_FOUND', tr('Hãy chọn lại file cần nhập.'))
+          pendingImport = null
+          // Sao lưu trước khi nhập: nhập nhầm thì khôi phục lại được
+          const backup = backups.snapshot('before-import')
+          const { result, taskIds } = importData(db!, clock, pending.file, mode, (patch) => data.updateSettings(patch))
+          if (mode === 'replace') onSettingsChanged(data.getSettings())
+          reminders?.absorb(mode === 'replace' ? null : taskIds)
+          send('data:reload', mode)
+          reminders?.poke()
+          refreshTray()
+          return { ...result, backup: backup.name }
+        }
+      },
+      'data:backups': { args: z.tuple([]), run: () => backups.list() },
+      'data:backupNow': { args: z.tuple([]), run: () => backups.snapshot('manual') },
+      'data:restoreBackup': {
+        args: z.tuple([z.string().min(1).max(120).regex(/^[\w.-]+$/)]),
+        run: (name) => {
+          backups.requestRestore(name, restoreMarker())
+          setTimeout(relaunch, 250)
+        }
+      },
+      'data:openFolder': {
+        args: z.tuple([z.enum(['data', 'backups'])]),
+        run: async (which) => {
+          const dir = which === 'backups' ? backups.dir : app.getPath('userData')
+          mkdirSync(dir, { recursive: true })
+          // Kiểm thử: không mở trình quản lý file trên máy người chạy test
+          if (!TEST) await shell.openPath(dir)
+        }
+      },
       'reminders:snapshot': { args: z.tuple([]), run: () => reminders!.run() },
       'reminders:snooze': { args: z.tuple([idSchema, minutesSchema]), run: (id, minutes) => reminders!.snooze(id, minutes) },
       'reminders:dismiss': { args: z.tuple([idSchema]), run: (id) => reminders!.dismiss(id) },
@@ -361,8 +511,10 @@ else {
     if (TEST)
       (globalThis as unknown as { __budkin: unknown }).__budkin = {
         clock,
+        db,
         data,
         reminders,
+        backups,
         notifications: notifier.log,
         /** Đẩy đồng hồ tới `ms`: renderer nhận độ lệch mới, bộ nhắc việc kiểm tra lại ngay */
         advance: (ms: number) => {
@@ -373,6 +525,7 @@ else {
         }
       }
     createWindow()
+    scheduleBackups()
   })
 
   // Tiến trình GPU chết (driver lỗi…): đếm lại, 2 lần liên tiếp thì lần mở sau dùng giao diện 2D

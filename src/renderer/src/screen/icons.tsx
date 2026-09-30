@@ -34,6 +34,14 @@ export type IconName =
   | 'globe'
   | 'grip'
   | 'skip'
+  | 'download'
+  | 'upload'
+  | 'archive'
+  | 'restore'
+  | 'monitor'
+  | 'volume'
+  | 'info'
+  | 'power'
 
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
@@ -145,7 +153,35 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M3.5 12h17M12 3.5c2.5 2.3 3.5 5.2 3.5 8.5s-1 6.2-3.5 8.5c-2.5-2.3-3.5-5.2-3.5-8.5s1-6.2 3.5-8.5z" />
     </>
   ),
-  grip: <path d="M9 6.5h.5M14.5 6.5h.5M9 12h.5M14.5 12h.5M9 17.5h.5M14.5 17.5h.5" />
+  grip: <path d="M9 6.5h.5M14.5 6.5h.5M9 12h.5M14.5 12h.5M9 17.5h.5M14.5 17.5h.5" />,
+  download: <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2" />,
+  upload: <path d="M12 15.5v-11M7.5 9 12 4.5 16.5 9M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2" />,
+  archive: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="4.5" rx="1.5" />
+      <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4" />
+    </>
+  ),
+  restore: (
+    <>
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9" />
+      <path d="M4.5 4.5V9H9M12 8v4.2l2.8 1.8" />
+    </>
+  ),
+  monitor: (
+    <>
+      <rect x="3" y="4.5" width="18" height="12" rx="2" />
+      <path d="M9 20.5h6M12 16.5v4" />
+    </>
+  ),
+  volume: <path d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />,
+  info: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11v5.5M12 7.8v.3" />
+    </>
+  ),
+  power: <path d="M12 3.5v8M7 6.5a7 7 0 1 0 10 0" />
 }
 
 export function Icon({ name, size = 16, ...rest }: { name: IconName; size?: number } & SVGProps<SVGSVGElement>): React.JSX.Element {

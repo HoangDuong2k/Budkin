@@ -139,12 +139,14 @@ body {
   outline-offset: 2px;
 }
 
-/* "Zzz" khi robot ngủ: hoạt ảnh CSS — cảnh 3D không phải vẽ khung nào */
+/* "Zzz" khi robot ngủ: từng chữ hiện lần lượt theo data-step (Hud.tsx đổi 0,7 giây một lần), không có hoạt ảnh CSS
+   chạy liên tục — lúc robot ngủ cả cửa sổ gần như không phải vẽ lại */
 .zzz {
   position: absolute;
   left: 0;
   top: 0;
   display: flex;
+  align-items: flex-end;
   gap: 2px;
   font-family: var(--font-mono);
   font-weight: 700;
@@ -160,41 +162,24 @@ body {
 
 .zzz span {
   display: inline-block;
-  animation: zzz 2.4s ease-in-out infinite;
+  visibility: hidden;
 }
 
+/* Bậc thang chéo lên: chữ sau to hơn, cao hơn */
 .zzz span:nth-child(2) {
   font-size: 15px;
-  animation-delay: 0.4s;
+  transform: translate(2px, -6px);
 }
 
 .zzz span:nth-child(3) {
   font-size: 19px;
-  animation-delay: 0.8s;
+  transform: translate(4px, -13px);
 }
 
-.zzz:not(.on) span {
-  animation-play-state: paused;
-}
-
-@keyframes zzz {
-  0% {
-    transform: translate(0, 4px);
-    opacity: 0;
-  }
-  30% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(10px, -18px);
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .zzz span {
-    animation: none;
-  }
+.zzz[data-step='1'] span:nth-child(1),
+.zzz[data-step='2'] span:nth-child(-n + 2),
+.zzz[data-step='3'] span {
+  visibility: visible;
 }
 
 /* Bong bóng thoại của robot: vị trí do cảnh 3D đặt mỗi khung (transform); đuôi chỉ xuống đầu robot (--tail) */
