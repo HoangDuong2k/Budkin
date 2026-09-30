@@ -1,11 +1,13 @@
 /**
- * Ảnh chụp giới thiệu (README): tạo dữ liệu mẫu rồi chụp bàn làm việc lúc bật đèn và tắt đèn, Kanban, Lịch, Cài đặt.
+ * Ảnh chụp giới thiệu (README): tạo dữ liệu mẫu rồi chụp bàn làm việc lúc bật đèn và tắt đèn, Kanban, Lịch, Cài đặt,
+ * từng mẫu robot trên bệ tròn.
  * Chạy: npm run build && npm run screenshots   → docs/screenshots/*.png
  */
 import { mkdirSync, rmSync } from 'fs'
 import { join, resolve } from 'path'
 import { _electron as electron, type Page } from 'playwright-core'
 import type { ArgsOf, Channel, DeskApi, ResultOf } from '../src/shared/api'
+import { ROBOT_MODELS } from '../src/shared/robots'
 import { addDays, localDateOf } from '../src/shared/datetime'
 
 const ROOT = resolve(__dirname, '..')
@@ -102,6 +104,19 @@ async function main(): Promise<void> {
   await page.waitForTimeout(1200)
   await page.screenshot({ path: join(OUT, 'settings.png') })
   console.log('  ✓ settings.png')
+
+  // Từng mẫu robot trên bệ tròn (ảnh cắt quanh robot, cùng khung để xếp thành hàng trong README)
+  await page.keyboard.press('Escape')
+  for (const robot of ROBOT_MODELS) {
+    await call(page, 'settings:update', { robot })
+    await page.waitForTimeout(2400)
+    await page.mouse.move(760, 330, { steps: 6 })
+    await page.waitForTimeout(900)
+    const at = (await page.evaluate('window.__budkin.hit().pedestal')) as { x: number; y: number }
+    await page.screenshot({ path: join(OUT, `robot-${robot}.png`), clip: { x: Math.round(at.x - 115), y: Math.round(at.y - 335), width: 230, height: 370 } })
+    console.log(`  ✓ robot-${robot}.png`)
+  }
+  await call(page, 'settings:update', { robot: 'budkin' })
   await app.evaluate(({ app: a }) => a.exit(0))
 }
 

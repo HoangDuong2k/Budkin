@@ -96,6 +96,17 @@ export const ROBOT = {
   alert: '#ff4b4b'
 }
 
+/** Màu mắt riêng của từng robot (đèn trạng thái đều xanh ngọc, báo động đều đỏ) */
+export const ROBOT_EYES = {
+  orbi: '#5ae3d8',
+  /** Rover: đèn hổ phách như thiết bị ngoài hiện trường */
+  rover: '#ffb65c',
+  /** Miu: xanh bạc hà như mắt mèo trong đêm */
+  miu: '#8cf2c4',
+  /** Mech: dải đèn trắng ấm */
+  mech: '#ffe4bd'
+}
+
 /** Đèn LED làm việc: ánh sáng trắng ấm */
 export const LAMP = {
   panel: '#fff5e8',

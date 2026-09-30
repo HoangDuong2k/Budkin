@@ -1,10 +1,27 @@
 // Trạng thái robot đang chạy: máy trạng thái (logic/robotMachine) + hẹn giờ + giá trị cho kiểm thử
-import { TEST_TIMINGS, TIMINGS, initialState, nextDeadline, reduce, visibleMode, type RobotEvent, type VisibleMode } from './logic/robotMachine'
+import {
+  TEST_TIMINGS,
+  TIMINGS,
+  initialState,
+  nextDeadline,
+  reduce,
+  visibleMode,
+  withTransients,
+  type RobotEvent,
+  type Transient,
+  type VisibleMode
+} from './logic/robotMachine'
 import { showPokeSummary } from '../state/hudStore'
 import { requestFrame } from './renderLoop'
 import { playChirp } from './sound'
 
-const cfg = window.api.boot.test ? TEST_TIMINGS : TIMINGS
+const baseCfg = window.api.boot.test ? TEST_TIMINGS : TIMINGS
+let cfg = baseCfg
+
+/** Mẫu robot đang đứng trên bệ có độ dài hoạt cảnh riêng */
+export function setRobotTransients(overrides: Partial<Record<Transient, number>> | undefined): void {
+  cfg = withTransients(baseCfg, overrides)
+}
 
 export const robot = {
   state: initialState(performance.now(), !window.api.boot.test),

@@ -3,7 +3,8 @@ import { decideRenderMode } from '../src/shared/renderMode'
 import { CAMERA, cameraFor, sceneLayout } from '../src/renderer/src/scene/math/layout'
 import { MAX_PITCH, MAX_YAW, MIN_PITCH, lookAngles, pointerTarget, softClamp } from '../src/renderer/src/scene/math/lookAt'
 import { alertHopSeconds, alertLedOn, nextLedToggle } from '../src/renderer/src/scene/logic/alertBlink'
-import { TIMINGS, initialState, nextDeadline, reduce, visibleMode, type RobotState } from '../src/renderer/src/scene/logic/robotMachine'
+import { TIMINGS, initialState, nextDeadline, reduce, visibleMode, withTransients, type RobotState } from '../src/renderer/src/scene/logic/robotMachine'
+import { ROBOT_MODELS, isRobotModel, nextRobot, type RobotModel } from '../src/shared/robots'
 import { FLIP_AT, themeFrame, type ThemeAnim } from '../src/renderer/src/scene/logic/themeTimeline'
 
 describe('robot nhìn theo con trỏ', () => {
@@ -162,3 +163,37 @@ describe('đèn ăng-ten khi báo động', () => {
   })
 })
 
+describe('nhiều mẫu robot', () => {
+  it('robot mới lên bệ: diễn lại hoạt cảnh xuất hiện, kể cả khi robot cũ đang ngủ', () => {
+    let s = initialState(0, false)
+    s = reduce(s, { type: 'tick', at: 1e6 })
+    expect(visibleMode(s)).toBe('sleep')
+    s = reduce(s, { type: 'intro', at: 1e6 })
+    expect(visibleMode(s)).toBe('intro')
+    expect(nextDeadline(s)).toBe(1e6 + TIMINGS.transient.intro)
+    // Hết hoạt cảnh xuất hiện thì thức, đếm lại từ đầu mới buồn ngủ
+    s = reduce(s, { type: 'tick', at: 1e6 + TIMINGS.transient.intro })
+    expect(visibleMode(s)).toBe('idle')
+  })
+
+  it('độ dài hoạt cảnh riêng của từng robot ghép lên bộ chung', () => {
+    const cfg = withTransients(TIMINGS, { poked: 1000 })
+    expect(cfg.transient.poked).toBe(1000)
+    expect(cfg.transient.celebrate).toBe(TIMINGS.transient.celebrate)
+    expect(reduce(initialState(0, false), { type: 'poke', at: 10 }, cfg).transientUntil).toBe(1010)
+    expect(withTransients(TIMINGS, undefined)).toBe(TIMINGS)
+  })
+
+  it('bấm bệ lần lượt qua mọi robot rồi quay về robot đầu', () => {
+    let id: RobotModel = 'budkin'
+    const seen: RobotModel[] = []
+    for (let i = 0; i < ROBOT_MODELS.length; i++) {
+      seen.push(id)
+      id = nextRobot(id)
+    }
+    expect(new Set(seen).size).toBe(ROBOT_MODELS.length)
+    expect(id).toBe('budkin')
+    expect(isRobotModel('mech')).toBe(true)
+    expect(isRobotModel('r2d2')).toBe(false)
+  })
+})

@@ -226,6 +226,73 @@ body {
   line-height: 1.45;
 }
 
+/* Mỗi robot một kiểu bong bóng (nội dung nhắc việc giữ nguyên để dễ đọc, chỉ khác khung) */
+
+/* Orbi: bảng hologram bo tròn, nền pha xanh ngọc */
+.bubble.voice-orbi {
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--panel) 88%, var(--accent));
+  box-shadow: var(--shadow), 0 0 16px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.bubble.voice-orbi::after {
+  background: color-mix(in srgb, var(--panel) 88%, var(--accent));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+/* Rover: phiếu báo cáo hiện trường — góc vuông, dải sọc cảnh báo hổ phách, chữ máy */
+.bubble.voice-rover {
+  border-radius: 2px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.bubble.voice-rover::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 4px;
+  background: repeating-linear-gradient(135deg, var(--accent-2) 0 6px, #17181a 6px 12px);
+}
+
+.bubble.voice-rover .bubble-summary {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* Miu: bo tròn, hai tai mèo trên đỉnh, viền bạc hà */
+.bubble.voice-miu {
+  border-radius: 16px;
+  border-top: 2px solid #8cf2c4;
+}
+
+.bubble.voice-miu::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 16px;
+  width: 40px;
+  height: 9px;
+  background: #8cf2c4;
+  clip-path: polygon(0 100%, 6px 0, 13px 100%, 27px 100%, 34px 0, 40px 100%);
+}
+
+/* Mech: góc vuông, viền trên trắng ấm, lời thoại đóng dấu "MECH //" */
+.bubble.voice-mech {
+  border-radius: 0;
+  border-top: 2px solid #ffe4bd;
+}
+
+.bubble.voice-mech .bubble-summary::before {
+  content: 'MECH // ';
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-2);
+}
+
 /* Popover, menu nổi: ngoài .screen (container query làm position: fixed bên trong bị tính theo .screen) */
 #portal-root {
   position: fixed;

@@ -20,6 +20,27 @@ robot phát sáng.
 
 Dữ liệu chỉ nằm trên máy của bạn, không cần tài khoản, không gửi đi đâu.
 
+## Robot trên bàn
+
+| Budkin | Orbi | Rover | Miu | Mech |
+|---|---|---|---|---|
+| ![Budkin](docs/screenshots/robot-budkin.png) | ![Orbi](docs/screenshots/robot-orbi.png) | ![Rover](docs/screenshots/robot-rover.png) | ![Miu](docs/screenshots/robot-miu.png) | ![Mech](docs/screenshots/robot-mech.png) |
+
+Robot đứng trên một **bệ tròn** có vòng LED: **bấm vào bệ** để đổi sang robot kế tiếp (robot cũ xoay rồi chìm vào bệ,
+robot mới trồi lên chào bạn), hoặc chọn trong Cài đặt → Chung. Robot nào cũng nhìn theo con trỏ, báo khi có việc đến
+hạn, bấm vào thì tóm tắt việc hôm nay, lâu không thao tác thì ngủ — nhưng mỗi robot một tính cách: dáng, hoạt cảnh,
+giọng, lời thoại và kiểu bong bóng riêng.
+
+- **Budkin** — robot bánh xe vui tính: bị chọc thì bẹp-giãn, ăn mừng thì nhảy xoay một vòng, báo động thì nhún nhảy.
+- **Orbi** — quả cầu bay điềm tĩnh, một mắt ống kính (con trỏ lại gần thì mống mắt nở ra): bị chọc thì xoay tròn,
+  ăn mừng thì bay một vòng và lộn nhào, ngủ thì đáp xuống nằm trên bệ. Nói ngắn gọn, giọng "bloop" trong như chuông.
+- **Rover** — xe bánh xích hăng hái với cột kính tiềm vọng: bị chọc thì lùi rồi chạy lên, ăn mừng thì xoay tại chỗ,
+  báo động thì đèn hiệu trên lưng nhấp nháy đỏ, ngủ thì thu cột kính. Nói như báo cáo ngoài thực địa, bíp 8-bit.
+- **Miu** — mèo máy tinh nghịch: con trỏ lại gần thì vểnh tai, bị chọc thì rung rừ rừ mắt cười, báo động thì tai đỏ
+  nhấp nháy và vẫy đuôi, ngủ thì nằm xuống quấn đuôi. Nói "Meo~", kêu meo meo.
+- **Mech** — người máy hai chân nghiêm túc: bị chọc thì chào kiểu nhà binh, ăn mừng thì giơ hai tay, báo động thì
+  giơ tay xin chú ý, ngủ thì ngồi thụp xuống. Nói kiểu báo cáo "Đã kiểm tra: …", giọng máy trầm.
+
 ## Tải và cài đặt
 
 Bộ cài có ở trang [Releases](https://github.com/HoangDuong2k/Budkin/releases) (khi đã phát hành), hoặc bản build mới

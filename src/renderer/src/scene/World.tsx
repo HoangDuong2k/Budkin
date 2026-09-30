@@ -12,8 +12,8 @@ import { reducedMotion } from './motion'
 import { installPointerTracking, onUserInput, pointer } from './pointer'
 import { Props } from './Props'
 import { bindRenderer, markFrame, policy, requestFrame, setMaxFps, setPaused } from './renderLoop'
-import { Robot } from './Robot'
 import { robot, robotInput } from './robotState'
+import { RobotStage } from './robots/RobotStage'
 import { Room } from './Room'
 import { stage } from './stage'
 import { ThemeDirector } from './ThemeDirector'
@@ -73,6 +73,7 @@ function Driver({ quality, software }: { quality: Quality; software: boolean }):
     const l = stage.layout
     place(hud.lampButton, { x: l.lamp.x - 0.02, y: 0.25, z: l.lamp.z }, 64, 150)
     place(hud.robotButton, { x: l.robot.x, y: 0.12, z: l.robot.z }, 70, 90)
+    place(hud.pedestalButton, { x: l.robot.x, y: 0.008, z: l.robot.z }, 96, 26)
   }, -20)
   return null
 }
@@ -87,7 +88,7 @@ export function World({ quality, software }: { quality: Quality; software: boole
       <Monitor />
       <Props />
       <Lamp />
-      <Robot />
+      <RobotStage />
       <Vignette />
     </>
   )

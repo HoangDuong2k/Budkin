@@ -1,8 +1,9 @@
 // Cho kiểm thử tự động (BUDKIN_TEST=1) đọc trạng thái cảnh, lấy mẫu điểm ảnh, giả lập mất WebGL
 import { advance } from '@react-three/fiber'
+import { Box3, type Mesh } from 'three'
 import { useAlerts } from '../state/alertStore'
 import { useData } from '../state/dataStore'
-import { useHud } from '../state/hudStore'
+import { currentRobot, useHud } from '../state/hudStore'
 import { useLang } from '../state/langStore'
 import { useTheme } from '../state/themeStore'
 import { env } from './envState'
@@ -10,7 +11,9 @@ import { projectPoint } from './math/framing'
 import { CAMERA } from './math/layout'
 import { renderInfo } from './renderInfo'
 import { renderStats } from './renderLoop'
-import { robot } from './robotState'
+import { ROBOTS } from './robots'
+import { PEDESTAL } from './robots/common'
+import { dispatchRobot, robot } from './robotState'
 import { stage } from './stage'
 
 type Rgb = [number, number, number]
@@ -38,13 +41,34 @@ function samplePixels(points: Array<{ x: number; y: number }>): Rgb[] {
   })
 }
 
-/** Điểm (CSS px) để bấm vào đèn / robot */
-function hit(): { lamp: { x: number; y: number }; robot: { x: number; y: number } } {
+/** Điểm (CSS px) để bấm vào đèn / robot / bệ robot (mặt trước của bệ, phía dưới chân robot) */
+function hit(): { lamp: { x: number; y: number }; robot: { x: number; y: number }; pedestal: { x: number; y: number } } {
   const l = stage.layout
   return {
     lamp: projectPoint({ x: l.lamp.x - 0.01, y: 0.2, z: l.lamp.z }, stage.camera, CAMERA, stage.viewport),
-    robot: projectPoint({ x: l.robot.x, y: 0.06, z: l.robot.z }, stage.camera, CAMERA, stage.viewport)
+    robot: projectPoint({ x: l.robot.x, y: PEDESTAL.height + ROBOTS[currentRobot()].hitY, z: l.robot.z }, stage.camera, CAMERA, stage.viewport),
+    pedestal: projectPoint({ x: l.robot.x, y: PEDESTAL.height * 0.5, z: l.robot.z + PEDESTAL.radius * 0.75 }, stage.camera, CAMERA, stage.viewport)
   }
+}
+
+/**
+ * Khối bao robot đang đứng trên bệ (mọi mesh đang hiện, không tính quầng sáng, vùng bấm ẩn), tính theo chân bệ trên mặt
+ * bàn — để kiểm tra robot nằm gọn trong ROBOT_BOX (khối bao dùng để đặt camera, robot không lấn vào màn hình)
+ */
+function robotBounds(): { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } } | null {
+  const holder = stage.getR3F?.().scene.getObjectByName('robot-holder')
+  if (!holder) return null
+  holder.updateWorldMatrix(true, true)
+  const box = new Box3()
+  const part = new Box3()
+  holder.traverseVisible((o) => {
+    const mesh = o as Mesh
+    if (!mesh.isMesh || !mesh.geometry) return
+    mesh.geometry.computeBoundingBox()
+    if (mesh.geometry.boundingBox) box.union(part.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld))
+  })
+  const b = stage.layout.robot
+  return { min: { x: box.min.x - b.x, y: box.min.y - b.y, z: box.min.z - b.z }, max: { x: box.max.x - b.x, y: box.max.y - b.y, z: box.max.z - b.z } }
 }
 
 function loseContext(): void {
@@ -70,6 +94,9 @@ export function installTestProbe(): void {
     webglInfo,
     samplePixels,
     hit,
+    robotBounds,
+    /** Kiểm thử / chụp ảnh: phát sự kiện cho robot (chọc, ăn mừng, báo động, đẩy tới lúc ngủ) */
+    robotEvent: dispatchRobot,
     loseContext
   }
 }

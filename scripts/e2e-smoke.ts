@@ -13,6 +13,7 @@ import { _electron as electron, type ElectronApplication, type Locator, type Pag
 import type { ApiResponse, ArgsOf, Channel, DeskApi, ResultOf } from '../src/shared/api'
 import { addDays, localDateOf, pad2 } from '../src/shared/datetime'
 import { liveCounts, parseExportFile } from '../src/shared/exportFormat'
+import { ROBOT_BOX } from '../src/renderer/src/scene/math/layout'
 import { SCREEN_BG } from '../src/shared/palette'
 import type { Settings, Task } from '../src/shared/types'
 
@@ -437,6 +438,61 @@ async function settingsFlow(page: Page): Promise<void> {
   assert(await until(async () => (await panel.count()) === 0), 'Esc đóng Cài đặt (lần 2)')
   // Trả lại thiết lập mặc định cho các phần kiểm thử sau
   await value(page, 'settings:update', { weekStart: 1, allDayRemindTime: '09:00' })
+}
+
+interface Point {
+  x: number
+  y: number
+}
+interface Bounds {
+  min: { x: number; y: number; z: number }
+  max: { x: number; y: number; z: number }
+}
+
+/**
+ * Nhiều mẫu robot: bấm bệ tròn lần lượt qua mọi robot rồi về lại Budkin — mỗi robot chào khi vừa lên bệ, nằm gọn trong
+ * khối bao dùng để đặt camera (không lấn vào màn hình), bấm vào thì phản ứng; chọn robot trong Cài đặt cũng đổi được
+ */
+async function robotsFlow(page: Page): Promise<void> {
+  const NAMES: Record<string, string> = { budkin: 'Budkin', orbi: 'Orbi', rover: 'Rover', miu: 'Miu', mech: 'Mech' }
+  const hud = (): Promise<{ robot: string; speech: string | null }> =>
+    probe(page, (p) => (p as unknown as { hudState: { getState(): { robot: string; speech: string | null } } }).hudState.getState())
+  const hit = (): Promise<{ robot: Point; pedestal: Point }> => probe(page, (p) => (p as unknown as { hit(): { robot: Point; pedestal: Point } }).hit())
+  // Khối bao cho phép lệch 5 mm (khối bao để đặt camera, không cần khít tuyệt đối)
+  const fits = (b: Bounds): boolean =>
+    (['x', 'y', 'z'] as const).every((k) => b.min[k] >= ROBOT_BOX.min[k] - 0.005 && b.max[k] <= ROBOT_BOX.max[k] + 0.005)
+  const fmt = (b: Bounds): string => (['x', 'y', 'z'] as const).map((k) => `${k} ${b.min[k].toFixed(3)}…${b.max[k].toFixed(3)}`).join(', ')
+
+  await page.mouse.move(8, 8)
+  assert((await hud()).robot === 'budkin', 'mặc định: Budkin đứng trên bệ tròn')
+  for (const id of ['orbi', 'rover', 'miu', 'mech', 'budkin']) {
+    const name = NAMES[id]
+    const at = await hit()
+    await page.mouse.click(at.pedestal.x, at.pedestal.y)
+    assert(await until(async () => (await hud()).robot === id), `bấm bệ tròn: robot chìm xuống, ${name} trồi lên`)
+    assert(await until(async () => (await hud()).speech === 'greeting'), `${name} chào khi vừa lên bệ`)
+    if (await page.locator('.bubble.is-greeting').count())
+      assert((await page.locator('.bubble.is-greeting').textContent())?.includes(name), `lời chào của ${name} theo tính cách riêng`)
+    await until(async () => String(await page.evaluate('window.__budkin.robot.mode')) === 'idle', 4000)
+    const b = await probe(page, (p) => (p as unknown as { robotBounds(): Bounds }).robotBounds())
+    assert(fits(b), `${name} nằm gọn trong khối bao của robot (${fmt(b)})`)
+    const before = Number(await page.evaluate('performance.now()'))
+    const at2 = await hit()
+    await page.mouse.click(at2.robot.x, at2.robot.y)
+    assert(await until(async () => Number(await page.evaluate('window.__budkin.robot.lastPokeAt')) >= before), `bấm vào ${name}: robot phản ứng`)
+    await shot(page, `18-robot-${id}.png`)
+  }
+  assert((await probe(page, (p) => p.data.getState().settings))?.robot === 'budkin', 'robot đang chọn được lưu vào thiết lập')
+
+  // Chọn trong Cài đặt → Chung
+  await page.keyboard.press('Control+Comma')
+  await page.locator('.settings-nav [data-section="general"]').click()
+  await page.locator('.robot-card[data-robot="miu"]').click()
+  assert(await until(async () => (await hud()).robot === 'miu'), 'Cài đặt → Robot trên bàn: chọn Miu, robot trên bàn đổi theo')
+  await page.locator('.robot-card[data-robot="budkin"]').click()
+  assert(await until(async () => (await hud()).robot === 'budkin'), 'chọn lại Budkin')
+  await page.keyboard.press('Escape')
+  await until(async () => (await page.locator('.settings').count()) === 0)
 }
 
 /** Cảnh 3D: robot nhìn theo chuột, bấm đèn đổi theme, chọc robot, không vẽ khi đứng yên, ngủ, mất WebGL → 2D */
@@ -887,6 +943,7 @@ async function main(): Promise<void> {
   await uiFlow(page)
   await recurrenceFlow(page)
   await settingsFlow(page)
+  await robotsFlow(page)
   await sceneFlow(page)
   await app.evaluate(({ app: a }) => a.exit(0))
 

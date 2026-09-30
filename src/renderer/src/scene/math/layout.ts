@@ -22,8 +22,8 @@ export interface Box {
   max: Vec3
 }
 
-/** Khối bao robot quanh chân đế (đã tính cả lúc nhảy lên, quay người) */
-export const ROBOT_BOX: Box = { min: { x: -0.068, y: 0, z: -0.055 }, max: { x: 0.068, y: 0.29, z: 0.055 } }
+/** Khối bao robot và bệ tròn dưới chân, quanh tâm bệ (đã tính cả lúc nhảy lên, quay người) — mọi mẫu robot phải nằm gọn */
+export const ROBOT_BOX: Box = { min: { x: -0.072, y: 0, z: -0.075 }, max: { x: 0.072, y: 0.29, z: 0.075 } }
 /** Khối bao đèn quanh chân đế (chụp đèn chồm sang trái, về phía màn hình) */
 export const LAMP_BOX: Box = { min: { x: -0.1, y: 0, z: -0.06 }, max: { x: 0.055, y: 0.5, z: 0.07 } }
 

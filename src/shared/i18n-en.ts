@@ -3,7 +3,8 @@ export const EN: Record<string, string> = {
   // Đèn, theme, robot
   'Bật đèn': 'Turn the lamp on',
   'Tắt đèn': 'Turn the lamp off',
-  'Chọc Budkin': 'Poke Budkin',
+  'Chọc {name}': 'Poke {name}',
+  'Đổi robot (đang là {name})': 'Switch robot (currently {name})',
 
   // Lỗi khi mở dữ liệu
   'Không mở được dữ liệu': 'Could not open your data',
@@ -334,5 +335,33 @@ export const EN: Record<string, string> = {
   'Phiên bản': 'Version',
   'Hệ điều hành': 'Operating system',
   'Đồ hoạ': 'Graphics',
-  'Mã nguồn trên GitHub': 'Source code on GitHub'
+  'Mã nguồn trên GitHub': 'Source code on GitHub',
+
+  // Robot trên bàn: tính cách
+  'Robot trên bàn': 'Desk robot',
+  'Giao diện': 'Interface',
+  'Mỗi robot một tính cách: dáng, giọng, lời thoại riêng. Bấm vào bệ tròn dưới chân robot để đổi nhanh.':
+    'Each robot has its own personality: look, voice and way of talking. Click the round pedestal under the robot to switch quickly.',
+  'Robot bánh xe vui tính, hay nhún nhảy': 'A cheerful wheeled robot that loves to bounce',
+  'Chào bạn! Budkin đây — có việc đến hạn là mình báo ngay.': "Hi! Budkin here — I'll tell you the moment something is due.",
+  'Quả cầu bay điềm tĩnh, nói ngắn gọn': 'A calm hovering orb of few words',
+  'Hôm nay không còn việc nào.': 'Nothing left for today.',
+  'Còn {n} việc hôm nay. {m} việc đã quá hạn.': '{n} tasks left today. {m} overdue.',
+  'Còn {n} việc hôm nay.': '{n} tasks left today.',
+  'Orbi đã sẵn sàng. Mình sẽ theo dõi các hạn chót.': 'Orbi online. I will keep watch over your deadlines.',
+  'Xe bánh xích hăng hái, báo cáo như ngoài thực địa': 'An eager tracked rover that reports like it is in the field',
+  'Báo cáo: đã xong hết nhiệm vụ hôm nay!': "Report: all of today's missions complete!",
+  'Báo cáo: {n} nhiệm vụ hôm nay, {m} nhiệm vụ trễ hạn!': 'Report: {n} missions today, {m} past due!',
+  'Báo cáo: {n} nhiệm vụ hôm nay!': 'Report: {n} missions today!',
+  'Rover có mặt! Sẵn sàng nhận nhiệm vụ.': 'Rover reporting! Ready for missions.',
+  'Mèo máy tinh nghịch, được chọc là rừ rừ': 'A playful robot cat that purrs when poked',
+  'Meo~ hết việc rồi, nghỉ thôi!': 'Meow~ all done, nap time!',
+  'Meo~ còn {n} việc, {m} việc trễ rồi đó!': 'Meow~ {n} tasks left, and {m} are late!',
+  'Meo~ hôm nay còn {n} việc nè.': 'Meow~ {n} tasks left today.',
+  'Meo~ Miu đây! Bấm vào Miu là Miu kể việc cho nghe.': "Meow~ it's Miu! Click me and I'll tell you what's left to do.",
+  'Người máy hai chân nghiêm túc, chào kiểu nhà binh': 'A serious two-legged mech with a military salute',
+  'Đã kiểm tra: không còn việc nào hôm nay.': 'Checked: no tasks left today.',
+  'Đã kiểm tra: {n} việc hôm nay, {m} việc quá hạn.': 'Checked: {n} tasks today, {m} overdue.',
+  'Đã kiểm tra: {n} việc hôm nay.': 'Checked: {n} tasks today.',
+  'Mech trình diện. Mọi hạn chót đều trong tầm kiểm soát.': 'Mech reporting for duty. All deadlines under control.'
 }

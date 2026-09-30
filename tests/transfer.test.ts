@@ -69,7 +69,7 @@ describe('xuất / nhập dữ liệu', () => {
     a.data.createTask({ title: 'Đã xong', status: 'done' })
     const gone = a.data.createTask({ title: 'Đã xoá' })
     a.data.deleteTask(gone.id, 'one')
-    a.data.updateSettings({ weekStart: 0, allDayRemindTime: '07:30', quality: 'saver' })
+    a.data.updateSettings({ weekStart: 0, allDayRemindTime: '07:30', quality: 'saver', robot: 'miu' })
 
     const file = roundTrip(a)
     expect(file.version).toBe(EXPORT_VERSION)
@@ -88,7 +88,7 @@ describe('xuất / nhập dữ liệu', () => {
     ])
     expect(b.data.listTasks({ scope: 'search', text: 'dong tien' })).toHaveLength(1)
     // Thiết lập đi theo dữ liệu thì lấy, thiết lập riêng của máy (chất lượng 3D) thì không
-    expect(b.data.getSettings()).toMatchObject({ weekStart: 0, allDayRemindTime: '07:30', quality: 'balanced' })
+    expect(b.data.getSettings()).toMatchObject({ weekStart: 0, allDayRemindTime: '07:30', quality: 'balanced', robot: 'miu' })
   })
 
   it('thay thế: dữ liệu cũ trên máy mất hết', () => {

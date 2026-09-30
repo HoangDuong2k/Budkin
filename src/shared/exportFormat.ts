@@ -21,7 +21,7 @@ export const EXPORT_VERSION = 1
 export const EXPORT_MAX_BYTES = 50 * 1024 * 1024
 
 /** Thiết lập đi theo dữ liệu khi chuyển máy (còn lại là của riêng từng máy) */
-export const PORTABLE_SETTINGS = ['language', 'weekStart', 'allDayRemindTime', 'defaultRemindBeforeMin', 'sound', 'volume', 'reducedMotion'] as const
+export const PORTABLE_SETTINGS = ['language', 'weekStart', 'allDayRemindTime', 'defaultRemindBeforeMin', 'sound', 'volume', 'reducedMotion', 'robot'] as const
 export type PortableSetting = (typeof PORTABLE_SETTINGS)[number]
 
 const stamp = z.number().int().min(0)

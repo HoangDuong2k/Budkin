@@ -1,6 +1,7 @@
 // Kiểu dữ liệu nghiệp vụ dùng chung giữa main và renderer
 import type { Lang } from './i18n'
 import type { ColorKey } from './palette'
+import type { RobotModel } from './robots'
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done'
 export const TASK_STATUSES: readonly TaskStatus[] = ['todo', 'in_progress', 'done']
@@ -98,6 +99,8 @@ export interface Settings {
   autostart: boolean
   quality: Quality
   reducedMotion: 'auto' | 'on' | 'off'
+  /** Robot đứng trên bệ tròn bên trái màn hình */
+  robot: RobotModel
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -110,7 +113,8 @@ export const DEFAULT_SETTINGS: Settings = {
   closeToTray: null,
   autostart: false,
   quality: 'balanced',
-  reducedMotion: 'auto'
+  reducedMotion: 'auto',
+  robot: 'budkin'
 }
 
 /** Thay đổi dữ liệu main phát cho renderer sau mỗi lần ghi (bản đầy đủ của từng đối tượng) */

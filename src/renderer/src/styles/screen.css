@@ -2546,3 +2546,65 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Chọn robot trên bàn (Cài đặt → Chung) */
+.robot-hint {
+  margin: 4px 0 8px;
+}
+
+.robot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.robot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  text-align: left;
+  cursor: pointer;
+}
+
+.robot-card:hover {
+  border-color: color-mix(in srgb, var(--c) 70%, var(--line));
+}
+
+.robot-card.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.rc-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-label);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.robot-card.on .rc-name {
+  color: var(--accent);
+}
+
+.rc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 6px var(--c);
+}
+
+.rc-blurb {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}

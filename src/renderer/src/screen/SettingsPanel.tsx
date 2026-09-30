@@ -5,12 +5,15 @@ import type { AppInfo, AppStatus, BackupInfo, BackupKind, BootPatch } from '../.
 import type { ImportMode, ImportPreview } from '../../../shared/exportFormat'
 import { parseTimeInput } from '../../../shared/datetime'
 import { LANGS, tr, trKey } from '../../../shared/i18n'
+import { ROBOT_MODELS, type RobotModel } from '../../../shared/robots'
 import type { SettingsPatch } from '../../../shared/schemas'
 import type { Quality, Settings } from '../../../shared/types'
 import { useNow } from '../clock'
 import { ApiError, call } from '../ipc'
+import { ROBOT, ROBOT_EYES } from '../scene/palette3d'
 import { renderInfo } from '../scene/renderInfo'
-import { playChirp } from '../scene/sound'
+import { PERSONALITY } from '../scene/robots/personality'
+import { playChirp, previewVoice } from '../scene/sound'
 import { useAlerts } from '../state/alertStore'
 import { useData } from '../state/dataStore'
 import { useLang } from '../state/langStore'
@@ -156,11 +159,45 @@ function Volume({ value }: { value: number }): React.JSX.Element {
   )
 }
 
+const EYE_COLOR: Record<RobotModel, string> = { budkin: ROBOT.eye, ...ROBOT_EYES }
+
+/** Chọn robot đứng trên bàn: robot đổi ngay (chìm vào bệ, robot mới trồi lên chào), nghe thử giọng */
+function RobotPicker({ value }: { value: RobotModel }): React.JSX.Element {
+  return (
+    <div className="robot-grid" role="radiogroup" aria-label={tr('Robot trên bàn')}>
+      {ROBOT_MODELS.map((id) => (
+        <button
+          key={id}
+          role="radio"
+          aria-checked={id === value}
+          className={`robot-card ${id === value ? 'on' : ''}`}
+          data-robot={id}
+          style={{ '--c': EYE_COLOR[id] } as React.CSSProperties}
+          onClick={() => {
+            save({ robot: id })
+            previewVoice(id)
+          }}
+        >
+          <span className="rc-name">
+            <i className="rc-dot" />
+            {PERSONALITY[id].name}
+          </span>
+          <span className="rc-blurb">{tr(PERSONALITY[id].blurb)}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function General({ s }: { s: Settings }): React.JSX.Element {
   const lang = useLang((x) => x.lang)
   const setLang = useLang((x) => x.setLang)
   return (
     <>
+      <GroupTitle>{tr('Robot trên bàn')}</GroupTitle>
+      <p className="set-hint robot-hint">{tr('Mỗi robot một tính cách: dáng, giọng, lời thoại riêng. Bấm vào bệ tròn dưới chân robot để đổi nhanh.')}</p>
+      <RobotPicker value={s.robot} />
+      <GroupTitle>{tr('Giao diện')}</GroupTitle>
       <Row id="language" label={tr('Ngôn ngữ')}>
         <Choice value={lang} options={LANGS.map((l) => ({ value: l.id, label: l.label }))} onChange={setLang} label={tr('Ngôn ngữ')} />
       </Row>

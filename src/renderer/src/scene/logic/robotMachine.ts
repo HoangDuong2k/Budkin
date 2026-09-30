@@ -24,6 +24,11 @@ export const TIMINGS: RobotTimings = {
 /** Kiểm thử: rút ngắn thời gian buồn ngủ / ngủ */
 export const TEST_TIMINGS: RobotTimings = { ...TIMINGS, drowsyAfter: 4000, sleepAfter: 1500 }
 
+/** Độ dài hoạt cảnh riêng của một mẫu robot (vd. chào kiểu nhà binh lâu hơn một cú bẹp-giãn) ghép lên bộ chung */
+export function withTransients(base: RobotTimings, overrides: Partial<Record<Transient, number>> | undefined): RobotTimings {
+  return overrides ? { ...base, transient: { ...base.transient, ...overrides } } : base
+}
+
 export interface RobotState {
   base: BaseMode
   transient: Transient | null
@@ -36,6 +41,8 @@ export interface RobotState {
 
 export type RobotEvent =
   | { type: 'input'; at: number }
+  /** Robot mới vừa đứng lên bệ (đổi mẫu): diễn lại hoạt cảnh xuất hiện */
+  | { type: 'intro'; at: number }
   | { type: 'tick'; at: number }
   | { type: 'poke'; at: number }
   | { type: 'lamp'; at: number }
@@ -69,6 +76,8 @@ export function reduce(s: RobotState, e: RobotEvent, cfg: RobotTimings = TIMINGS
       return s.base === 'idle' ? { ...s, lastInputAt: e.at } : wake(s, e.at, cfg)
     case 'poke':
       return start(wake(s, e.at, cfg), 'poked', e.at, cfg)
+    case 'intro':
+      return start({ ...s, base: 'idle', lastInputAt: e.at }, 'intro', e.at, cfg)
     case 'lamp':
       return start(wake(s, e.at, cfg), 'lampReact', e.at, cfg)
     case 'celebrate': {

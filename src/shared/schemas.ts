@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import { isValidDate } from './datetime'
 import { COLOR_KEYS } from './palette'
+import { ROBOT_MODELS } from './robots'
 
 export const LIMITS = {
   title: 500,
@@ -125,7 +126,8 @@ export const settingsPatchSchema = z.strictObject({
   closeToTray: z.boolean().nullable().optional(),
   autostart: z.boolean().optional(),
   quality: z.enum(['high', 'balanced', 'saver']).optional(),
-  reducedMotion: z.enum(['auto', 'on', 'off']).optional()
+  reducedMotion: z.enum(['auto', 'on', 'off']).optional(),
+  robot: z.enum(ROBOT_MODELS).optional()
 })
 export type SettingsPatch = z.infer<typeof settingsPatchSchema>
 

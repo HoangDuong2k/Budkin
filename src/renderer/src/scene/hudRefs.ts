@@ -6,5 +6,6 @@ export const hud = {
   bubbleW: 0,
   bubbleH: 0,
   lampButton: null as HTMLElement | null,
-  robotButton: null as HTMLElement | null
+  robotButton: null as HTMLElement | null,
+  pedestalButton: null as HTMLElement | null
 }

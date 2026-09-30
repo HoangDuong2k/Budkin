@@ -2,11 +2,14 @@
 // và nút ẩn cho đèn / robot để dùng được bằng bàn phím, trình đọc màn hình
 import { useEffect, useRef, useState } from 'react'
 import { tr } from '../../../shared/i18n'
+import { useHud } from '../state/hudStore'
 import { useTheme } from '../state/themeStore'
 import { hud } from './hudRefs'
 import { reducedMotion } from './motion'
 import { onRobotMode, pokeRobot, robot } from './robotState'
 import { ReminderBubble } from './ReminderBubble'
+import { PERSONALITY } from './robots/personality'
+import { switchRobot } from './robots/RobotStage'
 
 /** Nhịp hiện từng chữ z */
 const ZZZ_STEP_MS = 700
@@ -63,6 +66,7 @@ export function Hud(): React.JSX.Element {
   const [mode, setMode] = useState(robot.mode)
   const theme = useTheme((s) => s.target)
   const toggle = useTheme((s) => s.toggle)
+  const model = useHud((s) => s.robot)
   useEffect(() => onRobotMode(setMode), [])
   return (
     <>
@@ -80,8 +84,16 @@ export function Hud(): React.JSX.Element {
             hud.robotButton = el
           }}
           className="hotspot"
-          aria-label={tr('Chọc Budkin')}
+          aria-label={tr('Chọc {name}', { name: PERSONALITY[model].name })}
           onClick={pokeRobot}
+        />
+        <button
+          ref={(el) => {
+            hud.pedestalButton = el
+          }}
+          className="hotspot"
+          aria-label={tr('Đổi robot (đang là {name})', { name: PERSONALITY[model].name })}
+          onClick={switchRobot}
         />
       </div>
       <div className="scene-hud">
