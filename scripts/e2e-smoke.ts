@@ -75,13 +75,16 @@ const KNOWN_WARNINGS = [
 
 const passed: string[] = []
 const problems: string[] = []
+const STARTED = Date.now()
+/** Số giây từ lúc bắt đầu — in cạnh từng bước để biết chỗ nào chậm (CI không cho tải log) */
+const elapsed = (): string => `${Math.round((Date.now() - STARTED) / 1000)}s`
 let pageRef: Page | undefined
 let appRef: ElectronApplication | undefined
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(`KIỂM THỬ THẤT BẠI: ${msg}`)
-  passed.push(msg)
-  console.log(`  ✓ ${msg}`)
+  passed.push(`[${elapsed()}] ${msg}`)
+  console.log(`  ✓ [${elapsed()}] ${msg}`)
 }
 
 /** Trên GitHub Actions: in lỗi thành annotation (xem được ngay trên trang tóm tắt) */
@@ -776,14 +779,15 @@ async function dataFlow(app: ElectronApplication, page: Page): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  // Chống treo (vd. hộp thoại chờ người bấm): quá 5 phút thì báo lỗi, đóng app và thoát
+  // Chống treo (vd. hộp thoại chờ người bấm): quá 8 phút (máy chậm: 20 phút) thì báo lỗi, đóng app và thoát
+  const limitMin = SLOW ? 20 : 8
   setTimeout(() => {
-    const msg = `Kiểm thử bị treo quá ${SLOW ? 10 : 5} phút. Đã qua ${passed.length} bước, bước cuối: ${passed[passed.length - 1] ?? '(chưa có)'}`
+    const msg = [`Kiểm thử bị treo quá ${limitMin} phút. Đã qua ${passed.length} bước, các bước cuối:`, ...passed.slice(-8)].join('\n')
     console.error(msg)
     annotate('error', `E2E ${process.platform} bị treo`, msg)
     appRef?.process().kill()
     process.exit(1)
-  }, 5 * 60_000 * (SLOW ? 2 : 1)).unref()
+  }, limitMin * 60_000).unref()
   rmSync(OUT, { recursive: true, force: true })
   mkdirSync(OUT, { recursive: true })
 
@@ -903,7 +907,7 @@ main().catch(async (err) => {
   annotate(
     'error',
     `E2E ${process.platform} thất bại`,
-    [String((err as Error)?.message ?? err).slice(0, 1500), '', `Đã qua ${passed.length} bước, bước cuối: ${passed[passed.length - 1] ?? '(chưa có)'}`, '', 'Lỗi / cảnh báo từ app:', ...problems.slice(-12)].join('\n')
+    [String((err as Error)?.message ?? err).slice(0, 1500), '', `Đã qua ${passed.length} bước (${elapsed()}), các bước cuối:`, ...passed.slice(-6), '', 'Lỗi / cảnh báo từ app:', ...problems.slice(-12)].join('\n')
   )
   await appRef?.evaluate(({ app: a }) => a.exit(1)).catch(() => undefined)
   process.exit(1)
