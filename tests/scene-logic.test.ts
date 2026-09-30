@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { decideRenderMode } from '../src/shared/renderMode'
 import { CAMERA, cameraFor, sceneLayout } from '../src/renderer/src/scene/math/layout'
 import { MAX_PITCH, MAX_YAW, MIN_PITCH, lookAngles, pointerTarget, softClamp } from '../src/renderer/src/scene/math/lookAt'
+import { alertHopSeconds, alertLedOn, nextLedToggle } from '../src/renderer/src/scene/logic/alertBlink'
 import { TIMINGS, initialState, nextDeadline, reduce, visibleMode, type RobotState } from '../src/renderer/src/scene/logic/robotMachine'
 import { FLIP_AT, themeFrame, type ThemeAnim } from '../src/renderer/src/scene/logic/themeTimeline'
 
@@ -137,3 +138,27 @@ describe('chọn 3D hay 2D', () => {
     expect(decideRenderMode('software', ok).software).toBe(true)
   })
 })
+
+describe('đèn ăng-ten khi báo động', () => {
+  it('nhanh lúc đầu, chậm dần; đổi đúng các mốc, không nhảy pha giữa hai đoạn', () => {
+    expect(alertLedOn(0)).toBe(true)
+    expect(alertLedOn(0.3)).toBe(false)
+    expect(nextLedToggle(0)).toBe(0.25)
+    expect(nextLedToggle(14.9)).toBe(15)
+    // Giây 15: đèn tiếp tục xen kẽ (60 lần đổi trong 15 giây đầu → sáng)
+    expect(alertLedOn(14.9)).toBe(false)
+    expect(alertLedOn(15)).toBe(true)
+    expect(nextLedToggle(15.1)).toBe(15.5)
+    expect(nextLedToggle(119.9)).toBe(120)
+    expect(alertLedOn(120)).toBe(true)
+    expect(nextLedToggle(3600)).toBe(3602)
+  })
+
+  it('báo động cả đêm: mỗi phút chỉ vẽ lại ~30 lần', () => {
+    let draws = 0
+    for (let t = 3600; t < 3660; t = nextLedToggle(t)) draws++
+    expect(draws).toBe(30)
+    expect(alertHopSeconds(true)).toBeLessThan(alertHopSeconds(false))
+  })
+})
+

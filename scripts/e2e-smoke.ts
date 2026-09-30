@@ -573,6 +573,8 @@ async function reminderFlow(app: ElectronApplication, page: Page): Promise<void>
       return !!box && box.x >= 0 && box.y >= 0 && box.x + box.width <= rect.x
     })
   assert(await insideGap(), `bong bóng thoại nằm trong khoảng trống bên trái, không đè lên màn hình ${where}`)
+  // Chờ hết nhún nhảy: máy vẽ bằng CPU mà cảnh đang vẽ liên tục thì chụp màn hình / bấm chuột phải chờ rất lâu
+  await until(async () => (await page.evaluate('window.__budkin.robot.settled')) === true, 8000)
   await page.screenshot({ path: join(OUT, '12-reminder.png') })
 
   await press(reminder.getByRole('button', { name: '10 phút', exact: true }))

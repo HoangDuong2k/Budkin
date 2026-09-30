@@ -21,6 +21,7 @@ import {
 import { env } from './envState'
 import { merged, roundedBox } from './geometry'
 import { hud } from './hudRefs'
+import { alertHopSeconds, alertLedOn, nextLedToggle } from './logic/alertBlink'
 import { materials } from './materials'
 import { projectPoint } from './math/framing'
 import { CAMERA } from './math/layout'
@@ -110,13 +111,9 @@ export function Robot(): React.JSX.Element {
     return () => clearTimeout(t)
   }, [])
 
-  // Đang báo động: nhấp nháy đèn ăng-ten (2 lần/giây, sau 15 giây thì chậm lại) — chỉ vẽ lúc đèn đổi
-  useEffect(() => {
-    const iv = setInterval(() => {
-      if (robot.mode === 'alert') requestFrame()
-    }, 250)
-    return () => clearInterval(iv)
-  }, [])
+  // Đang báo động: hẹn vẽ lại đúng lúc đèn ăng-ten đổi (logic/alertBlink) — không vẽ liên tục
+  const ledTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(ledTimer.current), [])
 
   useFrame((_state, delta) => {
     // Khung đầu tiên sau một lúc đứng yên có delta rất lớn → giới hạn để hoạt cảnh không nhảy
@@ -171,7 +168,7 @@ export function Robot(): React.JSX.Element {
         hop = 0.04 * Math.sin(Math.PI * p)
         spin = TAU * (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2)
         moving = true
-      } else if (mode === 'alert' && t < 15) {
+      } else if (mode === 'alert' && t < alertHopSeconds(policy.software)) {
         hop = 0.012 * Math.abs(Math.sin((Math.PI * t) / 0.6))
         moving = true
       }
@@ -200,9 +197,10 @@ export function Robot(): React.JSX.Element {
 
     // Đèn ăng-ten: xanh bình thường, đỏ nhấp nháy khi báo động
     if (mode === 'alert') {
-      const rate = t < 15 ? 2 : 1
-      const on = Math.floor(t * rate * 2) % 2 === 0
+      const on = alertLedOn(t)
       ledMat.color.copy(on ? ledAlert : ledNormal).multiplyScalar(on ? 1 : 0.35)
+      clearTimeout(ledTimer.current)
+      ledTimer.current = setTimeout(requestFrame, Math.max(0, robot.since + nextLedToggle(t) * 1000 - now) + 5)
     } else ledMat.color.copy(ledNormal)
     // Phòng tối: mắt và đèn ăng-ten phát sáng rõ hơn
     const dark = 1 - env.env
