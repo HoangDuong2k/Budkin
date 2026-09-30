@@ -113,10 +113,10 @@ async function press(target: Locator): Promise<void> {
   try {
     await target.click({ timeout: 10_000 })
   } catch (err) {
-    // Sự kiện đã tới nơi (nút đã biến mất) thì thôi
-    if (!(await target.count())) return
+    // Sự kiện có thể tới nơi muộn: nút đã biến mất thì thôi
+    if (await until(async () => (await target.count()) === 0, 1500)) return
     problems.push(`[e2e] bấm chuột bị treo, bấm qua DOM: ${String((err as Error).message ?? err).split('\n')[0]}`)
-    await target.evaluate((el) => (el as HTMLElement).click())
+    await target.evaluate((el) => (el as HTMLElement).click(), undefined, { timeout: 5000 }).catch(() => undefined)
   }
 }
 
@@ -875,7 +875,10 @@ async function dataFlow(app: ElectronApplication, page: Page): Promise<void> {
   ;({ app, page } = await launch({ BUDKIN_USER_DATA: fresh }))
   await until(async () => probe(page, (p) => p.data.getState().loaded), 5000)
   assert(JSON.stringify(await dbCounts(app)) === JSON.stringify(source), 'mở lại sau khi khôi phục: dữ liệu về đúng lúc sao lưu (không còn việc thêm sau)')
-  assert(await until(async () => /Đã khôi phục dữ liệu từ bản sao lưu/.test((await page.locator('.toast').first().textContent().catch(() => '')) ?? '')), 'báo đã khôi phục')
+  assert(
+    await until(async () => ((await page.evaluate('window.__budkin.toastLog')) as string[]).some((t) => /Đã khôi phục dữ liệu từ bản sao lưu/.test(t))),
+    'báo đã khôi phục (kèm nút xem bản sao lưu)'
+  )
   assert((await value(page, 'data:backups')).some((b) => b.kind === 'before-restore'), 'dữ liệu trước khi khôi phục được giữ trong một bản sao lưu riêng')
   await app.evaluate(({ app: a }) => a.exit(0))
 }

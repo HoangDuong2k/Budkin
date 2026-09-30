@@ -326,6 +326,7 @@ export const EN: Record<string, string> = {
   'Khôi phục bản sao lưu lúc {when}? Budkin sẽ khởi động lại. Dữ liệu hiện tại được giữ trong một bản sao lưu riêng.':
     'Restore the backup from {when}? Budkin will restart. Your current data is kept in a separate backup.',
   'Đã khôi phục dữ liệu từ bản sao lưu {name}': 'Restored your data from backup {name}',
+  Xem: 'View',
   'Nơi lưu': 'Storage',
   'Thư mục dữ liệu': 'Data folder',
 

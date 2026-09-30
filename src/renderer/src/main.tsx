@@ -37,7 +37,14 @@ void useData.getState().load()
 subscribeAlerts()
 // Vừa khôi phục bản sao lưu (app tự khởi động lại để thay dữ liệu): báo cho người dùng biết
 void call('app:status')
-  .then((s) => s.restoredFrom && useUi.getState().toast({ text: tr('Đã khôi phục dữ liệu từ bản sao lưu {name}', { name: s.restoredFrom }) }))
+  .then(
+    (s) =>
+      s.restoredFrom &&
+      useUi.getState().toast({
+        text: tr('Đã khôi phục dữ liệu từ bản sao lưu {name}', { name: s.restoredFrom }),
+        action: { label: tr('Xem'), run: () => useUi.getState().openSettings('data') }
+      })
+  )
   .catch(() => undefined)
 
 // Bấm thông báo, menu khay: main bảo chuyển tới đâu

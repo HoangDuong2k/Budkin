@@ -6,6 +6,7 @@ import { useData } from '../state/dataStore'
 import { currentRobot, useHud } from '../state/hudStore'
 import { useLang } from '../state/langStore'
 import { useTheme } from '../state/themeStore'
+import { useUi } from '../state/uiStore'
 import { env } from './envState'
 import { projectPoint } from './math/framing'
 import { CAMERA } from './math/layout'
@@ -75,8 +76,19 @@ function loseContext(): void {
   stage.getR3F?.().gl.getContext().getExtension('WEBGL_lose_context')?.loseContext()
 }
 
+/** Mọi toast đã hiện (toast tự tắt sau vài giây — máy chậm thì kiểm thử đọc không kịp) */
+const toastLog: string[] = []
+
 export function installTestProbe(): void {
   if (!window.api.boot.test) return
+  const seen = new Set<number>()
+  useUi.subscribe((s) => {
+    for (const t of s.toasts)
+      if (!seen.has(t.id)) {
+        seen.add(t.id)
+        toastLog.push(t.text)
+      }
+  })
   ;(window as unknown as { __budkin: unknown }).__budkin = {
     get renderMode() {
       return renderInfo.mode
@@ -97,6 +109,7 @@ export function installTestProbe(): void {
     robotBounds,
     /** Kiểm thử / chụp ảnh: phát sự kiện cho robot (chọc, ăn mừng, báo động, đẩy tới lúc ngủ) */
     robotEvent: dispatchRobot,
+    toastLog,
     loseContext
   }
 }
