@@ -35,7 +35,8 @@ const SOUND: Partial<Record<VisibleMode, Parameters<typeof playChirp>[0]>> = { p
 export function dispatchRobot(e: RobotEvent): void {
   robot.state = reduce(robot.state, e, cfg)
   const mode = visibleMode(robot.state)
-  if (mode !== robot.mode) {
+  const changed = mode !== robot.mode
+  if (changed) {
     robot.mode = mode
     robot.since = performance.now()
     const s = SOUND[mode]
@@ -43,7 +44,8 @@ export function dispatchRobot(e: RobotEvent): void {
     for (const l of listeners) l(mode)
   }
   schedule()
-  requestFrame()
+  // Thao tác / hẹn giờ không đổi gì trên hình (vd. gõ phím khi robot đang thức): không vẽ khung nào
+  if (changed || (e.type !== 'input' && e.type !== 'tick')) requestFrame()
 }
 
 /** Hẹn đúng lúc cần kiểm tra lại (hết hoạt cảnh, tới giờ buồn ngủ) — không kiểm tra mỗi khung hình */

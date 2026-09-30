@@ -490,15 +490,19 @@ async function sceneFlow(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 3 && idleFrames < 0; attempt++) {
     await page.mouse.move(vp.width / 2 + attempt * 7, vp.height - 30, { steps: 2 })
     await settled()
-    // Khung hình do lần nhấn Shift cuối (giữ robot thức) yêu cầu phải vẽ xong trước khi bắt đầu đếm
+    // Khung hình cuối của hoạt cảnh (đang dở lúc robot vừa đứng yên) phải vẽ xong trước khi bắt đầu đếm
     await page.waitForTimeout(250 * WAIT)
     const mode0 = await page.evaluate('window.__budkin.robot.mode')
     const f0 = await num('window.__budkin.renderStats.frames')
-    await page.waitForTimeout(1200)
+    // Trong lúc đếm vẫn nhấn Shift giữ robot thức (máy chậm dễ chạm mốc buồn ngủ 4 giây) — gõ phím không vẽ khung nào
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press('Shift')
+      await page.waitForTimeout(400)
+    }
     const f1 = await num('window.__budkin.renderStats.frames')
     if (mode0 === 'idle' && (await page.evaluate('window.__budkin.robot.mode')) === 'idle') idleFrames = f1 - f0
   }
-  assert(idleFrames === 0, `Tiết kiệm, đứng yên 1,2 giây: ${idleFrames} khung hình`)
+  assert(idleFrames === 0, `Tiết kiệm, đứng yên (vẫn gõ phím) 1,2 giây: ${idleFrames} khung hình`)
   assert((await probe(page, (p) => p.renderMode)) === '3d', 'đổi mức chất lượng (tạo lại canvas) vẫn ở chế độ 3D')
 
   // Lâu không thao tác (kiểm thử rút ngắn còn vài giây): robot ngủ, hiện "Zzz", cảnh không vẽ
