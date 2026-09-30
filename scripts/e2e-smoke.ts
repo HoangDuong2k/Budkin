@@ -463,17 +463,40 @@ async function robotsFlow(page: Page): Promise<void> {
     (['x', 'y', 'z'] as const).every((k) => b.min[k] >= ROBOT_BOX.min[k] - 0.005 && b.max[k] <= ROBOT_BOX.max[k] + 0.005)
   const fmt = (b: Bounds): string => (['x', 'y', 'z'] as const).map((k) => `${k} ${b.min[k].toFixed(3)}…${b.max[k].toFixed(3)}`).join(', ')
 
+  /**
+   * Chờ robot thức hẳn (hết hoạt cảnh xuất hiện), nhấn Shift giữ cho khỏi buồn ngủ. Máy ảo vẽ bằng CPU: lần vẽ đầu của
+   * robot mới treo luồng vài giây, các mốc hẹn giờ dồn lại — robot có thể nhảy thẳng sang buồn ngủ / ngủ
+   */
+  const awake = async (): Promise<boolean> => {
+    const end = Date.now() + 8000 * WAIT
+    while (Date.now() < end) {
+      if ((await page.evaluate('window.__budkin.robot.mode')) === 'idle') return true
+      await page.keyboard.press('Shift')
+      await page.waitForTimeout(250)
+    }
+    return false
+  }
+  // Lời chào chỉ hiện vài giây: ghi lại ngay lúc bong bóng hiện ra
+  const watchGreeting = (): Promise<unknown> =>
+    page.evaluate(`(() => {
+      window.__greeting = ''
+      const obs = new MutationObserver(() => {
+        const t = document.querySelector('.bubble.is-greeting')?.textContent
+        if (t) { window.__greeting = t; obs.disconnect() }
+      })
+      obs.observe(document.body, { childList: true, subtree: true, characterData: true })
+    })()`)
+
   await page.mouse.move(8, 8)
   assert((await hud()).robot === 'budkin', 'mặc định: Budkin đứng trên bệ tròn')
   for (const id of ['orbi', 'rover', 'miu', 'mech', 'budkin']) {
     const name = NAMES[id]
     const at = await hit()
+    await watchGreeting()
     await page.mouse.click(at.pedestal.x, at.pedestal.y)
     assert(await until(async () => (await hud()).robot === id), `bấm bệ tròn: robot chìm xuống, ${name} trồi lên`)
-    assert(await until(async () => (await hud()).speech === 'greeting'), `${name} chào khi vừa lên bệ`)
-    if (await page.locator('.bubble.is-greeting').count())
-      assert((await page.locator('.bubble.is-greeting').textContent())?.includes(name), `lời chào của ${name} theo tính cách riêng`)
-    await until(async () => String(await page.evaluate('window.__budkin.robot.mode')) === 'idle', 4000)
+    assert(await until(async () => String(await page.evaluate('window.__greeting')).includes(name)), `${name} chào khi vừa lên bệ, theo tính cách riêng`)
+    assert(await awake(), `${name} đứng trên bệ, thức`)
     const b = await probe(page, (p) => (p as unknown as { robotBounds(): Bounds }).robotBounds())
     assert(fits(b), `${name} nằm gọn trong khối bao của robot (${fmt(b)})`)
     const before = Number(await page.evaluate('performance.now()'))
