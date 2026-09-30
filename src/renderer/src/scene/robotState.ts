@@ -14,7 +14,9 @@ export const robot = {
   // Cho kiểm thử đọc
   headYaw: 0,
   headPitch: 0,
-  settled: false
+  settled: false,
+  /** Lần bị chọc gần nhất (hoạt cảnh bẹp-giãn chỉ dài 0,45 giây — máy chậm khó bắt kịp đúng lúc) */
+  lastPokeAt: -Infinity
 }
 robot.mode = visibleMode(robot.state)
 
@@ -61,7 +63,8 @@ export function pingAlert(): void {
 
 /** Bấm vào robot: bẹp-giãn; không có nhắc đang chờ thì tóm tắt việc hôm nay */
 export function pokeRobot(): void {
-  dispatchRobot({ type: 'poke', at: performance.now() })
+  robot.lastPokeAt = performance.now()
+  dispatchRobot({ type: 'poke', at: robot.lastPokeAt })
   if (!robot.state.alert) showPokeSummary()
 }
 

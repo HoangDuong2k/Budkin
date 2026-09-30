@@ -16,7 +16,7 @@
  */
 import { mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join, resolve } from 'path'
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core'
+import { _electron as electron, type CDPSession, type ElectronApplication, type Page } from 'playwright-core'
 
 const ROOT = resolve(__dirname, '..')
 const OUT = join(ROOT, 'test-output', 'perf')
@@ -101,6 +101,13 @@ async function invoke(page: Page, channel: string, ...args: unknown[]): Promise<
   )
 }
 
+/** Heap JS của renderer sau khi ép gom rác (MB) — tăng mãi mới là rò rỉ; RSS còn gồm bộ đệm của Chromium */
+async function heapMb(cdp: CDPSession): Promise<number> {
+  await cdp.send('HeapProfiler.collectGarbage')
+  const { usedSize } = (await cdp.send('Runtime.getHeapUsage')) as { usedSize: number }
+  return Math.round((usedSize / 1024 / 1024) * 10) / 10
+}
+
 /** Một thao tác như người dùng: rê chuột qua cảnh (robot tỉnh, nhìn theo) */
 async function nudge(page: Page): Promise<void> {
   const vp = await page.evaluate(() => ({ w: innerWidth, h: innerHeight }))
@@ -157,20 +164,30 @@ async function main(): Promise<void> {
   for (const [text, ok] of checks) console.log(`  ${ok ? '✓' : '✗'} ${text}`)
 
   // Chạy dài: bộ nhớ có tăng dần không (rò rỉ)
-  const soak: Array<{ minute: number; memMb: Record<string, number> }> = []
+  const soak: Array<{ minute: number; memMb: Record<string, number>; heapMb?: number }> = []
   if (SOAK_MIN > 0) {
     console.log(`\nChạy dài ${SOAK_MIN} phút (mỗi phút ghi bộ nhớ, 10 phút thao tác một lần)…`)
+    const cdp = await page.context().newCDPSession(page)
+    const heap0 = await heapMb(cdp)
+    console.log(`  heap JS renderer lúc đầu (sau khi gom rác): ${heap0} MB`)
+    let heapLast = heap0
     for (let m = 1; m <= SOAK_MIN; m++) {
       await sleep(60_000)
-      if (m % 10 === 0) {
+      // Thao tác ở phút 5, 15, 25…; đo ở phút 10, 20, 30… (robot đã ngủ lại, đối tượng tạm đã được gom)
+      if (m % 10 === 5) {
         await nudge(page)
         const t = (await invoke(page, 'tasks:create', { title: `Việc lúc chạy dài ${m}` })) as { ok: boolean; value: { id: string } }
         if (t.ok) await invoke(page, 'tasks:setStatus', t.value.id, 'done')
       }
       const memMb = Object.fromEntries(Object.entries(group(await metrics(app))).map(([k, g]) => [k, Math.round(g.memMb)]))
-      soak.push({ minute: m, memMb })
-      if (m % 10 === 0 || m === SOAK_MIN) console.log(`  phút ${String(m).padStart(3)}: ${Object.entries(memMb).map(([k, v]) => `${k} ${v} MB`).join(' · ')}`)
+      const report = m % 10 === 0 || m === SOAK_MIN
+      if (report) heapLast = await heapMb(cdp)
+      soak.push({ minute: m, memMb, ...(report ? { heapMb: heapLast } : {}) })
+      if (report) console.log(`  phút ${String(m).padStart(3)}: ${Object.entries(memMb).map(([k, v]) => `${k} ${v} MB`).join(' · ')} · heap JS ${heapLast} MB`)
     }
+    const heapGrow = Math.round((heapLast - heap0) * 10) / 10
+    checks.push([`chạy dài: heap JS renderer ${heap0} → ${heapLast} MB (tăng ${heapGrow} MB < 5 MB)`, heapGrow < 5])
+    console.log(`  ${heapGrow < 5 ? '✓' : '✗'} ${checks[checks.length - 1][0]}`)
     const first = soak[0].memMb
     const last = soak[soak.length - 1].memMb
     for (const type of Object.keys(last)) {

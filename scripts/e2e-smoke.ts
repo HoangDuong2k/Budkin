@@ -472,9 +472,11 @@ async function sceneFlow(page: Page): Promise<void> {
   assert(await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) === before, 1500), 'Ctrl+Shift+L (đang gõ) bật / tắt đèn trở lại')
   await page.keyboard.press('Escape')
 
-  // Chọc robot
+  // Chọc robot. Hoạt cảnh bẹp-giãn chỉ dài 0,45 giây: kiểm tra mốc lần chọc cuối thay vì cố bắt đúng lúc (máy ảo vẽ bằng
+  // CPU có khi mất cả trăm ms mỗi khung)
+  const beforePoke = Number(await page.evaluate('performance.now()'))
   await page.mouse.click(hit.robot.x, hit.robot.y)
-  assert(await until(async () => (await page.evaluate('window.__budkin.robot.mode')) === 'poked', 1000), 'bấm vào robot: robot bẹp-giãn')
+  assert(await until(async () => Number(await page.evaluate('window.__budkin.robot.lastPokeAt')) >= beforePoke, 1000 * WAIT), 'bấm vào robot: robot bẹp-giãn')
 
   // Chế độ Tiết kiệm: đứng yên thì không vẽ khung nào
   await invoke(page, 'settings:update', { quality: 'saver' })
