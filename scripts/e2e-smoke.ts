@@ -464,13 +464,14 @@ async function robotsFlow(page: Page): Promise<void> {
   const fmt = (b: Bounds): string => (['x', 'y', 'z'] as const).map((k) => `${k} ${b.min[k].toFixed(3)}…${b.max[k].toFixed(3)}`).join(', ')
 
   /**
-   * Chờ robot thức hẳn (hết hoạt cảnh xuất hiện), nhấn Shift giữ cho khỏi buồn ngủ. Máy ảo vẽ bằng CPU: lần vẽ đầu của
-   * robot mới treo luồng vài giây, các mốc hẹn giờ dồn lại — robot có thể nhảy thẳng sang buồn ngủ / ngủ
+   * Chờ robot thức hẳn và đã được vẽ ở tư thế đứng yên (hết hoạt cảnh xuất hiện), nhấn Shift giữ cho khỏi buồn ngủ.
+   * Máy ảo vẽ bằng CPU: lần vẽ đầu của robot mới treo luồng vài giây, các mốc hẹn giờ dồn lại — robot có thể nhảy thẳng
+   * sang buồn ngủ / ngủ, hoặc theo đồng hồ đã xong hoạt cảnh mà trên màn hình vẫn chưa kịp vẽ
    */
   const awake = async (): Promise<boolean> => {
     const end = Date.now() + 8000 * WAIT
     while (Date.now() < end) {
-      if ((await page.evaluate('window.__budkin.robot.mode')) === 'idle') return true
+      if ((await page.evaluate("window.__budkin.robot.mode === 'idle' && window.__budkin.robot.settled === true")) === true) return true
       await page.keyboard.press('Shift')
       await page.waitForTimeout(250)
     }
@@ -498,7 +499,8 @@ async function robotsFlow(page: Page): Promise<void> {
     assert(await until(async () => String(await page.evaluate('window.__greeting')).includes(name)), `${name} chào khi vừa lên bệ, theo tính cách riêng`)
     assert(await awake(), `${name} đứng trên bệ, thức`)
     const b = await probe(page, (p) => (p as unknown as { robotBounds(): Bounds }).robotBounds())
-    assert(fits(b), `${name} nằm gọn trong khối bao của robot (${fmt(b)})`)
+    // Đủ cao (đã vẽ ở kích thước thật, không phải lúc mới trồi lên) mà vẫn nằm gọn trong khối bao
+    assert(fits(b) && b.max.y > 0.12, `${name} nằm gọn trong khối bao của robot (${fmt(b)})`)
     const before = Number(await page.evaluate('performance.now()'))
     const at2 = await hit()
     await page.mouse.click(at2.robot.x, at2.robot.y)

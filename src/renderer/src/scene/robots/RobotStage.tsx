@@ -145,6 +145,8 @@ export function RobotStage(): React.JSX.Element {
   // Robot mới lên bệ: giọng, lời thoại, độ dài hoạt cảnh theo robot đó; chào (trừ lần mở app)
   useEffect(() => {
     if (!shown) return
+    // Chưa vẽ khung nào của robot mới: chưa "đứng yên" (kiểm thử chờ cờ này trước khi đo, bấm vào robot)
+    robot.settled = false
     setRobotTransients(ROBOTS[shown].transients)
     useHud.setState({ robot: shown })
     placeBubble()
