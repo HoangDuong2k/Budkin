@@ -586,9 +586,11 @@ async function sceneFlow(page: Page): Promise<void> {
   await invoke(page, 'settings:update', { quality: 'saver' })
   await page.waitForFunction(() => (window as unknown as Probe).__budkin.stage.ready, undefined, { timeout: 10000 })
   // Di chuột nhẹ (đặt lại hẹn giờ buồn ngủ — 4 s khi kiểm thử), chờ robot đứng yên rồi đo; chỉ tính lần đo mà
-  // robot không đổi trạng thái giữa chừng (máy chậm / vẽ bằng CPU có thể chạm mốc buồn ngủ)
+  // robot không đổi trạng thái giữa chừng (máy chậm / vẽ bằng CPU có thể chạm mốc buồn ngủ). Đếm được khung thì đo lại
+  // (máy ảo Windows: cú bấm bị treo trước đó có thể tới muộn, robot cử động giữa lúc đo) — lấy lần đo ít khung nhất;
+  // app mà vẽ liên tục lúc đứng yên thì lần nào cũng có khung, vẫn hỏng
   let idleFrames = -1
-  for (let attempt = 0; attempt < 3 && idleFrames < 0; attempt++) {
+  for (let attempt = 0; attempt < 3 && idleFrames !== 0; attempt++) {
     await page.mouse.move(vp.width / 2 + attempt * 7, vp.height - 30, { steps: 2 })
     await settled()
     // Khung hình cuối của hoạt cảnh (đang dở lúc robot vừa đứng yên) phải vẽ xong trước khi bắt đầu đếm
@@ -601,7 +603,7 @@ async function sceneFlow(page: Page): Promise<void> {
       await page.waitForTimeout(400)
     }
     const f1 = await num('window.__budkin.renderStats.frames')
-    if (mode0 === 'idle' && (await page.evaluate('window.__budkin.robot.mode')) === 'idle') idleFrames = f1 - f0
+    if (mode0 === 'idle' && (await page.evaluate('window.__budkin.robot.mode')) === 'idle') idleFrames = idleFrames < 0 ? f1 - f0 : Math.min(idleFrames, f1 - f0)
   }
   assert(idleFrames === 0, `Tiết kiệm, đứng yên (vẫn gõ phím) 1,2 giây: ${idleFrames} khung hình`)
   assert((await probe(page, (p) => p.renderMode)) === '3d', 'đổi mức chất lượng (tạo lại canvas) vẫn ở chế độ 3D')
