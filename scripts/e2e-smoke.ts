@@ -184,10 +184,11 @@ async function launch(extraEnv: Record<string, string> = {}): Promise<{ app: Ele
   page.on('console', (m) => {
     if ((m.type() === 'error' || m.type() === 'warning') && !KNOWN_WARNINGS.some((re) => re.test(m.text()))) problems.push(`[console.${m.type()}] ${m.text().slice(0, 300)}`)
   })
-  await page.waitForSelector('.screen-app', { timeout: 20000 })
+  // Máy chậm (CI, vẽ bằng CPU): tạo khung vẽ 3D lâu — giao diện chỉ hiện khi cảnh đã đặt màn hình
+  await page.waitForSelector('.screen-app', { timeout: 20_000 * WAIT })
   // Cảnh 3D dựng xong sau giao diện (canvas phải đo kích thước trước)
   const mode = await page.evaluate(() => (window as unknown as Probe).__budkin.renderMode)
-  if (mode === '3d') await page.waitForFunction(() => (window as unknown as Probe).__budkin.stage.ready, undefined, { timeout: 20000 })
+  if (mode === '3d') await page.waitForFunction(() => (window as unknown as Probe).__budkin.stage.ready, undefined, { timeout: 20_000 * WAIT })
   const win = /^(\d+)x(\d+)$/.exec(process.env.BUDKIN_E2E_WINDOW ?? '')
   if (win) await resize(app, page, Number(win[1]), Number(win[2]))
   return { app, page }
