@@ -73,7 +73,7 @@ export function FlatDesk(): React.JSX.Element {
       stage.ready = true
     }
     // Robot đứng ở tâm bệ; mét trên mặt bàn → px theo tỉ lệ của tranh
-    stage.robotAnchor = (y) => (current ? { x: current.robot.x, y: current.base - y * 1000 * current.s } : { x: 0, y: 0 })
+    stage.robotAnchor = (y) => (current ? { x: current.robot.x, y: current.robotGround - y * 1000 * current.s } : { x: 0, y: 0 })
     stage.hit = () => {
       const l = current!
       return {

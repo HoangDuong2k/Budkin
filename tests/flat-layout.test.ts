@@ -29,6 +29,10 @@ describe('bố cục bàn làm việc 2D', () => {
     expect(robotRight).toBeLessThanOrEqual(l.bezel.x)
     expect(l.robot.y - 290 * l.s).toBeGreaterThanOrEqual(0)
     expect(l.base + MM.minBelow * l.s * 0.9).toBeLessThanOrEqual(h)
+    // Bệ robot (cả bóng dưới chân) không lọt ra ngoài mép dưới; mép sau mặt bàn nằm sau chân màn hình, robot, đèn
+    expect(l.robotGround + 12 * l.s).toBeLessThanOrEqual(h)
+    expect(l.deskBack).toBeLessThan(l.base - 40 * l.s)
+    expect(l.robotGround).toBeGreaterThan(l.base)
     // Đèn
     expect(l.lamp.x - MM.lampLeft * l.s).toBeGreaterThanOrEqual(l.bezel.x + l.bezel.width)
     expect(l.lamp.x + MM.lampRight * l.s).toBeLessThanOrEqual(w)

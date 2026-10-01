@@ -77,7 +77,7 @@ function keysPath(k: FlatLayout['keyboard'], s: number): string {
 }
 
 export const FlatRoom = memo(function FlatRoom({ l }: { l: FlatLayout }): React.JSX.Element {
-  const { w, h, s, cx, base, screen, bezel, keyboard: kb } = l
+  const { w, h, s, cx, base, deskBack, screen, bezel, keyboard: kb } = l
   const toggle = useTheme((x) => x.toggle)
   const theme = useTheme((x) => x.target)
 
@@ -158,9 +158,9 @@ export const FlatRoom = memo(function FlatRoom({ l }: { l: FlatLayout }): React.
       </defs>
 
       {/* ---- Tường bê tông: vách đúc, mạch ghép, lỗ ty, vết ố, vết nứt ---- */}
-      <rect x={0} y={0} width={w} height={base + 2} fill="url(#fd-wall)" />
+      <rect x={0} y={0} width={w} height={deskBack + 2} fill="url(#fd-wall)" />
       {seamXs.map((x) => (
-        <line key={x} className="fd-seam" x1={x} y1={0} x2={x} y2={base} />
+        <line key={x} className="fd-seam" x1={x} y1={0} x2={x} y2={deskBack} />
       ))}
       <line className="fd-seam" x1={0} y1={base - 620 * s} x2={w} y2={base - 620 * s} />
       <line className="fd-seam" x1={0} y1={base - 1240 * s} x2={w} y2={base - 1240 * s} />
@@ -207,18 +207,21 @@ export const FlatRoom = memo(function FlatRoom({ l }: { l: FlatLayout }): React.
       </g>
 
       {/* ---- Hộp thiết bị sau robot, dây cáp ---- */}
-      <path className="fd-box-top" d={`M ${l.robot.x - 160 * s} ${base - 100 * s} l ${10 * s} ${-12 * s} h ${118 * s} l ${-10 * s} ${12 * s} Z`} />
-      <rect className="fd-box" x={l.robot.x - 160 * s} y={base - 100 * s} width={118 * s} height={102 * s} rx={3 * s} />
-      <path className="fd-vent" d={`M ${l.robot.x - 148 * s} ${base - 80 * s} h ${70 * s} M ${l.robot.x - 148 * s} ${base - 70 * s} h ${70 * s} M ${l.robot.x - 148 * s} ${base - 60 * s} h ${70 * s}`} />
+      {/* ---- Mặt bàn gỗ óc chó (mép sau chạm tường, nằm sau màn hình / robot / đèn) ---- */}
+      <rect x={0} y={deskBack} width={w} height={h - deskBack} fill="url(#fd-desk)" />
+      <rect className="fd-contact" x={0} y={deskBack} width={w} height={9 * s} />
+      <line className="fd-desk-back" x1={0} y1={deskBack + 0.5} x2={w} y2={deskBack + 0.5} />
 
-      {/* ---- Mặt bàn gỗ óc chó ---- */}
-      <rect x={0} y={base} width={w} height={h - base} fill="url(#fd-desk)" />
-      <rect className="fd-contact" x={0} y={base} width={w} height={7 * s} />
+      {/* ---- Hộp thiết bị trên bàn, sát tường, phía sau robot ---- */}
+      <ellipse className="fd-shadow" cx={l.robot.x - 101 * s} cy={deskBack + 24 * s} rx={72 * s} ry={8 * s} />
+      <path className="fd-box-top" d={`M ${l.robot.x - 160 * s} ${deskBack - 78 * s} l ${10 * s} ${-12 * s} h ${118 * s} l ${-10 * s} ${12 * s} Z`} />
+      <rect className="fd-box" x={l.robot.x - 160 * s} y={deskBack - 78 * s} width={118 * s} height={102 * s} rx={3 * s} />
+      <path className="fd-vent" d={`M ${l.robot.x - 148 * s} ${deskBack - 58 * s} h ${70 * s} M ${l.robot.x - 148 * s} ${deskBack - 48 * s} h ${70 * s} M ${l.robot.x - 148 * s} ${deskBack - 38 * s} h ${70 * s}`} />
       {[0.12, 0.27, 0.41, 0.58, 0.74, 0.9].map((k, i) => (
         <path
           key={k}
           className={i % 2 ? 'fd-grain dark' : 'fd-grain'}
-          d={`M 0 ${base + (l.deskFront - base) * k} C ${w * 0.25} ${base + (l.deskFront - base) * (k - 0.05)}, ${w * 0.6} ${base + (l.deskFront - base) * (k + 0.06)}, ${w} ${base + (l.deskFront - base) * (k + 0.01)}`}
+          d={`M 0 ${deskBack + (l.deskFront - deskBack) * k} C ${w * 0.25} ${deskBack + (l.deskFront - deskBack) * (k - 0.05)}, ${w * 0.6} ${deskBack + (l.deskFront - deskBack) * (k + 0.06)}, ${w} ${deskBack + (l.deskFront - deskBack) * (k + 0.01)}`}
         />
       ))}
       {l.deskFront < h && (
@@ -227,8 +230,8 @@ export const FlatRoom = memo(function FlatRoom({ l }: { l: FlatLayout }): React.
           <line className="fd-desk-edge" x1={0} y1={l.deskFront} x2={w} y2={l.deskFront} />
         </>
       )}
-      <path className="fd-cable" d={`M ${l.robot.x - 100 * s} ${base + 2 * s} C ${l.robot.x + 40 * s} ${base + 22 * s}, ${cx - 260 * s} ${base + 4 * s}, ${cx - 40 * s} ${base + 3 * s}`} strokeWidth={5 * s} />
-      <path className="fd-cable" d={`M ${lx + 30 * s} ${base + 4 * s} C ${lx + 90 * s} ${base + 10 * s}, ${w - 40 * s} ${base + 2 * s}, ${w + 10} ${base + 6 * s}`} strokeWidth={4.5 * s} />
+      <path className="fd-cable" d={`M ${l.robot.x - 46 * s} ${deskBack + 14 * s} C ${l.robot.x + 60 * s} ${deskBack + 30 * s}, ${cx - 260 * s} ${deskBack + 12 * s}, ${cx - 40 * s} ${base - 4 * s}`} strokeWidth={5 * s} />
+      <path className="fd-cable" d={`M ${lx + 30 * s} ${base - 4 * s} C ${lx + 80 * s} ${base - 14 * s}, ${w - 60 * s} ${deskBack + 14 * s}, ${w + 10} ${deskBack + 10 * s}`} strokeWidth={4.5 * s} />
 
       {/* ---- Ánh đèn bàn hắt lên tường và mặt bàn (tắt đèn thì tắt) ---- */}
       <g className="fd-lamplight">
@@ -315,7 +318,7 @@ export const FlatRoom = memo(function FlatRoom({ l }: { l: FlatLayout }): React.
           <path d={`M ${g.x + 28 * s} ${g.y + 30 * s} v ${14 * s} M ${g.x + 64 * s} ${g.y + 30 * s} v ${14 * s} M ${g.x + 30 * s} ${g.y + 56 * s} q ${16 * s} ${12 * s} ${32 * s} 0`} />
         </g>
         <rect className="fd-led" x={bezel.x + bezel.width - 70 * s} y={bezel.y + bezel.height - 7 * s} width={20 * s} height={2.6 * s} rx={1.3 * s} />
-        <rect className="fd-led" x={l.robot.x - 150 * s} y={base - 40 * s} width={36 * s} height={3 * s} rx={1.5 * s} />
+        <rect className="fd-led" x={l.robot.x - 150 * s} y={deskBack - 18 * s} width={36 * s} height={3 * s} rx={1.5 * s} />
         <rect className="fd-led" x={l.mouse.x - 1.5 * s} y={l.mouse.y - 11 * s} width={3 * s} height={8 * s} rx={1.5 * s} />
         <circle className="fd-led warm" cx={lx + 30 * s} cy={base - 8 * s} r={2.6 * s} />
         {/* Tấm LED của đèn bàn và quầng sáng (theo độ sáng bóng — chớp lúc bật) */}

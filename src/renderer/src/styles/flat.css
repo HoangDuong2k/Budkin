@@ -126,6 +126,13 @@
   opacity: 0.38;
 }
 
+/* Mép sau mặt bàn bắt chút ánh sáng (phân biệt mặt bàn với chân tường) */
+.fd-desk-back {
+  stroke: #4a3628;
+  stroke-width: 1;
+  stroke-opacity: 0.8;
+}
+
 .fd-grain {
   fill: none;
   stroke: #4c3729;

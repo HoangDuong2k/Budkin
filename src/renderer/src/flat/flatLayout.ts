@@ -14,6 +14,10 @@ export const MM = {
   robotGap: 10,
   /** Mặt trên bệ robot (PEDESTAL.height trong scene/robots/common) */
   pedestal: 16,
+  /** Mép sau mặt bàn (chỗ bàn chạm tường) nằm sau chân màn hình / đèn — nhìn từ trên xuống thấy một dải mặt bàn phía sau */
+  deskBehind: 58,
+  /** Robot đứng nhích lên phía trước màn hình một chút (cảnh 3D: robot gần người xem hơn màn hình, đèn) */
+  robotForward: 14,
   /** Đèn: từ chân đế sang trái (chụp đèn chồm về phía màn hình) / sang phải, chiều cao */
   lampLeft: 100,
   lampRight: 55,
@@ -36,14 +40,18 @@ export interface FlatLayout {
   s: number
   /** Tâm màn hình theo chiều ngang */
   cx: number
-  /** Mép sau mặt bàn — nơi màn hình, robot, đèn đứng */
+  /** Nơi chân màn hình, đèn đứng trên mặt bàn */
   base: number
+  /** Mép sau mặt bàn, chỗ bàn chạm tường (phía trên `base`) */
+  deskBack: number
   /** Phần hiển thị của màn hình (giao diện nằm ở đây) */
   screen: Rect
   /** Cả khung màn hình (gồm viền) */
   bezel: Rect
   /** Tâm mặt trên của bệ robot */
   robot: { x: number; y: number }
+  /** Chân bệ robot trên mặt bàn */
+  robotGround: number
   /** Tâm chân đế đèn */
   lamp: { x: number; y: number }
   keyboard: { x: number; y: number; w: number; h: number }
@@ -77,9 +85,11 @@ export function flatLayout(w: number, h: number): FlatLayout {
     s,
     cx,
     base,
+    deskBack: base - MM.deskBehind * s,
     screen,
     bezel: { x: screen.x - b, y: screen.y - b, width: screen.width + 2 * b, height: screen.height + 2 * b },
-    robot: { x: cx - (outerHalf + MM.robotGap + MM.robotHalfW) * s, y: base - MM.pedestal * s },
+    robot: { x: cx - (outerHalf + MM.robotGap + MM.robotHalfW) * s, y: base + (MM.robotForward - MM.pedestal) * s },
+    robotGround: base + MM.robotForward * s,
     lamp: { x: cx + (outerHalf + MM.lampGap + MM.lampLeft) * s, y: base },
     keyboard: { x: cx - kbW / 2, y: base + 24 * s, w: kbW, h: 68 * s },
     mouse: { x: cx + 262 * s, y: base + 62 * s },
