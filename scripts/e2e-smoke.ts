@@ -620,8 +620,8 @@ async function sceneFlow(page: Page): Promise<void> {
   assert(await until(async () => ['startled', 'idle'].includes(String(await page.evaluate('window.__budkin.robot.mode'))), 1500), 'di chuột: robot tỉnh dậy')
 
   // Mất WebGL không phục hồi: chuyển sang giao diện 2D, chữ đang gõ dở vẫn còn
-  await page.locator('.quick-add-input').click()
-  await page.keyboard.type('Nháp chưa lưu')
+  // Gõ thẳng vào ô (không bấm chuột: máy ảo Windows của CI đôi khi treo sự kiện chuột lúc vẽ 3D bằng CPU)
+  await page.locator('.quick-add-input').fill('Nháp chưa lưu')
   await page.evaluate('window.__budkin.loseContext()')
   assert(await until(async () => (await probe(page, (p) => p.renderMode)) === '2d', 5000), 'mất WebGL: tự chuyển sang giao diện 2D')
   assert((await page.locator('.quick-add-input').inputValue()) === 'Nháp chưa lưu', 'chuyển sang 2D: chữ đang gõ dở không mất')
