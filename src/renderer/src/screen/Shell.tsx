@@ -63,7 +63,12 @@ function TopBar(): React.JSX.Element {
       <button className="icon-btn" onClick={toggleSidebar} aria-label={tr('Ẩn / hiện thanh bên')}>
         <Icon name="sidebar" />
       </button>
-      <span className="brand">Budkin</span>
+      <span className="brand">
+        <span className="brand-mark">
+          <Icon name="bot" size={15} />
+        </span>
+        <span className="brand-name">Budkin</span>
+      </span>
       <ViewSwitch />
       <div className="grow" />
       <div className="search">

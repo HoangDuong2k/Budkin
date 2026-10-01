@@ -103,7 +103,7 @@ export function ListView(): React.JSX.Element {
           <section key={s.key} className="list-section" data-section={s.key}>
             <button className={`section-head ${s.tone ?? ''}`} onClick={() => setCollapsed({ ...collapsed, [key]: !isCollapsed })}>
               <Icon name={isCollapsed ? 'chevronRight' : 'chevronDown'} size={14} />
-              <span>{sectionTitle(s, now.date)}</span>
+              <span className="section-label">{sectionTitle(s, now.date)}</span>
               <span className="count">{s.tasks.length}</span>
             </button>
             {!isCollapsed && s.tasks.map((t) => <TaskRow key={t.id} task={t} now={now} showProject={showProject} />)}

@@ -412,5 +412,7 @@ export const EN: Record<string, string> = {
   '{client} đã sửa {n} việc': '{client} changed {n} tasks',
   '{client} đã xoá “{title}”': '{client} deleted “{title}”',
   '{client} đã xoá {n} việc': '{client} deleted {n} tasks',
-  'Đã hoàn tác thay đổi của {client}': "Undid {client}'s change"
+  'Đã hoàn tác thay đổi của {client}': "Undid {client}'s change",
+  'Thấp': 'Low',
+  'Vừa': 'Medium'
 }

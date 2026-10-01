@@ -1,8 +1,8 @@
-// Thẻ việc trên Kanban: vạch màu theo mức ưu tiên, tiêu đề, hạn, nhắc, lặp, checklist, dự án, nhãn.
-// Dùng chung cho thẻ nằm trong cột và bản sao nổi đi theo con trỏ khi kéo (DragOverlay)
+// Thẻ việc trên Kanban: dự án ở dòng trên, tiêu đề, hạn (kèm "Quá hạn"), nhắc, lặp, checklist; chân thẻ có mức ưu tiên
+// và nhãn. Dùng chung cho thẻ nằm trong cột và bản sao nổi đi theo con trỏ khi kéo (DragOverlay)
 import { forwardRef, type CSSProperties, type HTMLAttributes } from 'react'
 import { isOverdue, type Now } from '../../../shared/filters'
-import { tr } from '../../../shared/i18n'
+import { tr, trKey } from '../../../shared/i18n'
 import { LABEL_COLORS } from '../../../shared/palette'
 import type { Task } from '../../../shared/types'
 import { useData } from '../state/dataStore'
@@ -13,6 +13,9 @@ import { Icon } from './icons'
 
 /** Hiện tối đa chừng này nhãn trên thẻ (còn lại gộp "+N") */
 const MAX_TAGS = 2
+
+/** Tên mức ưu tiên trên chân thẻ (0: không hiện) */
+const PRIORITY_LABEL = ['', trKey('Thấp'), trKey('Vừa'), trKey('Cao')]
 
 interface Props extends HTMLAttributes<HTMLDivElement> {
   task: Task
@@ -39,37 +42,48 @@ export const TaskCard = forwardRef<HTMLDivElement, Props>(function TaskCard({ ta
       data-task-id={task.id}
       {...rest}
     >
+      {project && (
+        <div className="card-top">
+          <i className="dot" style={{ background: LABEL_COLORS[project.color][theme] }} />
+          <span className="label">{project.name}</span>
+        </div>
+      )}
       <div className="card-title">{task.title}</div>
       <div className="card-meta">
         {task.dueDate && (
           <span className={`meta due ${late ? 'late' : task.dueDate === now.date ? 'today' : ''}`}>
-            <Icon name="calendar" size={11} />
+            <Icon name="calendar" size={12} />
             {dueText(task, now.date)}
           </span>
         )}
-        {task.remindBeforeMin !== null && !done && <Icon name="bell" size={11} className="meta-icon" aria-label={tr('Có nhắc việc')} />}
-        {task.recurrence && <Icon name="repeat" size={11} className="meta-icon" aria-label={tr('Lặp lại')} />}
+        {task.remindBeforeMin !== null && !done && <Icon name="bell" size={12} className="meta-icon" aria-label={tr('Có nhắc việc')} />}
+        {task.recurrence && <Icon name="repeat" size={12} className="meta-icon" aria-label={tr('Lặp lại')} />}
         {task.checklist.length > 0 && (
           <span className={`meta ${checked === task.checklist.length ? 'complete' : ''}`}>
-            <Icon name="checklist" size={11} />
+            <Icon name="checklist" size={12} />
             {checked}/{task.checklist.length}
           </span>
         )}
+        {late && <span className="card-late">{tr('Quá hạn')}</span>}
       </div>
-      {(project || tagList.length > 0) && (
-        <div className="card-meta">
-          {project && (
-            <span className="meta project">
-              <i className="dot" style={{ background: LABEL_COLORS[project.color][theme] }} />
-              {project.name}
+      {(task.priority > 0 || tagList.length > 0) && (
+        <div className="card-foot">
+          {task.priority > 0 && (
+            <span className="prio-pill">
+              <Icon name="flag" size={11} />
+              {tr(PRIORITY_LABEL[task.priority])}
             </span>
           )}
-          {tagList.slice(0, MAX_TAGS).map((tag) => (
-            <span key={tag.id} className="tag-chip" style={{ '--c': LABEL_COLORS[tag.color][theme] } as CSSProperties}>
-              #{tag.name}
+          {tagList.length > 0 && (
+            <span className="card-tags">
+              {tagList.slice(0, MAX_TAGS).map((tag) => (
+                <span key={tag.id} className="tag-chip" style={{ '--c': LABEL_COLORS[tag.color][theme] } as CSSProperties}>
+                  #{tag.name}
+                </span>
+              ))}
+              {tagList.length > MAX_TAGS && <span>+{tagList.length - MAX_TAGS}</span>}
             </span>
-          ))}
-          {tagList.length > MAX_TAGS && <span className="meta">+{tagList.length - MAX_TAGS}</span>}
+          )}
         </div>
       )}
     </div>

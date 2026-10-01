@@ -44,26 +44,6 @@ body {
   container-name: screen;
 }
 
-/* Bốn góc ngắm kiểu HUD quanh mép màn hình (không nhận chuột) */
-.screen::after {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  z-index: 50;
-  pointer-events: none;
-  opacity: 0.55;
-  --c: var(--accent);
-  background:
-    linear-gradient(var(--c), var(--c)) top left / 14px 2px no-repeat,
-    linear-gradient(var(--c), var(--c)) top left / 2px 14px no-repeat,
-    linear-gradient(var(--c), var(--c)) top right / 14px 2px no-repeat,
-    linear-gradient(var(--c), var(--c)) top right / 2px 14px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom left / 14px 2px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom left / 2px 14px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom right / 14px 2px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom right / 2px 14px no-repeat;
-}
-
 /* Thanh cuộn mảnh theo màu theme (thanh mặc định của Chromium quá dày trên màn hình nhỏ) */
 .screen *,
 .popover {
@@ -74,8 +54,8 @@ body {
 /* Bàn làm việc 2D cũng lỗi (rất hiếm): chỉ còn giao diện, phủ cả cửa sổ */
 .stage[data-mode='plain'] .screen {
   inset: 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-xl);
   box-shadow: var(--shadow);
 }
 
@@ -93,8 +73,8 @@ body {
   top: 12px !important;
   width: calc(100% - 24px) !important;
   height: calc(100% - 24px) !important;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-xl);
   box-shadow: var(--shadow);
 }
 
@@ -189,11 +169,10 @@ body {
   top: 0;
   transform: translate(-9999px, 0);
   box-sizing: border-box;
-  padding: 9px 10px 10px;
+  padding: 10px 12px 11px;
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-top: 2px solid var(--accent);
-  border-radius: var(--radius);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-md);
   box-shadow: var(--shadow);
   color: var(--text);
   font-size: 12.5px;
@@ -209,17 +188,13 @@ body {
   width: 10px;
   height: 10px;
   background: var(--panel);
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--edge-strong);
+  border-bottom: 1px solid var(--edge-strong);
   transform: rotate(45deg);
 }
 
 :root[data-theme='dark'] .bubble {
   box-shadow: var(--shadow), 0 0 18px color-mix(in srgb, var(--accent) 14%, transparent);
-}
-
-.bubble.is-summary {
-  border-top-color: var(--accent-2);
 }
 
 .bubble-summary {
