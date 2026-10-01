@@ -9,6 +9,8 @@
  */
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'fs'
 import { join, resolve } from 'path'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { _electron as electron, type ElectronApplication, type Locator, type Page } from 'playwright-core'
 import type { ApiResponse, ArgsOf, Channel, DeskApi, ResultOf } from '../src/shared/api'
 import { addDays, localDateOf, pad2 } from '../src/shared/datetime'
@@ -889,6 +891,96 @@ async function dataFlow(app: ElectronApplication, page: Page): Promise<void> {
   await app.evaluate(({ app: a }) => a.exit(0))
 }
 
+/**
+ * Kết nối AI (MCP): bấm "Kết nối" Claude Desktop (thư mục cấu hình giả), rồi chạy cầu nối đúng y lệnh vừa ghi vào
+ * cấu hình — như Claude Desktop sẽ chạy — và gọi công cụ bằng thư viện MCP chính thức. Việc AI tạo hiện ngay trên màn hình,
+ * có toast kèm Hoàn tác; quyền "Chỉ xem" / "Tắt" chặn đúng
+ */
+async function aiFlow(page: Page): Promise<void> {
+  const settings = (): Promise<Settings | null> => probe(page, (p) => p.data.getState().settings)
+  const toasts = async (): Promise<string[]> => (await page.evaluate('window.__budkin.toastLog')) as string[]
+  const openAi = async (): Promise<void> => {
+    if ((await page.locator('.settings').count()) === 0) await page.keyboard.press('Control+Comma')
+    await page.locator('.settings-nav [data-section="general"]').click()
+    await page.locator('.settings-nav [data-section="ai"]').click()
+    await until(async () => (await page.locator('.ai-clients').count()) === 1, 5000)
+  }
+  const client = (id: string): Locator => page.locator(`.ai-clients li[data-client="${id}"]`)
+
+  await page.locator('.list-head').first().click()
+  await openAi()
+  assert((await client('desktop').getAttribute('data-state')) === 'missing', 'Kết nối AI: chưa cài Claude Desktop → có link tải về')
+  assert(/claude mcp add budkin --scope user/.test((await client('code').locator('code').textContent()) ?? ''), 'Kết nối AI: có sẵn lệnh "claude mcp add" để chép cho Claude Code')
+  assert((await settings())?.aiAccess === 'off', 'mặc định: Claude chưa có quyền gì')
+
+  // Claude Desktop "được cài" (thư mục cấu hình giả trong thư mục dữ liệu kiểm thử): bấm Kết nối
+  const desktopDir = join(USER_DATA, 'no-claude-desktop')
+  mkdirSync(desktopDir, { recursive: true })
+  await openAi()
+  assert((await client('desktop').getAttribute('data-state')) === 'available', 'Claude Desktop có trên máy → nút Kết nối')
+  await press(client('desktop').getByRole('button', { name: 'Kết nối' }))
+  assert(await until(async () => (await client('desktop').getAttribute('data-state')) === 'connected'), 'bấm Kết nối → Claude Desktop "Đã kết nối"')
+  assert((await settings())?.aiAccess === 'full', 'kết nối xong: quyền chuyển sang "Xem và sửa"')
+  const config = JSON.parse(readFileSync(join(desktopDir, 'claude_desktop_config.json'), 'utf8')) as {
+    mcpServers: { budkin: { command: string; args: string[]; env?: Record<string, string> } }
+  }
+  const entry = config.mcpServers.budkin
+  assert(entry && existsSync(entry.command), `cấu hình Claude Desktop có mục budkin (${entry.args.find((a) => a.endsWith('.js')) ?? entry.args[0]})`)
+  await shot(page, '10-ai-settings.png')
+
+  // Chạy cầu nối đúng như Claude Desktop sẽ chạy
+  const transport = new StdioClientTransport({ command: entry.command, args: entry.args, env: { ...(process.env as Record<string, string>), ...entry.env }, stderr: 'pipe' })
+  const mcp = new Client({ name: 'claude-ai', version: '0.0.0-e2e' })
+  await mcp.connect(transport)
+  const { tools } = await mcp.listTools()
+  assert(tools.length === 6 && tools.some((t) => t.name === 'create_tasks'), `cầu nối MCP chạy bằng chính file Budkin (như Claude Desktop sẽ chạy): ${tools.length} công cụ`)
+  const text = (r: unknown): string => (r as { content: Array<{ text: string }> }).content[0].text
+  const today = localDateOf(Date.now() + CLOCK_BASE)
+  const overview = JSON.parse(text(await mcp.callTool({ name: 'get_overview', arguments: {} }))) as { now: { date: string; time: string } }
+  assert(overview.now.date === today && overview.now.time.startsWith('06:'), `get_overview: Claude biết hôm nay là ${overview.now.date} ${overview.now.time} (đồng hồ của app)`)
+
+  const created = await mcp.callTool({
+    name: 'create_tasks',
+    arguments: {
+      tasks: [
+        { title: 'Gọi điện cho mẹ', due_date: today, due_time: '20:00' },
+        { title: 'Mua quà sinh nhật', project: 'Gia đình', tags: ['Gấp'], checklist: ['Chọn quà', 'Gói quà'] }
+      ]
+    }
+  })
+  assert(!created.isError, 'Claude tạo 2 việc (một việc vào dự án mới "Gia đình")')
+  assert(
+    await until(async () => (await tasksNow(page)).filter((t) => ['Gọi điện cho mẹ', 'Mua quà sinh nhật'].includes(t.title)).length === 2),
+    'việc Claude tạo hiện ngay trong Budkin'
+  )
+  assert(await until(async () => (await toasts()).includes('Claude đã thêm 2 việc')), 'toast "Claude đã thêm 2 việc" kèm nút Hoàn tác')
+  await page.keyboard.press('Escape')
+  await press(page.locator('.toast', { hasText: 'Claude đã thêm 2 việc' }).getByRole('button', { name: 'Hoàn tác' }))
+  assert(
+    await until(async () => (await tasksNow(page)).every((t) => !['Gọi điện cho mẹ', 'Mua quà sinh nhật'].includes(t.title))),
+    'bấm Hoàn tác: hai việc Claude vừa tạo biến mất'
+  )
+
+  const listed = JSON.parse(text(await mcp.callTool({ name: 'list_tasks', arguments: { view: 'all_open', search: 'bao cao' } }))) as { tasks: Array<{ title: string }> }
+  assert(listed.tasks.some((t) => t.title === 'Gửi báo cáo tuần'), 'Claude tìm việc "bao cao" (không dấu) ra "Gửi báo cáo tuần"')
+  const target = listed.tasks.find((t) => t.title === 'Gửi báo cáo tuần') as unknown as { id: string }
+  const tomorrow = addDays(today, 1)
+  const moved = await mcp.callTool({ name: 'update_tasks', arguments: { updates: [{ id: target.id, due_date: tomorrow, priority: 'high' }] } })
+  assert(!moved.isError && (await until(async () => (await taskTitled(page, 'Gửi báo cáo tuần'))?.dueDate === tomorrow)), 'Claude dời "Gửi báo cáo tuần" sang ngày mai, Budkin cập nhật ngay')
+
+  await openAi()
+  await press(page.locator('.set-row[data-setting="aiAccess"]').getByRole('radio', { name: 'Chỉ xem' }))
+  assert(await until(async () => (await settings())?.aiAccess === 'read'), 'đổi quyền sang "Chỉ xem"')
+  const blocked = await mcp.callTool({ name: 'delete_tasks', arguments: { ids: [target.id] } })
+  assert(blocked.isError === true && /read tasks only/.test(text(blocked)) && !!(await taskTitled(page, 'Gửi báo cáo tuần')), '"Chỉ xem": Claude không xoá được việc')
+  await press(page.locator('.set-row[data-setting="aiAccess"]').getByRole('radio', { name: 'Tắt' }))
+  assert(await until(async () => (await settings())?.aiAccess === 'off'), 'đổi quyền sang "Tắt"')
+  const off = await mcp.callTool({ name: 'get_overview', arguments: {} })
+  assert(off.isError === true && /turned off/.test(text(off)), '"Tắt": Claude không đọc được gì')
+  await mcp.close()
+  await page.keyboard.press('Escape')
+}
+
 async function main(): Promise<void> {
   // Chống treo (vd. hộp thoại chờ người bấm): quá 8 phút (máy chậm: 20 phút) thì báo lỗi, đóng app và thoát
   const limitMin = SLOW ? 20 : 8
@@ -977,6 +1069,7 @@ async function main(): Promise<void> {
   await settingsFlow(page)
   await robotsFlow(page)
   await sceneFlow(page)
+  await aiFlow(page)
   await app.evaluate(({ app: a }) => a.exit(0))
 
   // ---- Nhắc việc ----

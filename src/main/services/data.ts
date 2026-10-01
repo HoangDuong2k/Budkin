@@ -94,6 +94,11 @@ export class DataService {
     return prev === undefined ? now : Math.max(now, prev + 1)
   }
 
+  /** Nhiều thao tác ghi trong một giao dịch (lỗi ở bước nào cũng huỷ hết), phát thay đổi một lần ở cuối */
+  batch<T>(fn: () => T): T {
+    return this.mutate('user', fn)
+  }
+
   // ---------- Đọc task ----------
 
   private hydrate(rows: TaskRow[]): Task[] {
@@ -172,6 +177,17 @@ export class DataService {
       case 'ids':
         return this.tasksByIds(scope.ids, false)
     }
+  }
+
+  /** Việc hoàn thành từ mốc `since` (ms) trở đi, mới nhất trước */
+  listCompleted(since: number, limit: number): Task[] {
+    return this.hydrate(
+      this.db.all<TaskRow>(
+        `SELECT ${TASK_COLS} FROM tasks WHERE deleted_at IS NULL AND status = 'done' AND completed_at >= ? ORDER BY completed_at DESC LIMIT ?`,
+        since,
+        limit
+      )
+    )
   }
 
   // ---------- Ghi task ----------
@@ -456,9 +472,9 @@ export class DataService {
     })
   }
 
-  /** Xoá mềm (hoàn tác được). 'series': mọi lần chưa xong của chuỗi lặp lại (lịch sử đã xong giữ nguyên) */
-  deleteTask(id: string, mode: 'one' | 'series'): void {
-    this.mutate('user', () => {
+  /** Xoá mềm (hoàn tác được). 'series': mọi lần chưa xong của chuỗi lặp lại (lịch sử đã xong giữ nguyên). Trả về các id đã xoá */
+  deleteTask(id: string, mode: 'one' | 'series'): string[] {
+    return this.mutate('user', () => {
       const row = this.taskRow(id)
       const rows =
         mode === 'series' && row.series_id
@@ -473,6 +489,7 @@ export class DataService {
         this.db.run('UPDATE tasks SET deleted_at = ?, updated_at = ? WHERE id = ?', now, now, r.id)
         this.touched.tasks.add(r.id)
       }
+      return rows.map((r) => r.id)
     })
   }
 

@@ -1,10 +1,12 @@
 /**
  * Ảnh chụp giới thiệu (README): tạo dữ liệu mẫu rồi chụp bàn làm việc lúc bật đèn và tắt đèn, Kanban, Lịch, Cài đặt,
- * từng mẫu robot trên bệ tròn.
+ * Kết nối AI (Claude thêm việc qua cầu nối MCP thật), từng mẫu robot trên bệ tròn.
  * Chạy: npm run build && npm run screenshots   → docs/screenshots/*.png
  */
 import { mkdirSync, rmSync } from 'fs'
 import { join, resolve } from 'path'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { _electron as electron, type Page } from 'playwright-core'
 import type { ArgsOf, Channel, DeskApi, ResultOf } from '../src/shared/api'
 import { ROBOT_MODELS } from '../src/shared/robots'
@@ -105,8 +107,32 @@ async function main(): Promise<void> {
   await page.screenshot({ path: join(OUT, 'settings.png') })
   console.log('  ✓ settings.png')
 
-  // Từng mẫu robot trên bệ tròn (ảnh cắt quanh robot, cùng khung để xếp thành hàng trong README)
+  // Kết nối AI: "Claude Desktop" (thư mục cấu hình giả của chế độ kiểm thử) đã kết nối, quyền Xem và sửa
+  mkdirSync(join(USER_DATA, 'no-claude-desktop'), { recursive: true })
+  const ai = await call(page, 'ai:connect', 'desktop')
+  await page.locator('.settings-nav [data-section="general"]').click()
+  await page.locator('.settings-nav [data-section="ai"]').click()
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: join(OUT, 'settings-ai.png') })
+  console.log('  ✓ settings-ai.png')
   await page.keyboard.press('Escape')
+
+  // Claude thêm việc qua cầu nối MCP thật: việc hiện ngay trong danh sách Hôm nay, robot ăn mừng, toast kèm nút Hoàn tác
+  await page.keyboard.press('1')
+  await page.locator('.sidebar .nav-main').nth(0).click()
+  const mcp = new Client({ name: 'claude-ai', version: '1.0.0' })
+  await mcp.connect(new StdioClientTransport({ command: ai.launch.command, args: ai.launch.args, env: { ...(process.env as Record<string, string>), ...ai.launch.env } }))
+  await mcp.callTool({
+    name: 'create_tasks',
+    arguments: { tasks: [{ title: 'Gọi điện cho mẹ', due_date: today, due_time: '20:00', project: 'Nhà' }, { title: 'Đặt vé xe về quê', due_date: addDays(today, 1), tags: ['Gấp'] }] }
+  })
+  await mcp.close()
+  await page.mouse.move(820, 330, { steps: 6 })
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: join(OUT, 'desk-ai.png') })
+  console.log('  ✓ desk-ai.png')
+
+  // Từng mẫu robot trên bệ tròn (ảnh cắt quanh robot, cùng khung để xếp thành hàng trong README)
   for (const robot of ROBOT_MODELS) {
     await call(page, 'settings:update', { robot })
     await page.waitForTimeout(2400)

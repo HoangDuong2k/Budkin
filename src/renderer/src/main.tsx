@@ -10,6 +10,7 @@ import { probeWebgl } from './flat/webglProbe'
 import { renderInfo } from './scene/renderInfo'
 import { installTestProbe } from './scene/testProbe'
 import { openTask, startQuickAdd } from './screen/actions'
+import { subscribeAiActivity } from './screen/aiActivity'
 import { subscribeAlerts } from './state/alertStore'
 import { subscribeData, useData } from './state/dataStore'
 import { useUi } from './state/uiStore'
@@ -35,6 +36,7 @@ installTestProbe()
 subscribeData()
 void useData.getState().load()
 subscribeAlerts()
+subscribeAiActivity()
 // Vừa khôi phục bản sao lưu (app tự khởi động lại để thay dữ liệu): báo cho người dùng biết
 void call('app:status')
   .then(

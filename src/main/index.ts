@@ -2,11 +2,11 @@ import { mkdirSync, readFileSync, statSync } from 'fs'
 import { basename, join } from 'path'
 import { pathToFileURL } from 'url'
 import { DatabaseSync } from 'node:sqlite'
-import { BrowserWindow, Menu, app, dialog, nativeTheme, powerMonitor, shell, type IpcMainInvokeEvent } from 'electron'
+import { BrowserWindow, Menu, app, clipboard, dialog, nativeTheme, powerMonitor, shell, type IpcMainInvokeEvent } from 'electron'
 import { z } from 'zod'
-import type { AlertsSnapshot, AppInfo, AppStatus, EventMap, ExportResult, NavigateTarget } from '../shared/api'
+import type { AiStatus, AlertsSnapshot, AppInfo, AppStatus, EventMap, ExportResult, McpLaunch, NavigateTarget } from '../shared/api'
 import { bootArg, normalizeBoot, type BootPrefs } from '../shared/boot'
-import { APP_ID, APP_NAME, DEFAULT_WINDOW, MIN_WINDOW } from '../shared/constants'
+import { APP_ID, APP_NAME, DEFAULT_WINDOW, HIDDEN_ARG, MIN_WINDOW } from '../shared/constants'
 import { localDateOf } from '../shared/datetime'
 import { EXPORT_MAX_BYTES, liveCounts, parseExportFile, type ExportFile, type ImportPreview } from '../shared/exportFormat'
 import { setLang, tr, trKey } from '../shared/i18n'
@@ -22,7 +22,11 @@ import { AppError } from './errors'
 import { writeFileAtomicSync } from './fsutil'
 import { dataHandlers } from './handlers'
 import { registerAll } from './ipc'
-import { HIDDEN_ARG, isAutostartOn, setAutostart } from './os/autostart'
+import { codeState, connectCode, connectDesktop, desktopState } from './mcp/clients'
+import { McpHost } from './mcp/host'
+import { BRIDGE_ARG, mcpSocketPath } from './mcp/protocol'
+import { AiRunner } from './mcp/runner'
+import { isAutostartOn, setAutostart } from './os/autostart'
 import { appIcon } from './os/icon'
 import { AppTray, hasTrayHost } from './os/tray'
 import { Notifier, canFlash } from './reminders/notifier'
@@ -34,6 +38,12 @@ import { exportData, importData } from './services/transfer'
 /** Kiểm thử tự động: cửa sổ hiện mà không giành focus, thư mục dữ liệu riêng, đồng hồ đẩy tới được */
 const TEST = process.env.BUDKIN_TEST === '1'
 if (process.env.BUDKIN_USER_DATA) app.setPath('userData', process.env.BUDKIN_USER_DATA)
+if (TEST) {
+  // Kiểm thử không bao giờ đụng vào Claude Desktop / Claude Code thật trên máy người chạy test
+  process.env.BUDKIN_CLAUDE_CLI ??= ''
+  process.env.BUDKIN_CLAUDE_DESKTOP_DIR ??= join(app.getPath('userData'), 'no-claude-desktop')
+  process.env.CLAUDE_CONFIG_DIR ??= join(app.getPath('userData'), 'no-claude-code')
+}
 
 const bootFile = join(app.getPath('userData'), 'boot.json')
 const storedBoot = readBootFile(bootFile)
@@ -53,6 +63,9 @@ let tray: AppTray | null = null
 let trayHost = false
 let alerts: AlertsSnapshot = { active: [], mutedUntil: null, nextAt: null }
 let backups: BackupService
+/** Công cụ cho app AI (MCP) và cổng nhận lời gọi từ cầu nối */
+let ai: AiRunner
+let mcpHost: McpHost | null = null
 /** Lần mở này vừa khôi phục từ bản sao lưu nào */
 let restoredFrom: string | null = null
 /** File đã chọn để nhập, chờ người dùng chọn Gộp / Thay thế */
@@ -111,6 +124,7 @@ function openData(): boolean {
     refreshTray()
   })
   backups = new BackupService(db, join(dir, 'backups'), clock)
+  ai = new AiRunner({ data, clock, access: () => data.getSettings().aiAccess, activity: (a) => send('ai:activity', a) })
   setLang(data.getSettings().language)
   return true
 }
@@ -148,6 +162,46 @@ function appStatus(): AppStatus {
     dataDir: app.getPath('userData'),
     restoredFrom
   }
+}
+
+/** Lệnh app AI dùng để chạy cầu nối MCP (ghi vào cấu hình Claude Desktop / Claude Code) */
+function mcpLaunch(): McpLaunch {
+  const dataDir = app.getPath('userData')
+  // AppImage: AppRun tự thêm --no-sandbox nên không chạy được chế độ Node — chạy chính app với --mcp-bridge
+  if (process.env.APPIMAGE) return { command: process.env.APPIMAGE, args: [BRIDGE_ARG, '--data-dir', dataDir] }
+  // Script nằm trong app.asar: chế độ Node của Electron đọc được asar
+  const args = [join(__dirname, 'mcp-bridge.js'), '--data-dir', dataDir]
+  if (!app.isPackaged) args.push('--app', app.getAppPath())
+  return { command: process.execPath, args, env: { ELECTRON_RUN_AS_NODE: '1' } }
+}
+
+function aiStatus(): AiStatus {
+  const launch = mcpLaunch()
+  return { launch, desktop: desktopState(launch), code: codeState(launch), lastUse: ai.lastUse }
+}
+
+async function connectAi(target: 'desktop' | 'code'): Promise<AiStatus> {
+  const launch = mcpLaunch()
+  try {
+    if (target === 'desktop') connectDesktop(launch)
+    else await connectCode(launch)
+  } catch (err) {
+    throw new AppError('INTERNAL', err instanceof Error ? err.message : String(err))
+  }
+  // Người dùng vừa chủ động kết nối: bật quyền luôn (đổi lại được ngay bên dưới)
+  if (data.getSettings().aiAccess === 'off') onSettingsChanged(data.updateSettings({ aiAccess: 'full' }))
+  return aiStatus()
+}
+
+/** Bản AppImage: app AI chạy `Budkin.AppImage --mcp-bridge` — tiến trình này chỉ làm cầu nối MCP, không mở cửa sổ */
+function runAppBridge(): void {
+  app.disableHardwareAcceleration()
+  const i = process.argv.indexOf('--data-dir')
+  const dataDir = i > 0 ? process.argv[i + 1] : app.getPath('userData')
+  const env: NodeJS.ProcessEnv = { ...process.env, BUDKIN_USER_DATA: dataDir }
+  void import('./mcp/bridge').then(({ runBridge }) =>
+    runBridge({ socket: mcpSocketPath(dataDir), launch: { command: process.env.APPIMAGE ?? process.execPath, args: [HIDDEN_ARG], env }, version: app.getVersion() })
+  )
 }
 
 const IMPORT_ERRORS = {
@@ -375,6 +429,7 @@ function registerIpc(): void {
         }
       },
       'app:relaunch': { args: z.tuple([]), run: () => void setTimeout(relaunch, 150) },
+      'app:copy': { args: z.tuple([z.string().max(10_000)]), run: (text) => clipboard.writeText(text) },
       ...dataHandlers(data, onSettingsChanged),
       'data:export': { args: z.tuple([]), run: () => exportToFile() },
       'data:importPick': { args: z.tuple([]), run: () => pickImport() },
@@ -416,7 +471,10 @@ function registerIpc(): void {
       'reminders:snapshot': { args: z.tuple([]), run: () => reminders!.run() },
       'reminders:snooze': { args: z.tuple([idSchema, minutesSchema]), run: (id, minutes) => reminders!.snooze(id, minutes) },
       'reminders:dismiss': { args: z.tuple([idSchema]), run: (id) => reminders!.dismiss(id) },
-      'reminders:mute': { args: z.tuple([minutesSchema.nullable()]), run: (minutes) => reminders!.mute(minutes) }
+      'reminders:mute': { args: z.tuple([minutesSchema.nullable()]), run: (minutes) => reminders!.mute(minutes) },
+      'ai:status': { args: z.tuple([]), run: () => aiStatus() },
+      'ai:connect': { args: z.tuple([z.enum(['desktop', 'code'])]), run: (target) => connectAi(target) },
+      'ai:undo': { args: z.tuple([z.uuid()]), run: (id) => ai.undo(id) }
     },
     isTrustedSender
   )
@@ -496,7 +554,8 @@ function createWindow(): void {
   else void win.loadFile(join(__dirname, '../renderer/index.html'))
 }
 
-if (!app.requestSingleInstanceLock()) app.quit()
+if (process.argv.includes(BRIDGE_ARG)) runAppBridge()
+else if (!app.requestSingleInstanceLock()) app.quit()
 else {
   // Mở app lần nữa (kể cả từ lối tắt "Thêm việc nhanh"): đưa cửa sổ đang có lên trước
   app.on('second-instance', (_e, argv) => showWindow(argv.includes('--quick-add') ? { kind: 'quickAdd' } : undefined))
@@ -514,6 +573,12 @@ else {
     registerIpc()
     setJumpList()
     startReminders()
+    // Cổng cho app AI (Claude Desktop, Claude Code…): luôn mở khi Budkin chạy; quyền xem / sửa kiểm tra ở từng lời gọi
+    mcpHost = new McpHost(mcpSocketPath(app.getPath('userData')), (req) => ai.call(req.tool, req.args, req.client))
+    mcpHost.start().catch((err: unknown) => {
+      console.error('[mcp] không mở được cổng kết nối AI', err)
+      mcpHost = null
+    })
     // Khay: không tạo khi kiểm thử (khỏi hiện biểu tượng trên máy người chạy test)
     trayHost = !TEST && (await hasTrayHost())
     if (trayHost) {
@@ -556,6 +621,7 @@ else {
   app.on('before-quit', () => (quitting = true))
   app.on('window-all-closed', () => app.quit())
   app.on('will-quit', () => {
+    mcpHost?.stop()
     reminders?.stop()
     tray?.destroy()
     db?.close()

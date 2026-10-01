@@ -5,3 +5,6 @@ export const APP_NAME = 'Budkin'
 /** Cửa sổ nhỏ nhất: màn hình máy tính 3D ở giữa còn khoảng 594×396 px cho giao diện */
 export const MIN_WINDOW = { width: 1024, height: 680 } as const
 export const DEFAULT_WINDOW = { width: 1280, height: 820 } as const
+
+/** Mở app chạy ẩn dưới khay (tự khởi động cùng máy, app AI gọi tới khi Budkin chưa mở) */
+export const HIDDEN_ARG = '--hidden'

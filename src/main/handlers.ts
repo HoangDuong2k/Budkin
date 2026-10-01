@@ -53,7 +53,7 @@ export function dataHandlers(data: DataService, onSettings: (s: Settings) => voi
     'tasks:update': { args: z.tuple([idSchema, taskPatchSchema]), run: (id, patch) => data.updateTask(id, patch) },
     'tasks:setStatus': { args: z.tuple([idSchema, statusSchema]), run: (id, status) => data.setStatus(id, status) },
     'tasks:move': { args: z.tuple([idSchema, taskMoveSchema]), run: (id, move) => data.moveTask(id, move) },
-    'tasks:delete': { args: z.tuple([idSchema, z.enum(['one', 'series'])]), run: (id, mode) => data.deleteTask(id, mode) },
+    'tasks:delete': { args: z.tuple([idSchema, z.enum(['one', 'series'])]), run: (id, mode) => void data.deleteTask(id, mode) },
     'tasks:restore': { args: z.tuple([z.array(idSchema).max(500)]), run: (ids) => data.restoreTasks(ids) },
     'tasks:skip': { args: z.tuple([idSchema]), run: (id) => data.skipOccurrence(id) },
 

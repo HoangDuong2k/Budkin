@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { isValidDate } from './datetime'
 import { COLOR_KEYS } from './palette'
 import { ROBOT_MODELS } from './robots'
+import { AI_ACCESS } from './types'
 
 export const LIMITS = {
   title: 500,
@@ -127,7 +128,8 @@ export const settingsPatchSchema = z.strictObject({
   autostart: z.boolean().optional(),
   quality: z.enum(['high', 'balanced', 'saver']).optional(),
   reducedMotion: z.enum(['auto', 'on', 'off']).optional(),
-  robot: z.enum(ROBOT_MODELS).optional()
+  robot: z.enum(ROBOT_MODELS).optional(),
+  aiAccess: z.enum(AI_ACCESS).optional()
 })
 export type SettingsPatch = z.infer<typeof settingsPatchSchema>
 

@@ -93,6 +93,40 @@ export interface ExportResult {
 /** Main bảo giao diện chuyển tới đâu (bấm thông báo, menu khay) */
 export type NavigateTarget = { kind: 'task'; taskId: string } | { kind: 'today' } | { kind: 'quickAdd' }
 
+export type AiActivityKind = 'create' | 'update' | 'delete'
+
+/** Một lần app AI (qua MCP) ghi dữ liệu: giao diện báo kèm nút Hoàn tác */
+export interface AiActivity {
+  id: string
+  /** Tên app AI cho người dùng đọc ("Claude", "Claude Code"…) */
+  client: string
+  kind: AiActivityKind
+  /** Số việc bị ảnh hưởng */
+  count: number
+  /** Tên vài việc đầu */
+  titles: string[]
+  taskIds: string[]
+  at: number
+}
+
+/** Lệnh app AI dùng để chạy cầu nối MCP của Budkin (ghi vào cấu hình của Claude Desktop / Claude Code) */
+export interface McpLaunch {
+  command: string
+  args: string[]
+  env?: Record<string, string>
+}
+
+/** missing: chưa thấy app trên máy; available: có app, chưa kết nối; connected: đã kết nối đúng; outdated: kết nối trỏ tới chỗ cũ */
+export type AiClientState = 'missing' | 'available' | 'connected' | 'outdated'
+
+export interface AiStatus {
+  launch: McpLaunch
+  desktop: { state: AiClientState; configPath: string | null }
+  /** cli: đường dẫn lệnh claude tìm được (null: không thấy — chỉ hiện lệnh để chép) */
+  code: { state: AiClientState; cli: string | null; command: string }
+  lastUse: { client: string; at: number } | null
+}
+
 /** Kênh renderer → main */
 export interface InvokeMap {
   'app:info': { args: []; result: AppInfo }
@@ -105,6 +139,8 @@ export interface InvokeMap {
   'app:setBoot': { args: [patch: BootPatch]; result: AppStatus }
   /** Khởi động lại app */
   'app:relaunch': { args: []; result: void }
+  /** Chép chữ vào bộ nhớ tạm (lệnh, câu hỏi mẫu ở mục Kết nối AI) */
+  'app:copy': { args: [text: string]; result: void }
 
   'tasks:list': { args: [scope: TaskListScope]; result: Task[] }
   'tasks:get': { args: [id: string]; result: Task }
@@ -154,6 +190,13 @@ export interface InvokeMap {
   'reminders:dismiss': { args: [taskId: string]; result: AlertsSnapshot }
   /** Tắt nhắc N phút (null: bật lại) */
   'reminders:mute': { args: [minutes: number | null]; result: AlertsSnapshot }
+
+  /** Kết nối AI: lệnh chạy cầu nối, tình trạng kết nối với Claude Desktop / Claude Code */
+  'ai:status': { args: []; result: AiStatus }
+  /** Thêm Budkin vào cấu hình của Claude Desktop / Claude Code */
+  'ai:connect': { args: [target: 'desktop' | 'code']; result: AiStatus }
+  /** Hoàn tác một lần app AI ghi dữ liệu */
+  'ai:undo': { args: [id: string]; result: void }
 }
 
 export type Channel = keyof InvokeMap
@@ -175,6 +218,8 @@ export interface EventMap {
   'app:navigate': NavigateTarget
   /** Chỉ khi kiểm thử: đồng hồ bị đẩy tới */
   'clock:offset': number
+  /** App AI vừa thêm / sửa / xoá việc */
+  'ai:activity': AiActivity
 }
 
 /** window.api — preload mở ra cho renderer */

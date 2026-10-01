@@ -42,6 +42,8 @@ export type IconName =
   | 'volume'
   | 'info'
   | 'power'
+  | 'plug'
+  | 'copy'
 
 const PATHS: Record<IconName, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
@@ -181,7 +183,9 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M12 11v5.5M12 7.8v.3" />
     </>
   ),
-  power: <path d="M12 3.5v8M7 6.5a7 7 0 1 0 10 0" />
+  power: <path d="M12 3.5v8M7 6.5a7 7 0 1 0 10 0" />,
+  plug: <path d="M9 3.5v4.5M15 3.5v4.5M6.5 8h11v3a5.5 5.5 0 0 1-11 0zM12 16.5v4" />,
+  copy: <path d="M8.5 8.5h10v11h-10zM15.5 8.5v-4h-10v11h3" />
 }
 
 export function Icon({ name, size = 16, ...rest }: { name: IconName; size?: number } & SVGProps<SVGSVGElement>): React.JSX.Element {

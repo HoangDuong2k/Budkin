@@ -4,14 +4,18 @@
  *   - bật "Khởi động cùng máy": có mục thật trong hệ điều hành (Windows: registry Run; Linux: ~/.config/autostart),
  *     trỏ tới đúng file đã cài, kèm --hidden
  *   - dữ liệu nằm ở thư mục dữ liệu mặc định (để sau khi gỡ cài đặt kiểm tra dữ liệu vẫn còn)
+ *   - kết nối AI (MCP): Budkin đang tắt mà app AI gọi tới thì cầu nối tự mở Budkin chạy nền rồi trả lời
  * Chạy: BUDKIN_E2E_EXE=<file đã cài> npm run install-check [-- --keep-autostart]
  *   --keep-autostart: để nguyên mục tự khởi động (Windows: kiểm tra bộ gỡ cài đặt có xoá không)
  */
 import { execFileSync } from 'child_process'
 import { existsSync, readFileSync } from 'fs'
 import { homedir } from 'os'
-import { join } from 'path'
+import { basename, join } from 'path'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { _electron as electron, type ElectronApplication, type Page } from 'playwright-core'
+import type { AiStatus, McpLaunch } from '../src/shared/api'
 
 const EXE = process.env.BUDKIN_E2E_EXE
 const KEEP = process.argv.includes('--keep-autostart')
@@ -52,9 +56,51 @@ function autostartEntry(): string | null {
   return existsSync(file) ? readFileSync(file, 'utf8') : null
 }
 
+/** Còn tiến trình nào của bản đã cài đang chạy không */
+function installedRunning(exe: string): boolean {
+  try {
+    if (process.platform === 'win32') {
+      const list = execFileSync('tasklist', ['/FI', `IMAGENAME eq ${basename(exe)}`, '/NH'], { encoding: 'utf8' })
+      return list.toLowerCase().includes(basename(exe).toLowerCase())
+    }
+    execFileSync('pgrep', ['-f', `^${exe}`], { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Tắt mọi tiến trình của bản đã cài (Budkin do cầu nối mở chạy nền — không có cửa sổ để đóng) */
+function killInstalled(exe: string): void {
+  try {
+    if (process.platform === 'win32') execFileSync('taskkill', ['/F', '/T', '/IM', basename(exe)], { stdio: 'ignore' })
+    else execFileSync('pkill', ['-f', `^${exe}`], { stdio: 'ignore' })
+  } catch {
+    // Không còn tiến trình nào
+  }
+}
+
+/** App AI (Claude Desktop…) chạy cầu nối khi Budkin đang tắt: danh sách công cụ có ngay, gọi công cụ thì Budkin được mở */
+async function bridgeLaunchesApp(exe: string, launch: McpLaunch): Promise<void> {
+  const client = new Client({ name: 'install-check', version: '1.0.0' })
+  await client.connect(new StdioClientTransport({ command: launch.command, args: launch.args, env: { ...process.env, ...launch.env } as Record<string, string> }))
+  try {
+    const { tools } = await client.listTools()
+    assert(tools.length === 6, `cầu nối MCP của bản cài chạy được khi Budkin đang tắt (${tools.length} công cụ)`)
+    const r = await client.callTool({ name: 'get_overview', arguments: {} }, undefined, { timeout: 90_000 })
+    const text = (r.content as Array<{ text: string }>)[0]?.text ?? ''
+    // Quyền mặc định là Tắt: câu trả lời này do chính Budkin (vừa được mở) gửi về
+    assert(r.isError === true && /turned off/.test(text), `AI gọi tới: cầu nối tự mở Budkin chạy nền và Budkin trả lời (${text.slice(0, 60)}…)`)
+  } finally {
+    await client.close().catch(() => undefined)
+    killInstalled(exe)
+  }
+}
+
 async function main(): Promise<void> {
   if (!EXE) throw new Error('Cần BUDKIN_E2E_EXE trỏ tới file đã cài')
   const exePath = EXE
+  let launch: McpLaunch | null = null
   const app: ElectronApplication = await electron.launch({
     executablePath: exePath,
     args: ['--quick-add', ...(process.platform === 'linux' && !process.env.BUDKIN_E2E_SANDBOX ? ['--no-sandbox'] : [])],
@@ -74,6 +120,9 @@ async function main(): Promise<void> {
     const dataDir = await app.evaluate(({ app: a }) => a.getPath('userData'))
     const created = await invoke(page, 'tasks:create', { title: 'Việc tạo lúc kiểm tra bản cài' })
     assert(created.ok && existsSync(join(dataDir, 'budkin.db')), `dữ liệu ghi vào thư mục mặc định (${dataDir})`)
+    const ai = (await invoke(page, 'ai:status')) as { ok: boolean; value: AiStatus }
+    launch = ai.value.launch
+    assert(ai.ok && launch.command.toLowerCase() === exePath.toLowerCase(), `cầu nối MCP chạy bằng chính file đã cài (${launch.args[0]})`)
 
     assert((await invoke(page, 'settings:update', { autostart: true })).ok, 'bật "Khởi động cùng máy"')
     assert(await until(() => autostartEntry() !== null, 5000), 'hệ điều hành có mục tự khởi động')
@@ -87,6 +136,9 @@ async function main(): Promise<void> {
   } finally {
     await app.evaluate(({ app: a }) => a.exit(0)).catch(() => undefined)
   }
+  // Chờ Budkin vừa đóng thoát hẳn rồi thử như app AI gọi tới
+  await until(() => !installedRunning(exePath), 15_000)
+  if (launch) await bridgeLaunchesApp(exePath, launch)
   console.log('\nBẢN ĐÃ CÀI: KIỂM TRA ĐỀU QUA')
 }
 

@@ -1,13 +1,13 @@
 // Màn hình Cài đặt: phủ lên giao diện trên màn hình máy tính (Ctrl+, hoặc nút bánh răng ở thanh bên, Esc để đóng).
 // Mục bên trái, thiết lập bên phải; đổi là lưu ngay, không có nút Lưu.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import type { AppInfo, AppStatus, BackupInfo, BackupKind, BootPatch } from '../../../shared/api'
+import type { AiClientState, AiStatus, AppInfo, AppStatus, BackupInfo, BackupKind, BootPatch } from '../../../shared/api'
 import type { ImportMode, ImportPreview } from '../../../shared/exportFormat'
 import { parseTimeInput } from '../../../shared/datetime'
 import { LANGS, tr, trKey } from '../../../shared/i18n'
 import { ROBOT_MODELS, type RobotModel } from '../../../shared/robots'
 import type { SettingsPatch } from '../../../shared/schemas'
-import type { Quality, Settings } from '../../../shared/types'
+import type { AiAccess, Quality, Settings } from '../../../shared/types'
 import { useNow } from '../clock'
 import { ApiError, call } from '../ipc'
 import { ROBOT, ROBOT_EYES } from '../scene/palette3d'
@@ -27,6 +27,7 @@ const SECTIONS: Array<{ id: SettingsSection; icon: IconName; label: string }> = 
   { id: 'general', icon: 'gear', label: trKey('Chung') },
   { id: 'reminders', icon: 'bell', label: trKey('Nhắc việc') },
   { id: 'display', icon: 'monitor', label: trKey('Hiển thị') },
+  { id: 'ai', icon: 'plug', label: trKey('Kết nối AI') },
   { id: 'data', icon: 'archive', label: trKey('Dữ liệu') },
   { id: 'about', icon: 'info', label: trKey('Thông tin') }
 ]
@@ -600,6 +601,182 @@ function DataSection({ status }: { status: AppStatus | null }): React.JSX.Elemen
   )
 }
 
+// ---------- Kết nối AI ----------
+
+const CLAUDE_DOWNLOAD = 'https://claude.ai/download'
+
+const ACCESS_HINT: Record<AiAccess, string> = {
+  off: trKey('Claude không đọc được gì trong Budkin, kể cả khi đã kết nối'),
+  read: trKey('Claude xem được việc, dự án, nhãn nhưng không thêm, sửa hay xoá'),
+  full: trKey('Claude xem, thêm, sửa, xoá việc. Mỗi lần thay đổi Budkin đều báo và cho hoàn tác')
+}
+
+const STATE_LABEL: Record<AiClientState, string> = {
+  missing: trKey('Chưa cài trên máy'),
+  available: trKey('Chưa kết nối'),
+  connected: trKey('Đã kết nối'),
+  outdated: trKey('Cần cập nhật')
+}
+
+const AI_EXAMPLES = [
+  trKey('Hôm nay tôi có những việc gì?'),
+  trKey('Thêm việc gọi điện cho mẹ lúc 8 giờ tối mai'),
+  trKey('Dời các việc quá hạn sang thứ Hai tuần sau'),
+  trKey('Chia việc "Chuyển nhà" thành các bước nhỏ'),
+  trKey('Tuần qua tôi đã làm xong những gì?')
+]
+
+function copyText(text: string): void {
+  void run('app:copy', text).then((r) => r.ok && toast(tr('Đã chép')))
+}
+
+function ClientState({ state }: { state: AiClientState }): React.JSX.Element {
+  return (
+    <span className={`ai-state ${state}`}>
+      <i />
+      {tr(STATE_LABEL[state])}
+    </span>
+  )
+}
+
+function ConnectButton({ state, busy, onClick }: { state: AiClientState; busy: boolean; onClick: () => void }): React.JSX.Element {
+  const label = state === 'outdated' ? tr('Cập nhật') : state === 'connected' ? tr('Kết nối lại') : tr('Kết nối')
+  return (
+    <button className={`btn small ${state === 'connected' ? 'ghost' : 'primary'}`} disabled={busy} onClick={onClick}>
+      {busy ? tr('Đang kết nối…') : label}
+    </button>
+  )
+}
+
+function AiSection({ s }: { s: Settings }): React.JSX.Element {
+  const now = useNow()
+  const [status, setStatus] = useState<AiStatus | null>(null)
+  const [busy, setBusy] = useState<'desktop' | 'code' | null>(null)
+  useEffect(() => {
+    call('ai:status')
+      .then(setStatus)
+      .catch(() => undefined)
+  }, [])
+
+  const connect = async (target: 'desktop' | 'code'): Promise<void> => {
+    setBusy(target)
+    const r = await run('ai:connect', target)
+    setBusy(null)
+    if (!r.ok) return
+    setStatus(r.value)
+    toast(
+      target === 'desktop'
+        ? tr('Đã thêm Budkin vào Claude Desktop. Thoát hẳn rồi mở lại Claude Desktop để dùng.')
+        : tr('Đã thêm Budkin vào Claude Code. Mở một phiên Claude Code mới để dùng.')
+    )
+  }
+
+  const desktop = status?.desktop
+  const code = status?.code
+  const desktopHint: Record<AiClientState, ReactNode> = {
+    missing: (
+      <>
+        {tr('Chưa thấy Claude Desktop trên máy này.')}{' '}
+        <a href={CLAUDE_DOWNLOAD} target="_blank" rel="noreferrer">
+          {tr('Tải Claude Desktop')}
+        </a>
+      </>
+    ),
+    available: tr('Thêm Budkin vào danh sách công cụ của Claude Desktop'),
+    connected: tr('Chưa thấy Budkin trong Claude Desktop? Thoát hẳn Claude Desktop (cả ở khay hệ thống) rồi mở lại'),
+    outdated: tr('Budkin đã đổi chỗ cài. Bấm Cập nhật để Claude tìm đúng chỗ')
+  }
+  const codeHint: Record<AiClientState, string> = {
+    missing: tr('Không thấy lệnh claude trên máy. Cài Claude Code rồi chạy lệnh dưới đây trong terminal'),
+    available: tr('Dùng được ở mọi thư mục làm việc. Cũng có thể tự chạy lệnh dưới đây'),
+    connected: tr('Gõ /mcp trong Claude Code để xem Budkin đã kết nối chưa'),
+    outdated: tr('Budkin đã đổi chỗ cài. Bấm Cập nhật để Claude tìm đúng chỗ')
+  }
+  const manual = status ? JSON.stringify({ mcpServers: { budkin: status.launch } }, null, 2) : ''
+
+  return (
+    <>
+      <p className="set-hint ai-intro">
+        {tr('Trò chuyện với Claude trong Claude Desktop hoặc Claude Code để hỏi việc hôm nay, thêm, dời hay đánh dấu xong việc trong Budkin. Dùng gói Claude bạn đang có, Budkin không tốn thêm phí.')}
+      </p>
+      <Row id="aiAccess" label={tr('Quyền của Claude')} hint={tr(ACCESS_HINT[s.aiAccess])}>
+        <Choice<AiAccess>
+          value={s.aiAccess}
+          options={[
+            { value: 'off', label: tr('Tắt') },
+            { value: 'read', label: tr('Chỉ xem') },
+            { value: 'full', label: tr('Xem và sửa') }
+          ]}
+          onChange={(aiAccess) => save({ aiAccess })}
+          label={tr('Quyền của Claude')}
+        />
+      </Row>
+
+      <GroupTitle>{tr('Ứng dụng')}</GroupTitle>
+      {!status && <p className="set-hint">{tr('Đang kiểm tra…')}</p>}
+      {desktop && code && (
+        <ul className="ai-clients">
+          <li data-client="desktop" data-state={desktop.state}>
+            <div className="ai-client-text">
+              <span className="ai-client-head">
+                <span className="ai-client-name">Claude Desktop</span>
+                <ClientState state={desktop.state} />
+              </span>
+              <span className="set-hint">{desktopHint[desktop.state]}</span>
+            </div>
+            {desktop.state !== 'missing' && <ConnectButton state={desktop.state} busy={busy === 'desktop'} onClick={() => void connect('desktop')} />}
+          </li>
+          <li data-client="code" data-state={code.state}>
+            <div className="ai-client-text">
+              <span className="ai-client-head">
+                <span className="ai-client-name">Claude Code</span>
+                <ClientState state={code.state} />
+              </span>
+              <span className="set-hint">{codeHint[code.state]}</span>
+              <div className="ai-command">
+                <code>{code.command}</code>
+                <button className="icon-btn" onClick={() => copyText(code.command)} aria-label={tr('Chép lệnh')} title={tr('Chép lệnh')}>
+                  <Icon name="copy" size={14} />
+                </button>
+              </div>
+            </div>
+            {code.cli && <ConnectButton state={code.state} busy={busy === 'code'} onClick={() => void connect('code')} />}
+          </li>
+        </ul>
+      )}
+
+      <GroupTitle>{tr('Thử hỏi Claude')}</GroupTitle>
+      <div className="ai-examples">
+        {AI_EXAMPLES.map((q) => (
+          <button key={q} className="chip-btn" title={tr('Bấm để chép')} onClick={() => copyText(tr(q))}>
+            {tr(q)}
+          </button>
+        ))}
+      </div>
+      {status?.lastUse && (
+        <p className="set-hint ai-last">
+          {tr('Lần dùng gần nhất')}{' '}
+          <span className="readout">
+            {status.lastUse.client} · {shortDateTime(status.lastUse.at, now.date)}
+          </span>
+        </p>
+      )}
+      {status && (
+        <details className="ai-other">
+          <summary>{tr('Ứng dụng AI khác có hỗ trợ MCP')}</summary>
+          <p className="set-hint">{tr('Thêm một máy chủ MCP kiểu stdio với cấu hình sau:')}</p>
+          <div className="ai-command block">
+            <code>{manual}</code>
+            <button className="icon-btn" onClick={() => copyText(manual)} aria-label={tr('Chép cấu hình')} title={tr('Chép cấu hình')}>
+              <Icon name="copy" size={14} />
+            </button>
+          </div>
+        </details>
+      )}
+    </>
+  )
+}
+
 // ---------- Thông tin ----------
 
 function About(): React.JSX.Element {
@@ -682,6 +859,7 @@ export function SettingsPanel(): React.JSX.Element | null {
         {section === 'general' && <General s={settings} />}
         {section === 'reminders' && <Reminders s={settings} status={status} />}
         {section === 'display' && <Display s={settings} status={status} setStatus={setStatus} />}
+        {section === 'ai' && <AiSection s={settings} />}
         {section === 'data' && <DataSection status={status} />}
         {section === 'about' && <About />}
       </div>

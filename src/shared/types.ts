@@ -84,6 +84,10 @@ export interface Task {
 
 export type Quality = 'high' | 'balanced' | 'saver'
 
+/** App AI bên ngoài (Claude Desktop, Claude Code… qua MCP) được làm gì với dữ liệu: tắt, chỉ xem, xem và sửa */
+export type AiAccess = 'off' | 'read' | 'full'
+export const AI_ACCESS: readonly AiAccess[] = ['off', 'read', 'full']
+
 export interface Settings {
   language: Lang
   /** 1 = tuần bắt đầu thứ Hai, 0 = Chủ nhật */
@@ -101,6 +105,8 @@ export interface Settings {
   reducedMotion: 'auto' | 'on' | 'off'
   /** Robot đứng trên bệ tròn bên trái màn hình */
   robot: RobotModel
+  /** Quyền của app AI kết nối qua MCP (riêng từng máy, không đi theo file xuất) */
+  aiAccess: AiAccess
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -114,7 +120,8 @@ export const DEFAULT_SETTINGS: Settings = {
   autostart: false,
   quality: 'balanced',
   reducedMotion: 'auto',
-  robot: 'budkin'
+  robot: 'budkin',
+  aiAccess: 'off'
 }
 
 /** Thay đổi dữ liệu main phát cho renderer sau mỗi lần ghi (bản đầy đủ của từng đối tượng) */

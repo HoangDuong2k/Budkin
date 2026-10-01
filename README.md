@@ -18,7 +18,8 @@ robot phát sáng.
 |---|---|
 | ![Bàn làm việc khi bật đèn](docs/screenshots/desk-day.png) | ![Bàn làm việc khi tắt đèn](docs/screenshots/desk-night.png) |
 
-Dữ liệu chỉ nằm trên máy của bạn, không cần tài khoản, không gửi đi đâu.
+Dữ liệu chỉ nằm trên máy của bạn, không cần tài khoản, không gửi đi đâu — trừ khi bạn tự
+[kết nối Claude](#hỏi-đáp-và-giao-việc-cho-claude) để hỏi đáp, giao việc bằng lời.
 
 ## Robot trên bàn
 
@@ -140,6 +141,8 @@ Mở **Cài đặt** bằng nút bánh răng ở chân thanh bên hoặc **Ctrl+
   cửa sổ thì chạy nền hay thoát, khởi động cùng máy.
 - **Hiển thị:** chất lượng 3D (Cao / Cân bằng / Tiết kiệm); chế độ Tự động, 3D vẽ bằng CPU (máy ảo, GPU lỗi) hoặc chỉ
   2D; trên Wayland có thêm lựa chọn chạy qua XWayland. Đổi chế độ thì bấm **Khởi động lại** để áp dụng.
+- **Kết nối AI:** quyền của Claude, kết nối Claude Desktop / Claude Code (xem
+  [bên dưới](#hỏi-đáp-và-giao-việc-cho-claude)).
 - **Dữ liệu:** xuất / nhập, sao lưu, mở thư mục dữ liệu.
 
 Dữ liệu (SQLite) nằm trong thư mục dữ liệu của app: `~/.config/Budkin` trên Linux, `%APPDATA%\Budkin` trên Windows.
@@ -152,6 +155,41 @@ Dữ liệu (SQLite) nằm trong thư mục dữ liệu của app: `~/.config/Bu
 - **Sao lưu tự động** mỗi ngày một bản, giữ 7 ngày gần nhất; thêm **Sao lưu ngay** khi cần. **Khôi phục** một bản thì
   Budkin khởi động lại rồi mới thay dữ liệu; dữ liệu ngay trước lúc khôi phục vẫn được giữ trong một bản sao lưu riêng.
 - **Chuyển sang máy khác:** Xuất dữ liệu ở máy cũ → Nhập (Thay thế) ở máy mới.
+
+## Hỏi đáp và giao việc cho Claude
+
+| Claude thêm việc, Budkin báo kèm nút Hoàn tác | Cài đặt → Kết nối AI |
+|---|---|
+| ![Claude vừa thêm việc vào Budkin](docs/screenshots/desk-ai.png) | ![Mục Kết nối AI trong Cài đặt](docs/screenshots/settings-ai.png) |
+
+Budkin kết nối với **Claude Desktop** và **Claude Code** qua MCP (Model Context Protocol): bạn trò chuyện với Claude như
+bình thường — *"hôm nay tôi có việc gì?"*, *"thêm việc gọi điện cho mẹ lúc 8 giờ tối mai"*, *"dời các việc quá hạn sang
+thứ Hai"*, *"chia việc Chuyển nhà thành các bước nhỏ"* — còn Claude đọc và sửa việc trong Budkin. Dùng tài khoản Claude
+bạn đang có: Budkin không tự gọi AI, không cần API key, không tốn thêm phí.
+
+**Cách bật:** Cài đặt → **Kết nối AI**.
+
+- **Claude Desktop:** bấm **Kết nối** — Budkin thêm mục `budkin` vào `claude_desktop_config.json` (giữ nguyên phần còn
+  lại, cất bản gốc thành `claude_desktop_config.json.before-budkin`). Thoát hẳn Claude Desktop rồi mở lại.
+- **Claude Code:** bấm **Kết nối** (Budkin chạy `claude mcp add budkin --scope user …`) hoặc chép lệnh hiện sẵn ra
+  terminal. Mở phiên mới, gõ `/mcp` để kiểm tra.
+- **Ứng dụng AI khác có hỗ trợ MCP:** mục cuối có sẵn cấu hình máy chủ stdio để chép.
+
+**Quyền của Claude:** **Tắt** / **Chỉ xem** / **Xem và sửa** — mặc định Tắt, bấm Kết nối thì chuyển sang Xem và sửa.
+Mỗi lần Claude thêm, sửa, xoá việc, robot phản ứng và Budkin hiện thông báo kèm nút **Hoàn tác** (gỡ được trong 15
+phút, kể cả hoàn thành việc lặp lại hay dời lịch nhiều việc một lúc). Claude Desktop / Claude Code cũng hỏi bạn trước
+khi cho Claude chạy công cụ.
+
+**Claude làm được gì:** xem tổng quan (ngày giờ trên máy, dự án, nhãn, số việc); liệt kê việc hôm nay, quá hạn, sắp
+tới, theo khoảng ngày, đã xong, lọc theo dự án / nhãn / từ khoá không dấu; xem chi tiết một việc; thêm nhiều việc một
+lúc (hạn, giờ, dự án và nhãn theo tên — chưa có thì tạo, ưu tiên, nhắc, lặp lại, checklist); sửa nhiều việc một lúc
+(dời lịch, đổi dự án / nhãn, hoàn thành, thêm và đánh dấu checklist) — sai một việc thì không việc nào bị đổi; xoá việc.
+
+**Budkin đang tắt?** Claude vẫn thấy danh sách công cụ mà không làm Budkin mở theo; khi Claude thực sự cần đọc / sửa
+việc, Budkin tự mở chạy nền dưới khay rồi trả lời.
+
+**Riêng tư:** khi bạn hỏi, Claude đọc những việc cần cho câu trả lời qua tài khoản Claude của bạn (theo chính sách dữ
+liệu của Anthropic). Quyền ở mức Tắt thì Claude không đọc được gì.
 
 ## Xử lý sự cố
 
@@ -201,15 +239,15 @@ Electron 44 tải file chạy ở lần dùng đầu tiên (không có script po
 
 ```bash
 npm run typecheck
-npm test                    # vitest: toán khung hình, nhắc việc, dữ liệu, xuất / nhập, sao lưu, i18n, cấu hình
+npm test                    # vitest: toán khung hình, nhắc việc, dữ liệu, xuất / nhập, sao lưu, công cụ MCP, i18n
 npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột / bàn phím, ảnh chụp trong test-output/e2e/
 ```
 
 - Máy không có GPU (CI, máy ảo): `BUDKIN_E2E_SWIFTSHADER=1 npm run e2e` — WebGL vẽ bằng CPU.
 - Kiểm thử bản đã đóng gói / đã cài: `BUDKIN_E2E_EXE=release/linux-unpacked/budkin npm run e2e` (hoặc đường dẫn tới
   file AppImage, `/opt/Budkin/budkin`, `Budkin.exe` đã cài). `npm run install-check` kiểm tra thêm phần chỉ bản cài
-  mới có: `--quick-add`, mục "khởi động cùng máy" của hệ điều hành, thư mục dữ liệu mặc định (dùng dữ liệu thật của
-  máy — chạy trên máy mình thì đặt `XDG_CONFIG_HOME` sang thư mục tạm).
+  mới có: `--quick-add`, mục "khởi động cùng máy" của hệ điều hành, thư mục dữ liệu mặc định, cầu nối MCP tự mở Budkin
+  khi app AI gọi tới (dùng dữ liệu thật của máy — chạy trên máy mình thì đặt `XDG_CONFIG_HOME` sang thư mục tạm).
 - Linux không có màn hình (CI): `xvfb-run -a -s "-screen 0 1920x1080x24" npm run e2e`. Trên máy có màn hình, cửa sổ app
   hiện lên trong lúc chạy e2e (không giành focus); cài `xvfb` để chạy ẩn. Phiên đăng nhập Wayland (Ubuntu mặc định) thì
   phải bỏ biến Wayland, không thì app vẫn mở lên màn hình thật:
@@ -245,6 +283,10 @@ Icon (mặt robot) vẽ bằng SVG trong `build/icon-src/`; sửa xong thì ch�
 
 - `src/main` — main process: cửa sổ, IPC (kiểm tra tham số bằng zod), SQLite (`node:sqlite`), nhắc việc, khay hệ thống,
   xuất / nhập, sao lưu.
+- `src/main/mcp` — kết nối AI: công cụ MCP (`tools.ts`), chạy công cụ trên dữ liệu kèm hoàn tác (`runner.ts`), cổng
+  socket cục bộ trong Budkin (`host.ts`), cầu nối stdio mà app AI chạy (`bridge.ts` — điểm vào `src/main/mcp-bridge.ts`
+  chạy bằng chính file Budkin với `ELECTRON_RUN_AS_NODE=1`; bản AppImage dùng `Budkin.AppImage --mcp-bridge`), gắn vào
+  Claude Desktop / Claude Code (`clients.ts`).
 - `src/preload` — mở `window.api` (sandbox) cho renderer.
 - `src/renderer` — React: cảnh 3D (React Three Fiber) + lớp DOM đặt khít lên màn hình máy tính 3D (chữ sắc nét,
   bộ gõ tiếng Việt chạy bình thường) + chế độ 2D khi máy không có WebGL.

@@ -5,9 +5,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
 import { app } from 'electron'
-import { APP_NAME } from '../../shared/constants'
-
-export const HIDDEN_ARG = '--hidden'
+import { APP_NAME, HIDDEN_ARG } from '../../shared/constants'
 
 function desktopFile(): string {
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), '.config')

@@ -4,7 +4,7 @@ import type { Selection } from '../../../shared/filters'
 
 export type View = 'list' | 'kanban' | 'calendar'
 export type CalendarMode = 'month' | 'week'
-export type SettingsSection = 'general' | 'reminders' | 'display' | 'data' | 'about'
+export type SettingsSection = 'general' | 'reminders' | 'display' | 'ai' | 'data' | 'about'
 
 export interface Toast {
   id: number
