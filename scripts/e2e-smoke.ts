@@ -397,7 +397,7 @@ async function settingsFlow(page: Page): Promise<void> {
   const settings = (): Promise<Settings | null> => probe(page, (p) => p.data.getState().settings)
   const panel = page.locator('.settings')
   const section = async (id: string): Promise<void> => {
-    await page.locator(`.settings-nav [data-section="${id}"]`).click()
+    await press(page.locator(`.settings-nav [data-section="${id}"]`))
     await until(async () => (await page.locator(`.settings-body[data-section="${id}"]`).count()) === 1)
   }
   const row = (id: string): Locator => page.locator(`.set-row[data-setting="${id}"]`)
@@ -513,7 +513,7 @@ async function robotsFlow(page: Page): Promise<void> {
 
   // Chọn trong Cài đặt → Chung
   await page.keyboard.press('Control+Comma')
-  await page.locator('.settings-nav [data-section="general"]').click()
+  await press(page.locator('.settings-nav [data-section="general"]'))
   await page.locator('.robot-card[data-robot="miu"]').click()
   assert(await until(async () => (await hud()).robot === 'miu'), 'Cài đặt → Robot trên bàn: chọn Miu, robot trên bàn đổi theo')
   await page.locator('.robot-card[data-robot="budkin"]').click()
@@ -828,7 +828,7 @@ async function stubDialogs(app: ElectronApplication, file: string): Promise<void
 async function openDataSettings(page: Page): Promise<void> {
   await page.keyboard.press('Escape')
   await page.keyboard.press('Control+Comma')
-  await page.locator('.settings-nav [data-section="data"]').click()
+  await press(page.locator('.settings-nav [data-section="data"]'))
   await until(async () => (await page.locator('.settings-body[data-section="data"]').count()) === 1)
 }
 
@@ -901,8 +901,8 @@ async function aiFlow(page: Page): Promise<void> {
   const toasts = async (): Promise<string[]> => (await page.evaluate('window.__budkin.toastLog')) as string[]
   const openAi = async (): Promise<void> => {
     if ((await page.locator('.settings').count()) === 0) await page.keyboard.press('Control+Comma')
-    await page.locator('.settings-nav [data-section="general"]').click()
-    await page.locator('.settings-nav [data-section="ai"]').click()
+    await press(page.locator('.settings-nav [data-section="general"]'))
+    await press(page.locator('.settings-nav [data-section="ai"]'))
     await until(async () => (await page.locator('.ai-clients').count()) === 1, 5000)
   }
   const client = (id: string): Locator => page.locator(`.ai-clients li[data-client="${id}"]`)
