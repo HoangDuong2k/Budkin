@@ -118,7 +118,19 @@ async function press(target: Locator): Promise<void> {
     // Sự kiện có thể tới nơi muộn: nút đã biến mất thì thôi
     if (await until(async () => (await target.count()) === 0, 1500)) return
     problems.push(`[e2e] bấm chuột bị treo, bấm qua DOM: ${String((err as Error).message ?? err).split('\n')[0]}`)
-    await target.evaluate((el) => (el as HTMLElement).click(), undefined, { timeout: 5000 }).catch(() => undefined)
+    // Như bấm chuột thật: ô nhập thì nhận con trỏ; chỗ khác thì ô đang gõ mất con trỏ (phím tắt dùng được)
+    await target
+      .evaluate(
+        (el) => {
+          const node = el as HTMLElement
+          if (node.matches('input, textarea, select, [contenteditable="true"]')) node.focus()
+          else if (!node.closest('button, a, [tabindex]')) (document.activeElement as HTMLElement | null)?.blur()
+          node.click()
+        },
+        undefined,
+        { timeout: 5000 }
+      )
+      .catch(() => undefined)
   }
 }
 
@@ -256,8 +268,8 @@ async function taskTitled(page: Page, title: string): Promise<Task | undefined> 
 /** Giao diện trên màn hình: thêm, sửa, hoàn thành, xoá + hoàn tác, tìm, đổi ngôn ngữ — bằng chuột và bàn phím thật */
 async function uiFlow(page: Page): Promise<void> {
   const row = (title: string): ReturnType<Page['locator']> => page.locator('.task-row', { hasText: title }).first()
-  await page.locator('.sidebar .nav-main').first().click()
-  await page.locator('.list-head').click()
+  await press(page.locator('.sidebar .nav-main').first())
+  await press(page.locator('.list-head'))
   await page.keyboard.press('n')
   assert(
     await until(async () => page.evaluate(() => document.activeElement?.classList.contains('quick-add-input') ?? false)),
@@ -270,22 +282,22 @@ async function uiFlow(page: Page): Promise<void> {
   assert(created?.dueDate !== null && created?.remindBeforeMin === 0, 'việc thêm ở "Hôm nay" có hạn hôm nay và nhắc trong ngày')
 
   // Khung sửa: tiêu đề, ưu tiên, giờ, checklist, nhãn mới
-  await row('Mua sữa cho mèo').click()
+  await press(row('Mua sữa cho mèo'))
   const editor = page.locator('.editor')
   await editor.waitFor()
-  await editor.locator('.editor-title').click()
+  await press(editor.locator('.editor-title'))
   await page.keyboard.press('Control+A')
   await page.keyboard.type('Mua sữa và pate cho mèo')
   await page.keyboard.press('Enter')
   assert(await until(async () => (await row('Mua sữa và pate cho mèo').count()) === 1), 'sửa tiêu đề trong khung sửa')
-  await editor.locator('.prio-btn.prio-3').click()
-  await editor.locator('[data-field="due"] .value-btn').click()
-  await page.locator('.popover .time-suggest button', { hasText: '18:00' }).click()
+  await press(editor.locator('.prio-btn.prio-3'))
+  await press(editor.locator('[data-field="due"] .value-btn'))
+  await press(page.locator('.popover .time-suggest button', { hasText: '18:00' }))
   await page.keyboard.press('Escape')
-  await editor.locator('.checklist-add input').click()
+  await press(editor.locator('.checklist-add input'))
   await page.keyboard.type('Pate cá hồi')
   await page.keyboard.press('Enter')
-  await editor.locator('[data-field="tags"] input').click()
+  await press(editor.locator('[data-field="tags"] input'))
   await page.keyboard.type('Nhà')
   await page.keyboard.press('Enter')
   assert(
@@ -301,22 +313,22 @@ async function uiFlow(page: Page): Promise<void> {
   await page.keyboard.press('Escape')
   await page.keyboard.press('Escape')
   assert(await until(async () => (await editor.count()) === 0), 'Esc đóng khung sửa')
-  await row('Mua sữa và pate cho mèo').locator('.check').click()
+  await press(row('Mua sữa và pate cho mèo').locator('.check'))
   assert(await until(async () => (await taskTitled(page, 'Mua sữa và pate cho mèo'))?.status === 'done'), 'bấm ô tròn: việc chuyển sang Đã xong')
 
   // Xoá rồi hoàn tác
-  await page.locator('.quick-add-input').click()
+  await press(page.locator('.quick-add-input'))
   await page.keyboard.type('Việc sẽ bị xoá')
   await page.keyboard.press('Enter')
   await until(async () => (await row('Việc sẽ bị xoá').count()) === 1)
-  await row('Việc sẽ bị xoá').click()
-  await editor.locator('.icon-btn.danger').click()
+  await press(row('Việc sẽ bị xoá'))
+  await press(editor.locator('.icon-btn.danger'))
   assert(await until(async () => (await taskTitled(page, 'Việc sẽ bị xoá')) === undefined), 'xoá việc từ khung sửa')
-  await page.locator('.toast-action').click()
+  await press(page.locator('.toast-action'))
   assert(await until(async () => (await row('Việc sẽ bị xoá').count()) === 1), 'bấm "Hoàn tác" trên toast: việc quay lại')
 
   // Tìm kiếm không dấu
-  await page.locator('.list-head').click()
+  await press(page.locator('.list-head'))
   await page.keyboard.press('/')
   await page.keyboard.type('pate')
   assert(
@@ -329,14 +341,14 @@ async function uiFlow(page: Page): Promise<void> {
 
   // Đổi ngôn ngữ (thanh bên thu gọn ở màn hình nhỏ thì đổi qua store)
   const langBtn = page.locator('.lang-switch button', { hasText: 'EN' })
-  if (await langBtn.isVisible()) await langBtn.click()
+  if (await langBtn.isVisible()) await press(langBtn)
   else await page.evaluate("window.__budkin.lang.getState().setLang('en')")
   assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Today'), 'đổi sang tiếng Anh: giao diện hiện "Today"')
   await shot(page, '7-today-en.png')
-  await page.locator('.theme-toggle').click()
+  await press(page.locator('.theme-toggle'))
   await page.waitForTimeout(200)
   await shot(page, '8-today-en-other-theme.png')
-  await page.locator('.theme-toggle').click()
+  await press(page.locator('.theme-toggle'))
   await page.evaluate("window.__budkin.lang.getState().setLang('vi')")
   assert(await until(async () => (await page.locator('.list-head h2').textContent()) === 'Hôm nay'), 'đổi lại tiếng Việt')
 }
@@ -346,8 +358,8 @@ async function recurrenceFlow(page: Page): Promise<void> {
   const title = 'Tập thể dục buổi sáng'
   const row = (): ReturnType<Page['locator']> => page.locator('.task-row', { hasText: title }).first()
   const instances = async (): Promise<Task[]> => (await tasksNow(page)).filter((t) => t.title === title)
-  await page.locator('.sidebar .nav-main').first().click()
-  await page.locator('.list-head').click()
+  await press(page.locator('.sidebar .nav-main').first())
+  await press(page.locator('.list-head'))
   await page.keyboard.press('n')
   await page.keyboard.type(title)
   await page.keyboard.press('Enter')
@@ -355,15 +367,15 @@ async function recurrenceFlow(page: Page): Promise<void> {
   const today = (await taskTitled(page, title))?.dueDate ?? ''
   const tomorrow = addDays(today, 1)
 
-  await row().click()
-  await page.locator('.editor [data-field="repeat"] .value-btn').click()
-  await page.locator('.popover .menu-item', { hasText: 'Hằng ngày' }).click()
+  await press(row())
+  await press(page.locator('.editor [data-field="repeat"] .value-btn'))
+  await press(page.locator('.popover .menu-item', { hasText: 'Hằng ngày' }))
   assert(await until(async () => (await taskTitled(page, title))?.recurrence?.freq === 'daily'), 'khung sửa: đặt lặp lại "Hằng ngày"')
   assert(/Hằng ngày/.test((await page.locator('.editor [data-field="repeat"] .value-btn').textContent()) ?? ''), 'ô Lặp lại hiện "Hằng ngày"')
   await page.keyboard.press('Escape')
   await page.keyboard.press('Escape')
 
-  await row().locator('.check').click()
+  await press(row().locator('.check'))
   assert(
     await until(async () => {
       const list = await instances()
@@ -372,7 +384,7 @@ async function recurrenceFlow(page: Page): Promise<void> {
     'hoàn thành việc hằng ngày: lần ngày mai tự xuất hiện'
   )
   assert(await until(async () => /Lần tới: Ngày mai/.test((await page.locator('.toast').first().textContent()) ?? '')), 'toast báo "Lần tới: Ngày mai"')
-  await page.locator('.toast .toast-action').first().click()
+  await press(page.locator('.toast .toast-action').first())
   assert(
     await until(async () => {
       const list = await instances()
@@ -381,8 +393,8 @@ async function recurrenceFlow(page: Page): Promise<void> {
     'bấm "Hoàn tác": việc về chưa xong, lần ngày mai bị gỡ'
   )
 
-  await row().click()
-  await page.locator('.editor [aria-label="Bỏ qua lần này"]').click()
+  await press(row())
+  await press(page.locator('.editor [aria-label="Bỏ qua lần này"]'))
   assert(await until(async () => (await instances())[0]?.dueDate === tomorrow), 'bỏ qua lần này: dời sang ngày mai')
   await page.keyboard.press('Escape')
 
@@ -402,11 +414,11 @@ async function settingsFlow(page: Page): Promise<void> {
   }
   const row = (id: string): Locator => page.locator(`.set-row[data-setting="${id}"]`)
 
-  await page.locator('.list-head').first().click()
+  await press(page.locator('.list-head').first())
   await page.keyboard.press('Control+Comma')
   assert(await until(async () => (await panel.count()) === 1), 'Ctrl+, mở màn hình Cài đặt')
   await section('general')
-  await row('weekStart').getByRole('radio', { name: 'Chủ nhật' }).click()
+  await press(row('weekStart').getByRole('radio', { name: 'Chủ nhật' }))
   assert(await until(async () => (await settings())?.weekStart === 0), 'Cài đặt: tuần bắt đầu vào Chủ nhật được lưu')
   await page.keyboard.press('Escape')
   assert(await until(async () => (await panel.count()) === 0), 'Esc đóng Cài đặt')
@@ -414,22 +426,22 @@ async function settingsFlow(page: Page): Promise<void> {
   assert(await until(async () => (await page.locator('.cal-dow').first().textContent()) === 'CN'), 'Lịch bắt đầu tuần bằng Chủ nhật')
   await page.keyboard.press('1')
 
-  await page.locator('.settings-btn').click()
+  await press(page.locator('.settings-btn'))
   assert(await until(async () => (await panel.count()) === 1), 'nút bánh răng ở thanh bên mở Cài đặt')
   await section('reminders')
   const time = row('allDayRemindTime').locator('input')
   await time.fill('830')
   await time.press('Enter')
   assert(await until(async () => (await settings())?.allDayRemindTime === '08:30'), 'giờ nhắc việc cả ngày: gõ "830" thành 08:30')
-  await row('mute').getByRole('button', { name: '1 giờ' }).click()
+  await press(row('mute').getByRole('button', { name: '1 giờ' }))
   assert(await until(async () => (await row('mute').getByRole('button', { name: 'Bật lại' }).count()) === 1), 'tạm tắt nhắc 1 giờ')
-  await row('mute').getByRole('button', { name: 'Bật lại' }).click()
+  await press(row('mute').getByRole('button', { name: 'Bật lại' }))
   assert(await until(async () => (await row('mute').getByRole('button', { name: '1 giờ' }).count()) === 1), 'bật lại nhắc việc')
 
   await section('display')
-  await row('render').getByRole('radio', { name: 'Chỉ 2D' }).click()
+  await press(row('render').getByRole('radio', { name: 'Chỉ 2D' }))
   assert(await until(async () => (await page.locator('.set-notice').count()) === 1), 'đổi sang "Chỉ 2D": báo cần khởi động lại')
-  await row('render').getByRole('radio', { name: 'Tự động' }).click()
+  await press(row('render').getByRole('radio', { name: 'Tự động' }))
   assert(await until(async () => (await page.locator('.set-notice').count()) === 0), 'đổi lại "Tự động": hết báo khởi động lại')
   await section('about')
   assert(await until(async () => /^\d+\.\d+\.\d+/.test((await page.locator('.about-specs dd').first().textContent()) ?? '')), 'Thông tin: hiện phiên bản app')
@@ -514,9 +526,9 @@ async function robotsFlow(page: Page): Promise<void> {
   // Chọn trong Cài đặt → Chung
   await page.keyboard.press('Control+Comma')
   await press(page.locator('.settings-nav [data-section="general"]'))
-  await page.locator('.robot-card[data-robot="miu"]').click()
+  await press(page.locator('.robot-card[data-robot="miu"]'))
   assert(await until(async () => (await hud()).robot === 'miu'), 'Cài đặt → Robot trên bàn: chọn Miu, robot trên bàn đổi theo')
-  await page.locator('.robot-card[data-robot="budkin"]').click()
+  await press(page.locator('.robot-card[data-robot="budkin"]'))
   assert(await until(async () => (await hud()).robot === 'budkin'), 'chọn lại Budkin')
   await page.keyboard.press('Escape')
   await until(async () => (await page.locator('.settings').count()) === 0)
@@ -559,7 +571,7 @@ async function sceneFlow(page: Page): Promise<void> {
   await shot(page, '9-scene.png')
 
   // Bấm vào đèn khi đang gõ trong ô tìm kiếm: đổi theme, ô tìm kiếm vẫn giữ con trỏ
-  await page.locator('.search input').click()
+  await press(page.locator('.search input'))
   const before = await page.evaluate(() => document.documentElement.dataset.theme)
   const hit = await probe(page, (p) => (p as unknown as { hit(): { lamp: { x: number; y: number }; robot: { x: number; y: number } } }).hit())
   await page.mouse.move(hit.lamp.x, hit.lamp.y, { steps: 4 })
@@ -754,10 +766,10 @@ async function centerOf(page: Page, selector: string): Promise<{ x: number; y: n
  */
 async function boardFlow(app: ElectronApplication, page: Page): Promise<string> {
   // Về danh sách "Tất cả việc" để Kanban / Lịch không bị lọc
-  await page.locator('.sidebar .nav-main').nth(3).click()
+  await press(page.locator('.sidebar .nav-main').nth(3))
   const card = await value(page, 'tasks:create', { title: 'Viết kịch bản video giới thiệu' })
 
-  await page.locator('.list-head').first().click()
+  await press(page.locator('.list-head').first())
   await page.keyboard.press('2')
   assert(await until(async () => (await page.locator('.board').count()) === 1), 'phím 2: chuyển sang Kanban')
   const cardSel = `.board-col.col-todo .task-card[data-task-id="${card.id}"]`
@@ -844,7 +856,7 @@ async function dataFlow(app: ElectronApplication, page: Page): Promise<void> {
   const toast = (): Locator => page.locator('.toast').last()
   await stubDialogs(app, file)
   await openDataSettings(page)
-  await page.getByRole('button', { name: 'Xuất file…' }).click()
+  await press(page.getByRole('button', { name: 'Xuất file…' }))
   assert(await until(async () => existsSync(file) && /Đã xuất \d+ việc/.test((await toast().textContent()) ?? ''), 5000), 'xuất dữ liệu ra file JSON (hộp thoại lưu file)')
   const parsed = parseExportFile(readFileSync(file, 'utf8'))
   const source = await dbCounts(app)
@@ -858,28 +870,28 @@ async function dataFlow(app: ElectronApplication, page: Page): Promise<void> {
   await until(async () => probe(page, (p) => p.data.getState().loaded), 5000)
   await stubDialogs(app, file)
   await openDataSettings(page)
-  await page.getByRole('button', { name: 'Chọn file…' }).click()
+  await press(page.getByRole('button', { name: 'Chọn file…' }))
   const dialog = page.locator('.import-modal')
   assert(await until(async () => /việc/.test((await dialog.locator('.import-meta').textContent().catch(() => '')) ?? '')), 'chọn file: hiện tên file, ngày xuất, số việc')
   await shot(page, '17-import.png')
-  await dialog.locator('[data-mode="replace"]').click()
+  await press(dialog.locator('[data-mode="replace"]'))
   assert(await until(async () => JSON.stringify(await dbCounts(app)) === JSON.stringify(source), 5000), 'nhập vào máy mới (thay thế): số việc, dự án, nhãn khớp')
   assert(await until(async () => Object.keys(await probe(page, (p) => p.data.getState().tasks)).length > 0), 'giao diện tải lại dữ liệu vừa nhập')
-  await page.getByRole('button', { name: 'Chọn file…' }).click()
-  await dialog.locator('[data-mode="merge"]').click()
+  await press(page.getByRole('button', { name: 'Chọn file…' }))
+  await press(dialog.locator('[data-mode="merge"]'))
   assert(await until(async () => /Đã gộp: 0 việc mới, 0 việc được cập nhật/.test((await toast().textContent()) ?? '')), 'nhập lại cùng file (gộp): không thêm, không đổi gì')
   assert(JSON.stringify(await dbCounts(app)) === JSON.stringify(source), 'gộp lần nữa không tạo trùng')
   const kinds = (await value(page, 'data:backups')).map((b) => b.kind)
   assert(kinds.filter((k) => k === 'before-import').length === 2, 'mỗi lần nhập đều tự sao lưu trước')
 
   // Sao lưu ngay → thêm việc → khôi phục bản vừa sao lưu
-  await page.getByRole('button', { name: 'Sao lưu ngay' }).click()
+  await press(page.getByRole('button', { name: 'Sao lưu ngay' }))
   const manual = page.locator('.backup-list li', { hasText: 'Tự sao lưu' })
   assert(await until(async () => (await manual.count()) === 1), 'sao lưu ngay: bản mới hiện trong danh sách')
   await value(page, 'tasks:create', { title: 'Việc thêm sau khi sao lưu' })
-  await manual.getByRole('button', { name: 'Khôi phục' }).click()
+  await press(manual.getByRole('button', { name: 'Khôi phục' }))
   const closed = app.waitForEvent('close')
-  await page.locator('.modal').getByRole('button', { name: 'Khôi phục' }).click()
+  await press(page.locator('.modal').getByRole('button', { name: 'Khôi phục' }))
   await closed
   assert(true, 'khôi phục: Budkin đóng lại để thay dữ liệu')
   ;({ app, page } = await launch({ BUDKIN_USER_DATA: fresh }))
@@ -909,7 +921,7 @@ async function aiFlow(page: Page): Promise<void> {
   }
   const client = (id: string): Locator => page.locator(`.ai-clients li[data-client="${id}"]`)
 
-  await page.locator('.list-head').first().click()
+  await press(page.locator('.list-head').first())
   await openAi()
   assert((await client('desktop').getAttribute('data-state')) === 'missing', 'Kết nối AI: chưa cài Claude Desktop → có link tải về')
   assert(/claude mcp add budkin --scope user/.test((await client('code').locator('code').textContent()) ?? ''), 'Kết nối AI: có sẵn lệnh "claude mcp add" để chép cho Claude Code')
@@ -1074,7 +1086,7 @@ async function flatFlow(app: ElectronApplication, page: Page): Promise<void> {
   await value(page, 'tasks:delete', due.id, 'one')
 
   // Chế độ Mở rộng (F): giao diện phủ gần kín cửa sổ, bàn 2D dừng vẽ
-  await page.locator('.list-head').first().click()
+  await press(page.locator('.list-head').first())
   await page.keyboard.press('f')
   assert(await until(async () => ((await page.locator('.screen').boundingBox())?.width ?? 0) > vp.width * 0.9), 'phím F trên bàn 2D: giao diện phủ gần kín cửa sổ')
   await page.keyboard.press('f')
@@ -1119,7 +1131,7 @@ async function main(): Promise<void> {
   }
 
   // Bấm nút đổi theme bằng chuột thật
-  await page.locator('.theme-toggle').click()
+  await press(page.locator('.theme-toggle'))
   const theme1 = theme0 === 'light' ? 'dark' : 'light'
   assert(
     await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) === theme1),
