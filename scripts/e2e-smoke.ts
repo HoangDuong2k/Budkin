@@ -1045,6 +1045,15 @@ async function flatFlow(app: ElectronApplication, page: Page): Promise<void> {
   // Đứng yên: robot ngủ, bàn 2D không vẽ khung nào
   assert(await until(async () => (await robotMode()) === 'sleep', 12_000), 'để yên: robot 2D ngủ')
   await until(async () => (await page.evaluate('window.__budkin.robot.settled')) === true, 3000)
+  // Khung cuối của lúc chuyển sang ngủ có thể bị dời (giới hạn 30 khung/giây; máy ảo chậm): chờ khung hình ngừng hẳn
+  let last = -1
+  const quietBy = Date.now() + 5000 * WAIT
+  while (Date.now() < quietBy) {
+    const n = await num('window.__budkin.renderStats.frames')
+    if (n === last) break
+    last = n
+    await page.waitForTimeout(400)
+  }
   const f0 = await num('window.__budkin.renderStats.frames')
   await page.waitForTimeout(1500)
   const idleFrames = (await num('window.__budkin.renderStats.frames')) - f0
