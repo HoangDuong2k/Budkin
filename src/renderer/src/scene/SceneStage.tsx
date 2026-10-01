@@ -1,7 +1,8 @@
 import { Canvas, advance, useThree } from '@react-three/fiber'
-import { Component, useEffect, useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react'
+import { Component, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { RenderReason } from '../../../shared/renderMode'
+import { FlatDesk } from '../flat/FlatDesk'
 import type { Quality } from '../../../shared/types'
 import { useData } from '../state/dataStore'
 import { bubbleWidthFor, useHud } from '../state/hudStore'
@@ -118,7 +119,7 @@ function ContextGuard({ onFallback }: { onFallback: (reason: RenderReason) => vo
   return null
 }
 
-/** Lỗi trong cảnh 3D (shader, driver…) → chuyển sang giao diện 2D thay vì màn hình trắng */
+/** Lỗi trong cảnh 3D (shader, driver…) → chuyển sang bàn làm việc 2D; lỗi cả ở bàn 2D → chỉ còn giao diện, không màn hình trắng */
 class SceneBoundary extends Component<{ onFail: (reason: RenderReason) => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
   static getDerivedStateFromError(): { failed: boolean } {
@@ -147,12 +148,16 @@ export function SceneStage({ webgl, software, onFallback, children }: Props): Re
   const expanded = useUi((s) => s.expanded)
   const quality: Quality = software ? 'saver' : settingsQuality
   const dpr = DPR[quality]
+  // Bàn làm việc 2D lỗi (rất hiếm): chỉ còn giao diện phủ cả cửa sổ
+  const [flatFailed, setFlatFailed] = useState(false)
+  const flat = !webgl && !flatFailed
+  const desk = webgl || flat
   useEffect(() => {
-    useHud.setState({ scene: webgl })
+    useHud.setState({ scene: desk })
     return () => useHud.setState({ scene: false })
-  }, [webgl])
+  }, [desk])
   return (
-    <div className={`stage ${webgl && expanded ? 'expanded' : ''}`} ref={stageRef} data-mode={webgl ? '3d' : '2d'}>
+    <div className={`stage ${desk && expanded ? 'expanded' : ''}`} ref={stageRef} data-mode={webgl ? '3d' : flat ? '2d' : 'plain'}>
       {webgl ? (
         // Bấm vào cảnh 3D (đèn, robot) không làm mất focus của ô đang gõ trên màn hình
         <div className="stage-canvas" onMouseDown={(e) => e.preventDefault()}>
@@ -177,8 +182,12 @@ export function SceneStage({ webgl, software, onFallback, children }: Props): Re
             </Canvas>
           </SceneBoundary>
         </div>
+      ) : flat ? (
+        <SceneBoundary onFail={() => setFlatFailed(true)}>
+          <FlatDesk />
+        </SceneBoundary>
       ) : null}
-      {webgl && <Hud />}
+      {desk && <Hud />}
       <div className="screen" ref={screenRef}>
         {children}
       </div>

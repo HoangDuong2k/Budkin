@@ -355,7 +355,13 @@ function Display({ s, status, setStatus }: { s: Settings; status: AppStatus | nu
       <Row
         id="quality"
         label={tr('Chất lượng 3D')}
-        hint={flat ? tr('Đang dùng giao diện 2D') : renderInfo.software ? tr('Đang vẽ bằng CPU nên luôn ở mức Tiết kiệm') : tr(QUALITY_HINT[s.quality])}
+        hint={
+          flat
+            ? tr('Bàn làm việc 2D: mức Tiết kiệm tắt chớp mắt và chuyển động nền của robot')
+            : renderInfo.software
+              ? tr('Đang vẽ bằng CPU nên luôn ở mức Tiết kiệm')
+              : tr(QUALITY_HINT[s.quality])
+        }
       >
         <Choice
           value={s.quality}
@@ -366,7 +372,7 @@ function Display({ s, status, setStatus }: { s: Settings; status: AppStatus | nu
           ]}
           onChange={(quality) => save({ quality })}
           label={tr('Chất lượng 3D')}
-          disabled={flat || renderInfo.software}
+          disabled={!flat && renderInfo.software}
         />
       </Row>
       <Row

@@ -981,6 +981,95 @@ async function aiFlow(page: Page): Promise<void> {
   await page.keyboard.press('Escape')
 }
 
+/**
+ * Bàn làm việc 2D (máy không có WebGL): robot, bệ, đèn vẽ bằng SVG, giao diện nằm khít trong màn hình máy tính. Bấm robot /
+ * bệ / đèn như cảnh 3D; nhắc việc hiện bằng bong bóng của robot; đứng yên thì không vẽ khung nào; chế độ Mở rộng
+ */
+async function flatFlow(app: ElectronApplication, page: Page): Promise<void> {
+  type Pt = { x: number; y: number }
+  const hit = (): Promise<{ robot: Pt; pedestal: Pt; lamp: Pt }> => probe(page, (p) => (p as unknown as { hit(): { robot: Pt; pedestal: Pt; lamp: Pt } }).hit())
+  const hud = (): Promise<{ robot: string; speech: string | null }> =>
+    probe(page, (p) => (p as unknown as { hudState: { getState(): { robot: string; speech: string | null } } }).hudState.getState())
+  const num = async (expr: string): Promise<number> => Number(await page.evaluate(expr))
+  const robotMode = async (): Promise<string> => String(await page.evaluate('window.__budkin.robot.mode'))
+
+  assert((await probe(page, (p) => p.renderMode)) === '2d', 'không có WebGL → bàn làm việc 2D')
+  assert(
+    (await page.locator('.stage').getAttribute('data-mode')) === '2d' && (await page.locator('.flat-robot').count()) === 1 && (await page.locator('.fd-lamp').count()) === 1,
+    'bàn 2D vẽ đủ robot, bệ tròn, đèn bàn'
+  )
+  const vp = await probe(page, (p) => p.stage.viewport)
+  const screen = (await page.locator('.screen').boundingBox())!
+  assert(
+    // Cửa sổ nhỏ hơn mức tối thiểu (máy ảo Windows 1024×768 của CI): màn hình vẫn chiếm phần lớn cửa sổ
+    screen.width >= Math.min(594, vp.width * 0.58) &&
+      screen.height >= Math.min(396, vp.height * 0.58) &&
+      screen.x > 0 &&
+      screen.x + screen.width < vp.width &&
+      screen.y > 0,
+    `giao diện nằm khít trong màn hình máy tính (${Math.round(screen.width)}×${Math.round(screen.height)})`
+  )
+  const h0 = await hit()
+  assert(h0.robot.x < screen.x && h0.pedestal.x < screen.x && h0.lamp.x > screen.x + screen.width, 'robot đứng bên trái, đèn bên phải màn hình')
+  await shot(page, '4-flat-2d.png')
+
+  // Bấm vào robot: phản ứng, tóm tắt việc hôm nay
+  const poke0 = await num('window.__budkin.robot.lastPokeAt')
+  await page.mouse.click(h0.robot.x, h0.robot.y)
+  assert(await until(async () => (await num('window.__budkin.robot.lastPokeAt')) !== poke0), 'bấm vào robot 2D: robot phản ứng')
+  assert(await until(async () => (await hud()).speech === 'summary'), 'bấm vào robot 2D: bong bóng tóm tắt việc hôm nay')
+
+  // Bấm vào bệ: robot chìm xuống, robot kế tiếp trồi lên chào
+  await page.mouse.click(h0.pedestal.x, h0.pedestal.y)
+  assert(await until(async () => (await page.locator('.flat-robot').getAttribute('data-robot')) === 'orbi', 4000), 'bấm vào bệ 2D: đổi sang Orbi')
+  assert(await until(async () => (await hud()).speech === 'greeting'), 'robot mới lên bệ thì chào')
+  // Chờ Orbi bay lên xong (hoạt cảnh xuất hiện) rồi mới bấm
+  await until(async () => (await page.evaluate('window.__budkin.robot.settled')) === true && (await robotMode()) === 'idle', 5000)
+  const h1 = await hit()
+  const poke1 = await num('window.__budkin.robot.lastPokeAt')
+  await page.mouse.click(h1.robot.x, h1.robot.y)
+  assert(await until(async () => (await num('window.__budkin.robot.lastPokeAt')) !== poke1), 'bấm vào Orbi (quả cầu bay) cũng trúng')
+  await value(page, 'settings:update', { robot: 'budkin' })
+  assert(await until(async () => (await page.locator('.flat-robot').getAttribute('data-robot')) === 'budkin', 4000), 'chọn lại Budkin trong thiết lập: bàn 2D đổi theo')
+
+  // Bấm vào đèn: đổi theme gần như ngay (hiệu ứng đèn ~0,35 giây), phòng tối / sáng theo
+  const theme0 = await probe(page, (p) => p.theme.getState().theme)
+  const theme1 = theme0 === 'light' ? 'dark' : 'light'
+  await page.mouse.click(h0.lamp.x, h0.lamp.y)
+  assert(await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) === theme1, 1500), `bấm vào đèn bàn 2D: ${theme0} → ${theme1}`)
+  await until(async () => (await page.evaluate('window.__budkin.env.anim === null')) === true, 3000)
+  const night = await num("getComputedStyle(document.querySelector('.flat')).getPropertyValue('--night')")
+  assert(night === (theme1 === 'dark' ? 1 : 0), `phòng ${theme1 === 'dark' ? 'tối hẳn' : 'sáng hẳn'} sau hiệu ứng (--night = ${night})`)
+  await shot(page, `4-flat-2d-${theme1}.png`)
+
+  // Đứng yên: robot ngủ, bàn 2D không vẽ khung nào
+  assert(await until(async () => (await robotMode()) === 'sleep', 12_000), 'để yên: robot 2D ngủ')
+  await until(async () => (await page.evaluate('window.__budkin.robot.settled')) === true, 3000)
+  const f0 = await num('window.__budkin.renderStats.frames')
+  await page.waitForTimeout(1500)
+  const idleFrames = (await num('window.__budkin.renderStats.frames')) - f0
+  assert(idleFrames === 0, `robot 2D ngủ: không vẽ khung nào (${idleFrames} khung trong 1,5 giây)`)
+  assert((await page.locator('.zzz.on').count()) === 1, 'robot 2D ngủ: có "Zzz"')
+
+  // Nhắc việc: robot báo động, nhắc hiện trong bong bóng của robot (không chiếm chỗ trong màn hình)
+  const due = await value(page, 'tasks:create', { title: 'Việc nhắc trên bàn 2D', ...dueOf((await mainNow(app)) - 60_000), remindBeforeMin: 0 })
+  assert(await until(async () => (await robotMode()) === 'alert', 5000), 'đến hạn: robot 2D báo động')
+  assert(
+    await until(async () => (await page.locator('.bubble .reminder-title', { hasText: due.title }).count()) === 1) && (await page.locator('.reminder-banner').count()) === 0,
+    'nhắc việc hiện trong bong bóng của robot, không thành dải báo trong màn hình'
+  )
+  await shot(page, '4-flat-2d-alert.png')
+  await value(page, 'reminders:dismiss', due.id)
+  await value(page, 'tasks:delete', due.id, 'one')
+
+  // Chế độ Mở rộng (F): giao diện phủ gần kín cửa sổ, bàn 2D dừng vẽ
+  await page.locator('.list-head').first().click()
+  await page.keyboard.press('f')
+  assert(await until(async () => ((await page.locator('.screen').boundingBox())?.width ?? 0) > vp.width * 0.9), 'phím F trên bàn 2D: giao diện phủ gần kín cửa sổ')
+  await page.keyboard.press('f')
+  assert(await until(async () => ((await page.locator('.screen').boundingBox())?.width ?? vp.width) < vp.width * 0.8), 'phím F lần nữa: về lại màn hình máy tính trên bàn 2D')
+}
+
 async function main(): Promise<void> {
   // Chống treo (vd. hộp thoại chờ người bấm): quá 8 phút (máy chậm: 20 phút) thì báo lỗi, đóng app và thoát
   const limitMin = SLOW ? 20 : 8
@@ -1024,7 +1113,7 @@ async function main(): Promise<void> {
     await until(async () => (await page.evaluate(() => document.documentElement.dataset.theme)) === theme1),
     `bấm nút đổi theme: ${theme0} → ${theme1}`
   )
-  // Chờ căn phòng sáng / tối dần xong (~0,75 s)
+  // Chờ căn phòng sáng / tối dần xong (~0,35 s)
   await until(async () => (await page.evaluate('window.__budkin.env.anim === null')) === true, 3000)
   await checkAlignment(page, `theme ${theme1}`, theme1)
   await shot(page, `3-theme-${theme1}.png`)
@@ -1090,13 +1179,9 @@ async function main(): Promise<void> {
   // ---- Xuất / nhập, sao lưu / khôi phục (đóng app này, mở profile mới) ----
   await dataFlow(app, page)
 
-  // ---- Máy không có WebGL: chế độ 2D ----
-  ;({ app, page } = await launch({ BUDKIN_E2E_NO_WEBGL: '1' }))
-  assert((await probe(page, (p) => p.renderMode)) === '2d', 'không có WebGL → chế độ 2D')
-  const box2d = await page.locator('.screen').boundingBox()
-  const vp = page.viewportSize() ?? (await page.evaluate(() => ({ width: innerWidth, height: innerHeight })))
-  assert(box2d && box2d.width > vp.width * 0.9, 'chế độ 2D: giao diện phủ gần kín cửa sổ')
-  await shot(page, '4-flat-2d.png')
+  // ---- Máy không có WebGL: bàn làm việc 2D (hồ sơ dữ liệu mới: không còn nhắc việc chờ từ các phần trước) ----
+  ;({ app, page } = await launch({ BUDKIN_E2E_NO_WEBGL: '1', BUDKIN_USER_DATA: join(OUT, 'userdata-2d') }))
+  await flatFlow(app, page)
 
   const errors = problems.filter((p) => p.startsWith('[renderer]'))
   assert(errors.length === 0, `renderer không có lỗi (${errors.length})`)

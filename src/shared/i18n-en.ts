@@ -268,7 +268,7 @@ export const EN: Record<string, string> = {
   'Bóng đổ sắc nét, chuyển động mượt nhất — tốn pin hơn': 'Crisp shadows and the smoothest motion — uses more battery',
   'Cân đối giữa đẹp và tiết kiệm pin': 'A balance between looks and battery life',
   'Vẽ ít nhất, không đổ bóng — hợp máy yếu, chạy pin': 'Draws as little as possible, no shadows — for slower machines and battery',
-  'Đang dùng giao diện 2D': 'Using the 2D interface',
+  'Bàn làm việc 2D: mức Tiết kiệm tắt chớp mắt và chuyển động nền của robot': 'Flat 2D desk: Saver turns off the robot blinking and idle motion',
   'Đang vẽ bằng CPU nên luôn ở mức Tiết kiệm': 'Drawing on the CPU, so always at Saver',
   'Chế độ hiển thị': 'Display mode',
   'Đang chạy:': 'Running:',

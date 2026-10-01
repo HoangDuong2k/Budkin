@@ -9,7 +9,7 @@ import { reducedMotion } from './motion'
 import { onRobotMode, pokeRobot, robot } from './robotState'
 import { ReminderBubble } from './ReminderBubble'
 import { PERSONALITY } from './robots/personality'
-import { switchRobot } from './robots/RobotStage'
+import { switchRobot } from './robots/robotSwap'
 
 /** Nhịp hiện từng chữ z */
 const ZZZ_STEP_MS = 700

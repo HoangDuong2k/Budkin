@@ -18,6 +18,7 @@ import { installGrain } from './styles/grain'
 import './styles/tokens.css'
 import './styles/app.css'
 import './styles/screen.css'
+import './styles/flat.css'
 
 const boot = window.api.boot
 // Đặt theme, ngôn ngữ trước lần vẽ đầu tiên (cửa sổ đã có màu nền đúng theme do main đặt)

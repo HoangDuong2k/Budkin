@@ -1,38 +1,23 @@
 // Bệ tròn bên trái màn hình và robot đứng trên đó. Bấm vào bệ: robot đang đứng xoay rồi chìm vào bệ, robot kế tiếp
-// trồi lên và chào. Robot đang chọn lưu trong thiết lập (settings.robot) — chọn ở Cài đặt cũng diễn y như vậy.
+// trồi lên và chào (robotSwap — dùng chung với bàn làm việc 2D).
 // Bệ: khối graphite vát cạnh, mặt kính đen, vòng LED quanh thân (sáng lên khi rê chuột, loé khi đổi robot, đỏ nhấp nháy
 // theo robot khi báo động).
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { Color, LatheGeometry, MeshBasicMaterial, Vector2, type Group } from 'three'
-import { DEFAULT_ROBOT, nextRobot, type RobotModel } from '../../../../shared/robots'
-import { run } from '../../screen/actions'
-import { useData } from '../../state/dataStore'
-import { say, useHud } from '../../state/hudStore'
-import { placeBubble } from '../bubblePlacement'
 import { env } from '../envState'
 import { alertLedOn } from '../logic/alertBlink'
 import { materials } from '../materials'
-import { reducedMotion } from '../motion'
 import { ROBOT } from '../palette3d'
 import { policy, requestFrame } from '../renderLoop'
-import { dispatchRobot, robot, setRobotTransients } from '../robotState'
-import { playChirp } from '../sound'
+import { robot } from '../robotState'
 import { stage } from '../stage'
 import { blobTexture } from '../textures'
 import { PEDESTAL, ROOT_YAW, setCursor } from './common'
 import { ROBOTS } from './index'
+import { FLARE_MS, switchRobot, useRobotSwap } from './robotSwap'
 
-/** Robot cũ xoay rồi chìm vào bệ trong bấy nhiêu ms; sau đó robot mới trồi lên bằng hoạt cảnh xuất hiện của chính nó */
-const SINK_MS = 380
-/** Vòng LED loé sáng khi đổi robot */
-const FLARE_MS = 1200
-
-/** Đổi sang robot kế tiếp (bấm vào bệ, nút ẩn cho bàn phím): lưu vào thiết lập, cảnh đổi theo */
-export function switchRobot(): void {
-  const current = useData.getState().settings?.robot ?? DEFAULT_ROBOT
-  void run('settings:update', { robot: nextRobot(current) })
-}
+export { switchRobot }
 
 /** Bóng đổ của đèn bàn chỉ tính lại khi cần: robot đổi dáng thì tính lại */
 function refreshShadow(): void {
@@ -117,74 +102,23 @@ function Pedestal({ flareAt }: { flareAt: React.RefObject<number> }): React.JSX.
 }
 
 export function RobotStage(): React.JSX.Element {
-  const loaded = useData((s) => s.settings !== null)
-  const target = useData((s) => s.settings?.robot ?? DEFAULT_ROBOT)
-  const [shown, setShown] = useState<RobotModel | null>(null)
-  const targetRef = useRef(target)
-  targetRef.current = target
   const holder = useRef<Group>(null)
-  /** Lúc robot cũ bắt đầu chìm (null: không đang đổi) */
-  const sinkAt = useRef<number | null>(null)
-  const flareAt = useRef(-Infinity)
-  const swapped = useRef(false)
-
-  // Thiết lập đổi (bấm bệ, Cài đặt, nhập dữ liệu): robot cũ chìm xuống rồi robot mới trồi lên.
-  // Lần đầu (mở app) thì hiện luôn robot đã chọn
-  useEffect(() => {
-    if (!loaded) return
-    if (shown === null) {
-      setShown(target)
-      return
-    }
-    if (target === shown || sinkAt.current !== null) return
-    flareAt.current = performance.now()
-    if (reducedMotion()) setShown(target)
-    else sinkAt.current = performance.now()
-    requestFrame()
-  }, [loaded, target, shown])
-
-  // Robot mới lên bệ: giọng, lời thoại, độ dài hoạt cảnh theo robot đó; chào (trừ lần mở app)
-  useEffect(() => {
-    if (!shown) return
-    // Chưa vẽ khung nào của robot mới: chưa "đứng yên" (kiểm thử chờ cờ này trước khi đo, bấm vào robot)
-    robot.settled = false
-    setRobotTransients(ROBOTS[shown].transients)
-    useHud.setState({ robot: shown })
-    placeBubble()
+  // Robot mới lên bệ: tính lại bóng đổ; hết hoạt cảnh xuất hiện thì tính lại theo dáng đứng yên
+  const { shown, flareAt, sinkStep } = useRobotSwap((introduced) => {
     refreshShadow()
-    if (!swapped.current) return
-    dispatchRobot({ type: 'intro', at: performance.now() })
-    say('greeting')
-    playChirp('hello')
-    // Hoạt cảnh xuất hiện xong: tính lại bóng đổ theo dáng đứng yên
+    if (!introduced) return
     const timer = setTimeout(refreshShadow, 1400)
     return () => clearTimeout(timer)
-  }, [shown])
+  })
 
   useFrame(() => {
     const g = holder.current
     if (!g) return
     const l = stage.layout
-    let scale = 1
-    let sink = 0
-    let spin = 0
-    const s0 = sinkAt.current
-    if (s0 !== null) {
-      const k = Math.min(1, (performance.now() - s0) / SINK_MS)
-      const e = k * k
-      scale = Math.max(0.001, 1 - e)
-      sink = 0.02 * e
-      spin = e * Math.PI * 1.5
-      if (k >= 1) {
-        sinkAt.current = null
-        swapped.current = true
-        setShown(targetRef.current)
-      }
-      requestFrame()
-    }
-    g.position.set(l.robot.x, PEDESTAL.height - sink, l.robot.z)
-    g.rotation.y = ROOT_YAW + spin
-    g.scale.setScalar(scale)
+    const e = sinkStep(performance.now()) ?? 0
+    g.position.set(l.robot.x, PEDESTAL.height - 0.02 * e, l.robot.z)
+    g.rotation.y = ROOT_YAW + e * Math.PI * 1.5
+    g.scale.setScalar(Math.max(0.001, 1 - e))
   })
 
   const Model = shown ? ROBOTS[shown].Model : null

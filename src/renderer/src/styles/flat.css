@@ -1,0 +1,562 @@
+/* ---- Bàn làm việc 2D (src/renderer/src/flat): tranh vector cùng phong cách với cảnh 3D ----
+   Bật / tắt đèn chỉ đổi --night (0 sáng … 1 mất điện), --lamp (công suất đèn bàn), --bulb (độ sáng tấm LED) trên .flat;
+   màu robot pha tối theo --night, lớp phủ tối và các vùng sáng đổi độ mờ — không có hoạt ảnh CSS chạy liên tục. */
+
+.flat {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #0b0c0e;
+  --night: 0;
+  --lamp: 1;
+  --bulb: 1;
+  --rb-led: #5ae3d8;
+  --rb-alert: #ff4b4b;
+  --rb-rubber: #121315;
+  --rb-shell-hi: color-mix(in srgb, #f6f3ec, #16181b calc(var(--night) * 74%));
+  --rb-shell: color-mix(in srgb, #e1dbd0, #121417 calc(var(--night) * 74%));
+  --rb-shell-lo: color-mix(in srgb, #b3ab9f, #0d0f11 calc(var(--night) * 74%));
+  --rb-gr-hi: color-mix(in srgb, #3c4046, #0f1113 calc(var(--night) * 60%));
+  --rb-gr-lo: color-mix(in srgb, #1a1c20, #08090a calc(var(--night) * 60%));
+  --rb-alu-hi: color-mix(in srgb, #d8dbdf, #1c1e21 calc(var(--night) * 72%));
+  --rb-alu-lo: color-mix(in srgb, #868b91, #111214 calc(var(--night) * 72%));
+  --rb-alu: var(--rb-alu-hi);
+}
+
+.flat-room {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.flat-robot {
+  position: absolute;
+  z-index: 1;
+  overflow: visible;
+}
+
+/* ---- Tường, cửa sổ ---- */
+.fd-seam {
+  stroke: #26282b;
+  stroke-width: 1.2;
+}
+
+.fd-hole {
+  fill: #222427;
+}
+
+.fd-stain {
+  fill: #1d1f22;
+  opacity: 0.2;
+}
+
+.fd-crack {
+  fill: none;
+  stroke: #1b1c1f;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.fd-smoke {
+  fill: #9a9ea4;
+  opacity: 0.1;
+}
+
+.fd-city-far {
+  fill: #2b2f36;
+}
+
+.fd-city-near {
+  fill: #15171b;
+}
+
+.fd-city-lit {
+  fill: #f2b56b;
+  opacity: 0.5;
+}
+
+.fd-glass {
+  fill: #a9c4cc;
+  opacity: 0.07;
+}
+
+.fd-shard {
+  fill: none;
+  stroke: #d7e6ea;
+  stroke-opacity: 0.22;
+  stroke-width: 1;
+}
+
+.fd-frame {
+  fill: none;
+  stroke: #17181b;
+}
+
+.fd-sill {
+  fill: #444649;
+}
+
+.fd-graffiti {
+  fill: none;
+  stroke: var(--accent);
+  stroke-opacity: 0.24;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- Bàn, đồ vật ---- */
+.fd-box {
+  fill: #16181b;
+}
+
+.fd-box-top {
+  fill: #25282c;
+}
+
+.fd-vent {
+  stroke: #0b0c0e;
+  stroke-width: 2;
+}
+
+.fd-contact {
+  fill: #000;
+  opacity: 0.38;
+}
+
+.fd-grain {
+  fill: none;
+  stroke: #4c3729;
+  stroke-opacity: 0.45;
+  stroke-width: 1.2;
+}
+
+.fd-grain.dark {
+  stroke: #1f150f;
+  stroke-opacity: 0.55;
+}
+
+.fd-desk-front {
+  fill: #1b130e;
+}
+
+.fd-desk-edge {
+  stroke: #5c4433;
+  stroke-width: 1.5;
+}
+
+.fd-cable {
+  fill: none;
+  stroke: #0c0d0f;
+  stroke-linecap: round;
+}
+
+.fd-lamplight {
+  opacity: calc(var(--lamp) * 0.95);
+}
+
+.fd-shadow {
+  fill: #000;
+  opacity: 0.42;
+}
+
+.fd-foot-hi {
+  stroke: #e1e4e7;
+  stroke-opacity: 0.6;
+  stroke-width: 1;
+}
+
+.fd-bezel {
+  fill: #0a0b0d;
+}
+
+.fd-bezel-edge {
+  fill: none;
+  stroke: #3a3e44;
+  stroke-width: 1;
+}
+
+.fd-lip {
+  fill: none;
+  stroke: #2b2e33;
+  stroke-width: 3;
+}
+
+.fd-cam {
+  fill: #1c1f23;
+}
+
+.fd-kb {
+  fill: #1a1c20;
+}
+
+.fd-kb-edge {
+  stroke: #0c0d0f;
+}
+
+.fd-keys {
+  fill: #2b2e33;
+}
+
+.fd-mouse {
+  fill: #131518;
+}
+
+.fd-mouse-hi {
+  fill: #fff;
+  opacity: 0.08;
+}
+
+.fd-jar {
+  fill: #b8d4da;
+  fill-opacity: 0.1;
+  stroke: #d5e6ea;
+  stroke-opacity: 0.35;
+  stroke-width: 1.5;
+}
+
+.fd-soil {
+  fill: #2a1c14;
+}
+
+.fd-stem {
+  fill: none;
+  stroke: #3d6b48;
+  stroke-width: 2.5;
+}
+
+.fd-leaf {
+  fill: #427d55;
+}
+
+.fd-leaf.b {
+  fill: #2f6342;
+}
+
+.fd-jar-hi {
+  fill: #fff;
+  opacity: 0.12;
+}
+
+/* ---- Đèn bàn: bấm để bật / tắt ---- */
+.fd-lamp {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.fd-lamp-base {
+  fill: #1b1d20;
+}
+
+.fd-lamp-top {
+  fill: #2c2f34;
+}
+
+.fd-lamp-arm {
+  fill: none;
+  stroke: #aeb2b7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fd-lamp-joint {
+  fill: #2a2d31;
+  stroke: #8c9095;
+  stroke-width: 1;
+}
+
+.fd-lamp-head {
+  fill: #2b2e33;
+}
+
+.fd-lamp-rim {
+  fill: #111214;
+}
+
+.fd-lamp:hover .fd-lamp-arm {
+  stroke: #d4d7db;
+}
+
+.fd-lamp:hover .fd-lamp-head {
+  fill: #3a3e44;
+}
+
+.fd-hit {
+  fill: transparent;
+}
+
+/* ---- Tắt đèn: phủ tối cả phòng, rồi vẽ những thứ tự phát sáng lên trên ---- */
+.fd-night {
+  fill: #020304;
+  opacity: calc(var(--night) * 0.84);
+}
+
+.fd-stars {
+  fill: #e8f0f4;
+  opacity: var(--night);
+}
+
+.fd-moon {
+  fill: #e6ecee;
+  opacity: 0.85;
+}
+
+.fd-city-glow {
+  fill: #ffbf73;
+  opacity: calc(var(--night) * 0.6);
+}
+
+.fd-screen-glow {
+  opacity: calc(0.2 + var(--night) * 0.6);
+}
+
+.fd-kb-glow {
+  opacity: calc(var(--night) * 0.85);
+}
+
+.fd-keys-lit {
+  fill: var(--accent);
+  fill-opacity: 0.1;
+  stroke: var(--accent);
+  stroke-width: 0.8;
+  stroke-opacity: 0.65;
+  opacity: calc(var(--night) * 0.9);
+}
+
+.fd-graffiti-glow {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  opacity: calc(var(--night) * 0.28);
+}
+
+.fd-led {
+  fill: var(--accent);
+}
+
+.fd-led.warm {
+  fill: #ffcf8f;
+  opacity: calc(0.15 + var(--lamp) * 0.85);
+}
+
+.fd-bulb {
+  opacity: var(--bulb);
+}
+
+.fd-panel {
+  fill: #fff5e8;
+}
+
+/* ---- Robot 2D và bệ tròn ---- */
+.fr-pedestal,
+.fr-robot {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.fr-ped-shadow {
+  fill: url(#fr-shadow);
+}
+
+.fr-ped-glow {
+  fill: url(#fr-halo-led);
+}
+
+.fr-ped-side {
+  fill: url(#fr-graphite);
+}
+
+.fr-ped-led {
+  fill: none;
+  stroke: var(--rb-led);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.fr-ped-top {
+  fill: var(--rb-gr-hi);
+}
+
+.fr-ped-glass {
+  fill: url(#fr-glass);
+}
+
+.rb-shell {
+  fill: url(#fr-shell);
+}
+
+.rb-graphite {
+  fill: url(#fr-graphite);
+}
+
+.rb-alu {
+  fill: url(#fr-alu);
+}
+
+.rb-rubber {
+  fill: var(--rb-rubber);
+}
+
+.rb-glass {
+  fill: url(#fr-glass);
+}
+
+.rb-gloss {
+  fill: #fff;
+  opacity: 0.07;
+}
+
+.rb-anod {
+  fill: color-mix(in srgb, var(--rb-led) 50%, #1a2a2a);
+}
+
+.rb-led {
+  fill: var(--rb-led);
+}
+
+.rb-led-line {
+  fill: none;
+  stroke: var(--rb-led);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.rb-alu-line {
+  fill: none;
+  stroke: var(--rb-alu);
+  stroke-width: 2.8;
+  stroke-linecap: round;
+}
+
+.rb-dark-line {
+  fill: none;
+  stroke: var(--rb-gr-lo);
+  stroke-linecap: round;
+}
+
+.rb-eye {
+  fill: var(--rb-eye);
+}
+
+.rb-eye-line {
+  fill: none;
+  stroke: var(--rb-eye);
+  stroke-width: 3.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rb-eye-line.thin {
+  stroke-width: 2.6;
+}
+
+.rb-halo-led,
+.rb-halo-state {
+  fill: url(#fr-halo-led);
+}
+
+.rb-halo-eye {
+  fill: url(#fr-halo-eye);
+}
+
+[data-led='alert'] .rb-led {
+  fill: var(--rb-alert);
+}
+
+[data-led='alert'] .rb-led-line {
+  stroke: var(--rb-alert);
+}
+
+[data-led='alert'] .rb-halo-state {
+  fill: url(#fr-halo-alert);
+}
+
+[data-led='dim'] .rb-led,
+[data-led='dim'] .rb-led-line {
+  opacity: 0.35;
+}
+
+[data-led='sleep'] .rb-led,
+[data-led='sleep'] .rb-led-line {
+  opacity: 0.4;
+}
+
+/* Chi tiết riêng của từng robot */
+.rb-alu-line.thin {
+  stroke-width: 1.4;
+}
+
+.rb-tail {
+  fill: none;
+  stroke: var(--rb-gr-hi);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.rb-tread {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: 0.55;
+  stroke-width: 1.4;
+}
+
+.rb-amber {
+  fill: color-mix(in srgb, #d38b3c, #2a1a0c calc(var(--night) * 55%));
+}
+
+.rb-eye-ring {
+  fill: none;
+  stroke: var(--rb-eye);
+  stroke-width: 3.6;
+}
+
+.rb-beacon {
+  fill: var(--rb-eye);
+}
+
+.rb-halo-beacon {
+  fill: url(#fr-halo-eye);
+}
+
+.rb-limb {
+  fill: none;
+  stroke: var(--rb-shell);
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.rb-limb.dark {
+  stroke: var(--rb-gr-hi);
+  stroke-width: 11;
+}
+
+.rb-limb.thin {
+  stroke-width: 10;
+}
+
+.rb-limb.dark.thin {
+  stroke-width: 9;
+}
+
+.rb-visor-eye {
+  fill: var(--rb-eye);
+}
+
+[data-led='alert'] .rb-beacon,
+[data-led='alert'] .rb-visor-eye {
+  fill: var(--rb-alert);
+}
+
+[data-led='alert'] .rb-halo-beacon {
+  fill: url(#fr-halo-alert);
+}
+
+[data-led='dim'] .rb-beacon {
+  opacity: 0.3;
+}
+
+[data-led='sleep'] .rb-beacon {
+  opacity: 0.15;
+}

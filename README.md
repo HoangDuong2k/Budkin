@@ -42,6 +42,18 @@ giọng, lời thoại và kiểu bong bóng riêng.
 - **Mech** — người máy hai chân nghiêm túc: bị chọc thì chào kiểu nhà binh, ăn mừng thì giơ hai tay, báo động thì
   giơ tay xin chú ý, ngủ thì ngồi thụp xuống. Nói kiểu báo cáo "Đã kiểm tra: …", giọng máy trầm.
 
+## Bàn làm việc 2D
+
+| Bật đèn | Tắt đèn |
+|---|---|
+| ![Bàn làm việc 2D khi bật đèn](docs/screenshots/desk-2d-day.png) | ![Bàn làm việc 2D khi tắt đèn](docs/screenshots/desk-2d-night.png) |
+
+Máy không có WebGL, GPU hay gặp lỗi, hoặc khi chọn **Chỉ 2D** (Cài đặt → Hiển thị): cả bàn làm việc được vẽ lại bằng
+tranh vector, cùng phong cách và bố cục với bản 3D. Vẫn đủ 5 robot trên bệ tròn với dáng, giọng, lời thoại riêng: nhìn
+theo con trỏ, chớp mắt, bị chọc thì phản ứng, ăn mừng, báo động khi đến hạn, ngủ có "Zzz"; bấm bệ để đổi robot (robot cũ
+chìm xuống, robot mới trồi lên), bấm đèn bàn để bật / tắt đèn. Bản 2D nhẹ hơn nhiều so với 3D vẽ bằng CPU: đo trên máy
+không có GPU, rê chuột liên tục tốn khoảng 1/3 một lõi CPU (3D vẽ bằng CPU: gần 14 lõi), để yên gần như 0.
+
 ## Tải và cài đặt
 
 Bộ cài có ở trang [Releases](https://github.com/HoangDuong2k/Budkin/releases) (khi đã phát hành), hoặc bản build mới
@@ -122,7 +134,8 @@ Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm 
 - Mỗi việc có hạn đặt được mức nhắc: không nhắc, đúng giờ, hoặc trước N phút / giờ / ngày (nhắc "sắp đến hạn" rồi
   nhắc lần nữa lúc "đến hạn"). Việc cả ngày nhắc lúc 9:00 (đổi được trong Cài đặt).
 - Tới giờ, **Budkin** báo động (đèn đỏ, nhún nhảy, kêu bíp) và hiện bong bóng thoại: **Xong**, **10 phút** (báo lại),
-  **Mở**, **×** (bỏ qua). Cửa sổ thu hẹp hoặc chế độ 2D thì nhắc việc hiện thành banner ngay trong màn hình.
+  **Mở**, **×** (bỏ qua). Cửa sổ quá hẹp (không đủ chỗ cho bong bóng bên trái màn hình) thì nhắc việc hiện thành banner
+  ngay trong màn hình.
 - Khi đang không dùng app (cửa sổ ẩn / không có focus) thì có thêm thông báo của hệ điều hành. Nhiều việc cùng lúc
   (từ 3 việc) gộp thành một thông báo; nhắc trễ quá 6 giờ (máy tắt, ngủ qua đêm) thì chỉ ghi nhận, không báo.
 - Bấm nút đóng: lần đầu Budkin hỏi ẩn xuống khay (vẫn nhắc việc) hay thoát hẳn. Thoát hẳn lúc nào cũng được bằng
@@ -139,8 +152,8 @@ Mở **Cài đặt** bằng nút bánh răng ở chân thanh bên hoặc **Ctrl+
 - **Chung:** ngôn ngữ, tuần bắt đầu vào thứ Hai hay Chủ nhật, âm thanh và âm lượng, giảm chuyển động.
 - **Nhắc việc:** mức nhắc mặc định, giờ nhắc cho việc cả ngày, tạm tắt nhắc (1 giờ / 4 giờ / 1 ngày), bấm nút đóng
   cửa sổ thì chạy nền hay thoát, khởi động cùng máy.
-- **Hiển thị:** chất lượng 3D (Cao / Cân bằng / Tiết kiệm); chế độ Tự động, 3D vẽ bằng CPU (máy ảo, GPU lỗi) hoặc chỉ
-  2D; trên Wayland có thêm lựa chọn chạy qua XWayland. Đổi chế độ thì bấm **Khởi động lại** để áp dụng.
+- **Hiển thị:** chất lượng (Cao / Cân bằng / Tiết kiệm); chế độ Tự động, 3D vẽ bằng CPU (máy ảo, GPU lỗi) hoặc
+  [Chỉ 2D](#bàn-làm-việc-2d); trên Wayland có thêm lựa chọn chạy qua XWayland. Đổi chế độ thì bấm **Khởi động lại**.
 - **Kết nối AI:** quyền của Claude, kết nối Claude Desktop / Claude Code (xem
   [bên dưới](#hỏi-đáp-và-giao-việc-cho-claude)).
 - **Dữ liệu:** xuất / nhập, sao lưu, mở thư mục dữ liệu.
@@ -211,8 +224,8 @@ Nhắc việc); hệ điều hành không ở chế độ **Không làm phiền*
 `No usable sandbox`). Ubuntu 24.04+ chặn user namespace cho app không có profile AppArmor: dùng bản `.deb` (tự cài
 profile), còn AppImage tự chạy với `--no-sandbox` khi cần. Chạy từ mã nguồn thì dùng `npm run dev:linux`.
 
-**Cảnh 3D đen, giật hoặc app chậm (máy ảo, GPU / driver lỗi).** Cài đặt → Hiển thị → **3D bằng CPU** (máy yếu nên để
-chất lượng Tiết kiệm) hoặc **Chỉ 2D**, rồi Khởi động lại. Budkin tự chuyển sang 2D khi máy không có WebGL, khi cảnh 3D
+**Cảnh 3D đen, giật hoặc app chậm (máy ảo, GPU / driver lỗi).** Cài đặt → Hiển thị → **Chỉ 2D** (bàn làm việc vẽ
+phẳng, nhẹ hơn nhiều) hoặc **3D bằng CPU** (nặng — chỉ hợp máy mạnh), rồi Khởi động lại. Budkin tự chuyển sang 2D khi máy không có WebGL, khi cảnh 3D
 lỗi, hoặc khi GPU gặp lỗi 2 lần liên tiếp. Nếu cửa sổ không hiện được gì, đặt `"render": "2d"` trong file `boot.json`
 ở thư mục dữ liệu rồi mở lại.
 
@@ -289,7 +302,8 @@ Icon (mặt robot) vẽ bằng SVG trong `build/icon-src/`; sửa xong thì ch�
   Claude Desktop / Claude Code (`clients.ts`).
 - `src/preload` — mở `window.api` (sandbox) cho renderer.
 - `src/renderer` — React: cảnh 3D (React Three Fiber) + lớp DOM đặt khít lên màn hình máy tính 3D (chữ sắc nét,
-  bộ gõ tiếng Việt chạy bình thường) + chế độ 2D khi máy không có WebGL.
+  bộ gõ tiếng Việt chạy bình thường). `src/renderer/src/flat` — bàn làm việc 2D (SVG) dùng chung máy trạng thái robot,
+  hiệu ứng đèn, lời thoại, âm thanh với cảnh 3D; cả hai chỉ vẽ khi có gì chuyển động.
 - `src/shared` — kiểu dữ liệu, hợp đồng IPC, i18n, bảng màu, định dạng file xuất dùng chung.
 
 Phông chữ Be Vietnam Pro, Oswald, JetBrains Mono dùng theo giấy phép SIL Open Font License

@@ -21,6 +21,7 @@
     "src/shared/**/*",
     "src/renderer/src/scene/math/**/*",
     "src/renderer/src/scene/logic/**/*",
+    "src/renderer/src/flat/flatLayout.ts",
     "scripts/**/*",
     "tests/**/*"
   ]

@@ -15,7 +15,7 @@ import { renderStats } from './renderLoop'
 import { ROBOTS } from './robots'
 import { PEDESTAL } from './robots/common'
 import { dispatchRobot, robot } from './robotState'
-import { stage } from './stage'
+import { stage, type HitPoints } from './stage'
 
 type Rgb = [number, number, number]
 
@@ -43,7 +43,8 @@ function samplePixels(points: Array<{ x: number; y: number }>): Rgb[] {
 }
 
 /** Điểm (CSS px) để bấm vào đèn / robot / bệ robot (mặt trước của bệ, phía dưới chân robot) */
-function hit(): { lamp: { x: number; y: number }; robot: { x: number; y: number }; pedestal: { x: number; y: number } } {
+function hit(): HitPoints {
+  if (stage.hit) return stage.hit()
   const l = stage.layout
   return {
     lamp: projectPoint({ x: l.lamp.x - 0.01, y: 0.2, z: l.lamp.z }, stage.camera, CAMERA, stage.viewport),

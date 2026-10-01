@@ -71,8 +71,8 @@ body {
   scrollbar-color: var(--faint) transparent;
 }
 
-/* Chế độ 2D (không có WebGL): giao diện phủ cả cửa sổ */
-.stage[data-mode='2d'] .screen {
+/* Bàn làm việc 2D cũng lỗi (rất hiếm): chỉ còn giao diện, phủ cả cửa sổ */
+.stage[data-mode='plain'] .screen {
   inset: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);

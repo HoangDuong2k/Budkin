@@ -1,6 +1,6 @@
 /**
  * Ảnh chụp giới thiệu (README): tạo dữ liệu mẫu rồi chụp bàn làm việc lúc bật đèn và tắt đèn, Kanban, Lịch, Cài đặt,
- * Kết nối AI (Claude thêm việc qua cầu nối MCP thật), từng mẫu robot trên bệ tròn.
+ * Kết nối AI (Claude thêm việc qua cầu nối MCP thật), từng mẫu robot trên bệ tròn, bàn làm việc 2D (máy không có WebGL).
  * Chạy: npm run build && npm run screenshots   → docs/screenshots/*.png
  */
 import { mkdirSync, rmSync } from 'fs'
@@ -144,6 +144,26 @@ async function main(): Promise<void> {
   }
   await call(page, 'settings:update', { robot: 'budkin' })
   await app.evaluate(({ app: a }) => a.exit(0))
+
+  // Bàn làm việc 2D: mở lại cùng dữ liệu mẫu như máy không có WebGL
+  const flat = await electron.launch({
+    executablePath: require('electron') as unknown as string,
+    args: [ROOT, ...(process.platform === 'linux' ? ['--no-sandbox'] : [])],
+    env: { ...process.env, BUDKIN_TEST: '1', BUDKIN_E2E_NO_WEBGL: '1', BUDKIN_USER_DATA: USER_DATA, BUDKIN_CLOCK_OFFSET: String(CLOCK) } as Record<string, string>
+  })
+  const fp = await flat.firstWindow()
+  await fp.waitForSelector('.flat-robot', { timeout: 20000 })
+  await flat.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1440, 860))
+  await fp.waitForTimeout(800)
+  for (const theme of ['light', 'dark'] as const) {
+    await fp.evaluate((t) => (window as unknown as { __budkin: { theme: { getState(): { request(t: string): void } } } }).__budkin.theme.getState().request(t), theme)
+    await fp.waitForFunction(() => (window as unknown as { __budkin: { env: { anim: unknown } } }).__budkin.env.anim === null, undefined, { timeout: 5000 })
+    await fp.mouse.move(820, 330, { steps: 6 })
+    await fp.waitForTimeout(1200)
+    await fp.screenshot({ path: join(OUT, `desk-2d-${theme === 'light' ? 'day' : 'night'}.png`) })
+    console.log(`  ✓ desk-2d-${theme === 'light' ? 'day' : 'night'}.png`)
+  }
+  await flat.evaluate(({ app: a }) => a.exit(0))
 }
 
 main().catch((err) => {

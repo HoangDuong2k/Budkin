@@ -1,9 +1,16 @@
-// Lịch vẽ của cảnh 3D (frameloop="demand"): chỉ vẽ khi có gì đổi. App mở cả ngày nên đứng yên = 0 khung hình.
-// Mọi yêu cầu vẽ đi qua requestFrame(): gộp lại, tôn trọng giới hạn fps (Tiết kiệm 30, vẽ bằng CPU 20).
-import type { RootState } from '@react-three/fiber'
+// Lịch vẽ của bàn làm việc (cảnh 3D với frameloop="demand", hoặc tranh 2D): chỉ vẽ khi có gì đổi. App mở cả ngày nên
+// đứng yên = 0 khung hình. Mọi yêu cầu vẽ đi qua requestFrame(): gộp lại, tôn trọng giới hạn fps (Tiết kiệm 30, vẽ bằng CPU 20).
 import type { Quality } from '../../../shared/types'
 
-let get: (() => RootState) | null = null
+/** Thứ thật sự vẽ: cảnh 3D (React Three Fiber) hoặc bàn làm việc 2D (flat/flatLoop) */
+export interface FrameDriver {
+  /** Xin vẽ khung kế tiếp */
+  invalidate(): void
+  /** false: dừng hẳn (cửa sổ ẩn, chế độ Mở rộng) — xin vẽ cũng không vẽ */
+  setRunning(running: boolean): void
+}
+
+let driver: FrameDriver | null = null
 let minInterval = 1000 / 60
 /** Các lý do đang dừng vẽ hẳn (cửa sổ ẩn, chế độ Mở rộng…) — còn lý do nào thì còn dừng */
 const pauses = new Set<string>()
@@ -16,10 +23,10 @@ export const policy: { quality: Quality; software: boolean } = { quality: 'balan
 /** Số khung đã vẽ (kiểm thử đo "đứng yên thì không vẽ") */
 export const renderStats = { frames: 0 }
 
-export function bindRenderer(getState: (() => RootState) | null): void {
-  get = getState
+export function bindRenderer(d: FrameDriver | null): void {
+  driver = d
   // Canvas tạo lại (đổi mức chất lượng) trong lúc đang dừng: vẫn dừng
-  if (getState && pauses.size) getState().setFrameloop('never')
+  if (d && pauses.size) d.setRunning(false)
 }
 
 export function setMaxFps(fps: number): void {
@@ -28,20 +35,19 @@ export function setMaxFps(fps: number): void {
 
 /** Xin vẽ một khung. Gọi trong useFrame khi hoạt cảnh chưa xong để vẽ tiếp khung sau */
 export function requestFrame(): void {
-  const state = get?.()
-  if (!state) return
-  // 60 fps: để R3F tự canh theo requestAnimationFrame
+  if (!driver) return
+  // 60 fps: để vòng vẽ tự canh theo requestAnimationFrame
   if (minInterval <= 17) {
-    state.invalidate()
+    driver.invalidate()
     return
   }
   if (pending) return
   const wait = lastFrameAt + minInterval - performance.now()
-  if (wait <= 1) state.invalidate()
+  if (wait <= 1) driver.invalidate()
   else
     pending = setTimeout(() => {
       pending = null
-      get?.().invalidate()
+      driver?.invalidate()
     }, wait)
 }
 
@@ -57,8 +63,7 @@ export function setPaused(paused: boolean, reason: string): void {
   if (paused) pauses.add(reason)
   else pauses.delete(reason)
   const now = pauses.size > 0
-  const state = get?.()
-  if (!state || was === now) return
-  state.setFrameloop(now ? 'never' : 'demand')
-  if (!now) state.invalidate()
+  if (!driver || was === now) return
+  driver.setRunning(!now)
+  if (!now) driver.invalidate()
 }

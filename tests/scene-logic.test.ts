@@ -98,25 +98,29 @@ describe('bật / tắt đèn', () => {
     ...over
   })
 
-  it('tắt đèn: đổi theme DOM lúc 100 ms, kết thúc ở phòng tối, đèn tắt', () => {
+  it('tắt đèn: đổi theme DOM ngay khi đèn tắt, kết thúc ở phòng tối, đèn tắt, xong trong 0,35 giây', () => {
     expect(themeFrame(anim('dark'), FLIP_AT.toDark - 1).flipped).toBe(false)
     expect(themeFrame(anim('dark'), FLIP_AT.toDark).flipped).toBe(true)
-    const end = themeFrame(anim('dark'), 700)
+    const end = themeFrame(anim('dark'), 350)
     expect(end).toMatchObject({ env: 0, lamp: 0, bulb: 0, done: true })
+    expect(themeFrame(anim('dark'), 200).done).toBe(false)
   })
 
-  it('bật đèn: bóng chớp (sáng → mờ → sáng) rồi mới đổi theme, kết thúc phòng sáng', () => {
+  it('bật đèn: bóng chớp nhanh (sáng → mờ → sáng) rồi đổi theme, kết thúc phòng sáng trong 0,35 giây', () => {
     const lamp = (t: number): number => themeFrame(anim('light'), t).lamp
+    expect(lamp(35)).toBeCloseTo(1, 6)
+    expect(lamp(55)).toBeCloseTo(0.25, 6)
     expect(lamp(80)).toBeCloseTo(1, 6)
-    expect(lamp(120)).toBeCloseTo(0.25, 6)
-    expect(lamp(170)).toBeCloseTo(1, 6)
+    expect(FLIP_AT.toLight).toBeLessThanOrEqual(100)
     expect(themeFrame(anim('light'), FLIP_AT.toLight).flipped).toBe(true)
-    expect(themeFrame(anim('light'), 800)).toMatchObject({ env: 1, lamp: 1, done: true })
+    expect(themeFrame(anim('light'), 350)).toMatchObject({ env: 1, lamp: 1, done: true })
   })
 
   it('bấm lại giữa chừng: đi tiếp từ giá trị hiện tại, không nhảy', () => {
-    const mid = themeFrame(anim('dark'), 300)
-    const back = themeFrame(anim('light', { startedAt: 300, fromEnv: mid.env, fromLamp: mid.lamp }), 300)
+    const mid = themeFrame(anim('dark'), 150)
+    expect(mid.env).toBeGreaterThan(0.1)
+    expect(mid.env).toBeLessThan(0.9)
+    const back = themeFrame(anim('light', { startedAt: 150, fromEnv: mid.env, fromLamp: mid.lamp }), 150)
     expect(back.env).toBeCloseTo(mid.env, 9)
   })
 
@@ -124,7 +128,7 @@ describe('bật / tắt đèn', () => {
     const f = themeFrame(anim('light', { reduced: true }), 0)
     expect(f.flipped).toBe(true)
     expect(f.lamp).toBe(1)
-    expect(themeFrame(anim('light', { reduced: true }), 200).done).toBe(true)
+    expect(themeFrame(anim('light', { reduced: true }), 120).done).toBe(true)
   })
 })
 
