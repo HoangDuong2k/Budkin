@@ -1082,8 +1082,9 @@ async function flatFlow(app: ElectronApplication, page: Page): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  // Chống treo (vd. hộp thoại chờ người bấm): quá 8 phút (máy chậm: 20 phút) thì báo lỗi, đóng app và thoát
-  const limitMin = SLOW ? 20 : 8
+  // Chống treo (vd. hộp thoại chờ người bấm): quá 8 phút (máy chậm: 35 phút — máy ảo Windows của CI chạy bản đã cài
+  // mất ~20 phút cho cả bộ) thì báo lỗi, đóng app và thoát
+  const limitMin = SLOW ? 35 : 8
   setTimeout(() => {
     const msg = [`Kiểm thử bị treo quá ${limitMin} phút. Đã qua ${passed.length} bước, các bước cuối:`, ...passed.slice(-8)].join('\n')
     console.error(msg)
