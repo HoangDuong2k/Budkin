@@ -1,0 +1,60 @@
+---
+// Cả trang giới thiệu theo một ngôn ngữ: trang tiếng Việt (pages/index.astro) và tiếng Anh (pages/en/index.astro)
+// dùng chung. Ảnh chụp lấy từ docs/screenshots của app, đổi sang WebP lúc build.
+import { getImage } from 'astro:assets'
+import type { ImageMetadata } from 'astro'
+import logo from '../../../build/icons/128x128.png'
+import favicon from '../../../build/icons/64x64.png'
+import type { Dict } from '../i18n/vi'
+import { DOWNLOAD, REPO } from '../i18n/vi'
+import LandingBody, { type Img } from './LandingBody'
+import RobotGuide from './RobotGuide'
+import SiteHeader from './SiteHeader'
+import '../styles/global.css'
+
+interface Props {
+  t: Dict
+}
+const { t } = Astro.props
+
+const files = import.meta.glob<{ default: ImageMetadata }>('../../../docs/screenshots/*.png', { eager: true })
+const byName = (name: string): ImageMetadata => {
+  const hit = Object.entries(files).find(([k]) => k.endsWith(`/${name}`))
+  if (!hit) throw new Error(`Không có ảnh docs/screenshots/${name}`)
+  return hit[1].default
+}
+const optimize = async (name: string, width: number): Promise<Img> => {
+  const img = await getImage({ src: byName(name), width, format: 'webp', quality: 82 })
+  return { src: img.src, width: Number(img.attributes.width), height: Number(img.attributes.height) }
+}
+const shots: Record<string, Img> = {}
+for (const s of [t.hero.shot, ...t.sections.map((x) => x.shot)]) {
+  if (s && !shots[s.src]) shots[s.src] = await optimize(s.src, 1440)
+}
+const robots = await Promise.all(
+  ['Budkin', 'Orbi', 'Rover', 'Miu', 'Mech'].map(async (name) => ({ name, ...(await optimize(`robot-${name.toLowerCase()}.png`, 230)) }))
+)
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+const home = `${base}${t.lang === 'vi' ? '/' : `/${t.lang}/`}`
+const nav = { ...t.nav, switchLang: { ...t.nav.switchLang, href: `${base}${t.nav.switchLang.href}` } }
+const sections = t.sections.map(({ id, question }) => ({ id, question }))
+---
+
+<!doctype html>
+<html lang={t.lang} class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{t.title}</title>
+    <meta name="description" content={t.description} />
+    <meta name="theme-color" content="#121315" />
+    <link rel="icon" type="image/png" href={favicon.src} />
+  </head>
+  <body class="min-h-dvh bg-background text-foreground antialiased">
+    <SiteHeader client:load home={home} logo={logo.src} download={DOWNLOAD} repo={REPO} labels={nav} />
+    <LandingBody t={t} shots={shots} robots={robots} download={DOWNLOAD} repo={REPO} />
+    <RobotGuide client:load sections={sections} labels={t.robot} />
+  </body>
+</html>

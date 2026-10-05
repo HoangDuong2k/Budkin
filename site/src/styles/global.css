@@ -1,0 +1,105 @@
+/* Trang giới thiệu Budkin: Tailwind v4 + momi-ui, bảng màu của app (xám than, xanh ngọc, hổ phách — thế giới hậu tận thế,
+   thiết bị hiện đại). Hình robot dùng chung với app (robot-art.css). */
+@layer theme, base, components, utilities;
+@import 'tailwindcss';
+@import 'momi-ui/tailwind.css';
+@import '@fontsource/be-vietnam-pro/400.css';
+@import '@fontsource/be-vietnam-pro/500.css';
+@import '@fontsource/be-vietnam-pro/600.css';
+@import '@fontsource/be-vietnam-pro/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/oswald/500.css';
+@import '../../../src/renderer/src/styles/robot-art.css' layer(components);
+
+@import './robot-guide.css' layer(components);
+
+/* Token của momi-ui theo bảng màu Budkin (lúc bật đèn: chạng vạng dưới đèn LED trắng ấm). :root.dark để thắng .dark
+   mặc định của momi-ui (cùng không nằm trong layer) */
+:root.dark {
+  color-scheme: dark;
+  --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-label: 'Oswald', 'Be Vietnam Pro', sans-serif;
+  --radius: 0.625rem;
+
+  --background: #121315;
+  --foreground: #e7e4de;
+  --card: #191b1e;
+  --card-foreground: #e7e4de;
+  --popover: #202327;
+  --popover-foreground: #e7e4de;
+  --primary: #3fc2b8;
+  --primary-foreground: #041413;
+  --secondary: #24272b;
+  --secondary-foreground: #e7e4de;
+  --muted: #1d1f22;
+  --muted-foreground: #9e9b95;
+  --accent: #26292d;
+  --accent-foreground: #e7e4de;
+  --destructive: #ec6a5c;
+  --destructive-foreground: #140806;
+  --success: #6fcf97;
+  --success-foreground: #04130b;
+  --warning: #d9a863;
+  --warning-foreground: #1c1407;
+  --info: #74b0e2;
+  --info-foreground: #06121c;
+  --border: color-mix(in srgb, #e7e4de 10%, transparent);
+  --input: color-mix(in srgb, #e7e4de 16%, transparent);
+  --ring: #3fc2b8;
+  --surface-sunken: #16181a;
+  --surface-raised: #202327;
+  --border-strong: color-mix(in srgb, #e7e4de 16%, transparent);
+}
+
+html {
+  /* Chừa chỗ cho thanh trên dính khi nhảy tới một phần của trang */
+  scroll-padding-top: 4.5rem;
+  background: var(--background);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Chữ nhỏ in hoa màu hổ phách phía trên tiêu đề (kiểu chữ kẻ khuôn trên thùng hàng, như nhãn trong app) */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-label);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--warning);
+}
+
+/* Đèn LED xanh ngọc (như chấm trạng thái trong app) */
+.led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--primary);
+}
+
+/* Quầng sáng xanh ngọc sau phần mở đầu, như ánh màn hình hắt lên tường trong đêm */
+.hero-glow {
+  position: absolute;
+  inset: auto 0 0;
+  height: 70%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 50% 60% at 50% 70%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%);
+}
+
+.robot-name {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}

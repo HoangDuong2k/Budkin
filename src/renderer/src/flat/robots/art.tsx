@@ -1,7 +1,7 @@
 // Hình vẽ robot 2D dùng chung cho bàn làm việc 2D của app và trang giới thiệu (site/): chỉ có SVG — không phụ thuộc
 // trạng thái của app. Ai dùng thì tự làm chuyển động qua các ref (nhóm fx › body › head › eyes, tay, ăng-ten).
 // Màu và lớp CSS: styles/robot-art.css (biến --rb-* trên .flat hoặc .robot-art).
-import { useRef, type RefObject } from 'react'
+import { createRef, useRef, type RefObject } from 'react'
 
 /** Màu mắt LED xanh ngọc của Budkin (giống scene/palette3d ROBOT.eye) */
 export const BUDKIN_EYE = '#5ae3d8'
@@ -68,20 +68,23 @@ export interface BudkinParts {
   coreHalo: RefObject<SVGEllipseElement | null>
 }
 
+/** Các ref của Budkin — cùng một object suốt vòng đời component (dùng được làm dependency của effect) */
 export function useBudkinParts(): BudkinParts {
-  return {
-    fx: useRef<SVGGElement>(null),
-    body: useRef<SVGGElement>(null),
-    armL: useRef<SVGGElement>(null),
-    armR: useRef<SVGGElement>(null),
-    head: useRef<SVGGElement>(null),
-    antenna: useRef<SVGGElement>(null),
-    eyes: useRef<SVGGElement>(null),
-    happy: useRef<SVGGElement>(null),
-    eyeHalo: useRef<SVGEllipseElement>(null),
-    ledHalo: useRef<SVGCircleElement>(null),
-    coreHalo: useRef<SVGEllipseElement>(null)
+  const parts = useRef<BudkinParts | null>(null)
+  parts.current ??= {
+    fx: createRef(),
+    body: createRef(),
+    armL: createRef(),
+    armR: createRef(),
+    head: createRef(),
+    antenna: createRef(),
+    eyes: createRef(),
+    happy: createRef(),
+    eyeHalo: createRef(),
+    ledHalo: createRef(),
+    coreHalo: createRef()
   }
+  return parts.current
 }
 
 /** Budkin — robot bánh xe vui tính: vỏ gốm trắng ngà, mặt kính đen, mắt LED xanh ngọc, ăng-ten có đèn trạng thái */
