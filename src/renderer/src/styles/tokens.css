@@ -129,19 +129,26 @@
   --font-body: 'Be Vietnam Pro', system-ui, sans-serif;
   --font-label: 'Oswald', 'Be Vietnam Pro', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  /* Hình khối giao diện: khối bo tròn mềm nổi trên nền, nút / ô nhập / bộ chọn dạng viên thuốc */
-  --radius: 10px;
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 20px;
+  /* Hình khối giao diện (kiểu Modern Minimal): góc bo vừa phải — nút, ô nhập 8px; thẻ, khung nổi 10–12px; chỉ công tắc,
+     chấm trạng thái là tròn. Các vùng ngăn bằng viền mảnh, không phải khối nổi. */
+  --radius: 8px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 10px;
+  --r-xl: 12px;
   --r-pill: 999px;
-  /* Viền mảnh, mặt khối nổi — pha từ màu chữ / màu khối nên đổi theo theme mà không thêm màu mới */
+  /* Viền mảnh, mặt khối — pha từ màu chữ / màu khối nên đổi theo theme mà không thêm màu mới */
   --edge: color-mix(in srgb, var(--text) 9%, transparent);
-  --edge-strong: color-mix(in srgb, var(--text) 16%, transparent);
-  --surface: color-mix(in srgb, var(--panel) 72%, transparent);
-  --surface-hi: color-mix(in srgb, var(--text) 7%, transparent);
-  --surface-on: color-mix(in srgb, var(--text) 12%, transparent);
+  --edge-strong: color-mix(in srgb, var(--text) 15%, transparent);
+  --surface: color-mix(in srgb, var(--panel) 90%, transparent);
+  --surface-hi: color-mix(in srgb, var(--text) 5%, transparent);
+  --surface-on: color-mix(in srgb, var(--text) 9%, transparent);
+  /* Nền ô nhập: tối hơn mặt khối một chút */
+  --field: color-mix(in srgb, var(--text) 3%, transparent);
+  /* Bóng đổ: rất nhẹ cho nút / thẻ, đậm hơn cho khung nổi (menu, hộp thoại) */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 10px 30px -6px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
 

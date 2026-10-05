@@ -154,7 +154,7 @@ function Volume({ value }: { value: number }): React.JSX.Element {
         }}
       />
       <span className="readout">{Math.round(v * 100)}%</span>
-      <button className="btn small ghost" onClick={() => playChirp('poke')}>
+      <button className="btn small" onClick={() => playChirp('poke')}>
         {tr('Nghe thử')}
       </button>
     </>

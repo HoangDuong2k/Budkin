@@ -5,7 +5,7 @@
   --sidebar-w: 188px;
   display: grid;
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
-  grid-template-rows: 52px minmax(0, 1fr);
+  grid-template-rows: 48px minmax(0, 1fr);
   height: 100%;
   position: relative;
   color: var(--text);
@@ -37,47 +37,52 @@ button {
   color: inherit;
 }
 
+/* Đang dùng bàn phím: vòng sáng xanh ngọc mềm quanh phần tử */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 1px;
 }
 
 /* ---------- Nút ---------- */
 
-/* Nút: viên thuốc, mặt khối nhạt, viền mảnh */
+/* Nút: bo góc 8px, viền mảnh, nền trong; rê chuột thì có mặt nền nhạt */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
   height: 32px;
   box-sizing: border-box;
-  border: 1px solid var(--edge);
-  background: var(--surface-hi);
-  border-radius: var(--r-pill);
-  padding: 0 14px;
+  border: 1px solid var(--edge-strong);
+  background: transparent;
+  border-radius: var(--r-md);
+  padding: 0 12px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--shadow-xs);
 }
 
 .btn:hover:not(:disabled) {
-  border-color: var(--edge-strong);
+  background: var(--surface-hi);
+}
+
+.btn:active:not(:disabled) {
   background: var(--surface-on);
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: default;
 }
 
 .btn.small {
   height: 28px;
-  padding: 0 12px;
+  padding: 0 10px;
   font-size: 12.5px;
 }
 
-/* Nút chính: viên thuốc xanh ngọc, chữ tối đậm vừa; khi mất điện thì hắt sáng nhẹ */
+/* Nút chính: nền xanh ngọc đặc, chữ tối */
 .btn.primary {
   background: var(--accent);
   border-color: transparent;
@@ -86,11 +91,7 @@ button {
 }
 
 .btn.primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 86%, #fff);
-}
-
-:root[data-theme='dark'] .btn.primary {
-  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 88%, #fff);
 }
 
 .btn.danger {
@@ -101,21 +102,27 @@ button {
 }
 
 .btn.danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger) 86%, #fff);
+  background: color-mix(in srgb, var(--danger) 88%, #fff);
 }
 
 .btn.ghost {
   background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 
-/* Nút biểu tượng: tròn */
+.btn.ghost:hover:not(:disabled) {
+  background: var(--surface-hi);
+}
+
+/* Nút biểu tượng: ô vuông bo góc, chỉ hiện nền khi rê chuột */
 .icon-btn {
   display: inline-grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border: 0;
-  border-radius: var(--r-pill);
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -130,6 +137,7 @@ button {
 .icon-btn.subtle {
   width: 22px;
   height: 22px;
+  border-radius: var(--r-sm);
 }
 
 .icon-btn.danger:hover {
@@ -138,46 +146,48 @@ button {
 }
 
 .chip-btn {
-  border: 1px solid var(--edge);
-  background: var(--surface-hi);
-  border-radius: var(--r-pill);
-  padding: 4px 12px;
+  border: 1px solid var(--edge-strong);
+  background: transparent;
+  border-radius: var(--r-md);
+  padding: 4px 10px;
   cursor: pointer;
   font-size: 12px;
+  font-weight: 500;
 }
 
 .chip-btn.small {
-  padding: 2px 9px;
+  padding: 2px 8px;
   font-size: 11px;
+  border-radius: var(--r-sm);
 }
 
 .chip-btn:hover {
-  border-color: var(--edge-strong);
-  background: var(--surface-on);
+  background: var(--surface-hi);
 }
 
 .chip-btn.on {
   background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
   color: var(--accent);
   font-weight: 600;
 }
 
-/* Ô nhập: mặt khối mềm, viền mảnh; đang gõ thì viền xanh ngọc kèm quầng nhạt */
+/* Ô nhập: nền tối hơn một chút, viền mảnh; đang gõ thì viền xanh ngọc kèm vòng sáng nhạt */
 .input {
   font: inherit;
   color: inherit;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-sm);
+  background: var(--field);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-md);
   padding: 6px 10px;
   outline: none;
   min-width: 0;
+  box-shadow: var(--shadow-xs);
 }
 
 .input:focus {
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .input.bad {
@@ -208,18 +218,17 @@ button {
   height: 10px;
 }
 
-/* Số đếm: bong bóng tròn nhỏ (thanh bên, đầu nhóm, đầu cột Kanban) */
+/* Số đếm: chữ số nhỏ màu nhạt (thanh bên, đầu nhóm); ở đầu cột Kanban có ô nền nhạt */
 .count {
   display: inline-grid;
   place-items: center;
   box-sizing: border-box;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: var(--r-pill);
-  background: var(--surface-hi);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-sm);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -231,43 +240,42 @@ button {
 
 /* ---------- Thanh trên ---------- */
 
-/* Thanh trên: tên app kèm huy hiệu tròn, bộ chuyển cách xem dạng viên thuốc, ô tìm, nút thêm việc */
+/* Thanh trên: liền khối với viền dưới mảnh — tên app, bộ chuyển cách xem, ô tìm, nút thêm việc, đồng hồ */
 .topbar {
   grid-column: 1 / -1;
   position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 12px 0 10px;
+  padding: 0 12px;
   min-width: 0;
+  border-bottom: 1px solid var(--edge);
 }
 
 .topbar .btn {
-  height: 32px;
+  height: 30px;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   font-weight: 600;
-  font-size: 15.5px;
-  letter-spacing: -0.1px;
+  font-size: 14.5px;
+  letter-spacing: -0.2px;
   color: var(--text);
   white-space: nowrap;
 }
 
-/* Huy hiệu tròn: mặt robot xanh ngọc */
+/* Biểu tượng app: ô vuông bo góc xanh ngọc, mặt robot tối */
 .brand-mark {
   display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  box-sizing: border-box;
-  border-radius: var(--r-pill);
-  background: var(--accent-soft);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  color: var(--accent);
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-text);
   flex: none;
 }
 
@@ -276,19 +284,23 @@ button {
   align-items: center;
   gap: 8px;
   box-sizing: border-box;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-pill);
-  padding: 0 6px 0 12px;
-  height: 32px;
-  flex: 0 1 250px;
+  background: var(--field);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-md);
+  padding: 0 6px 0 10px;
+  height: 30px;
+  flex: 0 1 240px;
   min-width: 110px;
   color: var(--muted);
 }
 
+.search:hover {
+  background: var(--surface-hi);
+}
+
 .search:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .search input {
@@ -301,28 +313,24 @@ button {
   color: var(--text);
 }
 
-/* Đồng hồ: chữ đơn cách trong viên thuốc */
+/* Đồng hồ: chữ đơn cách xanh ngọc, như đèn số trên thiết bị */
 .clock {
   font-family: var(--font-mono);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--accent);
   font-size: 12px;
-  padding: 5px 10px;
-  border-radius: var(--r-pill);
-  background: var(--surface);
-  border: 1px solid var(--edge);
+  padding: 0 4px;
 }
 
-/* Chuyển cách xem: viên thuốc, mục đang chọn là viên sáng chữ tối */
+/* Chuyển cách xem: nhóm nút trên nền nhạt, mục đang chọn là ô nổi lên */
 .view-switch {
   display: inline-flex;
   gap: 2px;
-  margin-left: 6px;
+  margin-left: 4px;
   padding: 3px;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-pill);
-  background: var(--surface);
+  border-radius: var(--r-lg);
+  background: var(--surface-on);
   flex: none;
 }
 
@@ -330,10 +338,10 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
-  padding: 0 12px;
+  height: 24px;
+  padding: 0 10px;
   border: 0;
-  border-radius: var(--r-pill);
+  border-radius: 7px;
   background: transparent;
   color: var(--muted);
   font-size: 12.5px;
@@ -343,12 +351,12 @@ button {
 
 .view-switch button:hover {
   color: var(--text);
-  background: var(--surface-hi);
 }
 
 .view-switch button.on {
-  color: var(--screen-bg);
-  background: var(--text);
+  color: var(--text);
+  background: var(--panel-2);
+  box-shadow: var(--shadow-sm);
   font-weight: 600;
 }
 
@@ -365,7 +373,7 @@ button {
     display: none;
   }
   .view-switch button {
-    padding: 0 9px;
+    padding: 0 8px;
   }
 }
 
@@ -374,41 +382,40 @@ button {
     display: none;
   }
   .topbar .add-task {
-    padding: 0 9px;
+    padding: 0 8px;
   }
 }
 
 /* ---------- Thanh bên ---------- */
 
-/* Thanh bên: khối bo tròn nổi trên nền màn hình */
+/* Thanh bên: cột liền khối, ngăn với nội dung bằng viền phải mảnh */
 .sidebar {
-  margin: 2px 0 10px 10px;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
+  border-right: 1px solid var(--edge);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  border-radius: var(--r-sm);
-  color: var(--text);
+  border-radius: var(--r-md);
+  color: var(--muted);
 }
 
 .nav-item:hover {
   background: var(--surface-hi);
+  color: var(--text);
 }
 
-/* Mục đang chọn: mặt khối sáng hơn, biểu tượng xanh ngọc */
+/* Mục đang chọn: nền nhạt, chữ sáng, biểu tượng xanh ngọc */
 .nav-item.on {
   background: var(--surface-on);
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -421,7 +428,7 @@ button {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   border: 0;
   border-radius: inherit;
   background: transparent;
@@ -455,13 +462,14 @@ button {
   display: inline-grid;
 }
 
+/* Tên nhóm (Dự án, Nhãn): chữ nhỏ màu nhạt */
 .nav-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 4px 4px 8px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 14px 2px 4px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
   color: var(--muted);
 }
 
@@ -475,7 +483,7 @@ button {
   bottom: -8px;
   margin: auto -8px -8px;
   padding: 8px;
-  background: color-mix(in srgb, var(--panel) 72%, var(--screen-bg));
+  background: var(--screen-bg);
   border-top: 1px solid var(--edge);
   display: flex;
   align-items: center;
@@ -487,25 +495,29 @@ button {
   display: inline-flex;
   gap: 2px;
   padding: 2px;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-pill);
-  background: var(--surface);
+  border-radius: var(--r-md);
+  background: var(--surface-on);
 }
 
 .lang-switch button {
   border: 0;
-  border-radius: var(--r-pill);
+  border-radius: var(--r-sm);
   background: transparent;
-  padding: 3px 9px;
+  padding: 3px 8px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   color: var(--muted);
 }
 
+.lang-switch button:hover {
+  color: var(--text);
+}
+
 .lang-switch button.on {
-  background: var(--text);
-  color: var(--screen-bg);
+  background: var(--panel-2);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Thanh bên thu gọn: chỉ còn biểu tượng */
@@ -519,8 +531,7 @@ button {
 }
 
 .screen-app.sidebar-closed .sidebar {
-  margin-left: 6px;
-  padding: 6px 3px;
+  padding: 6px 4px;
 }
 
 @container screen (max-width: 640px) {
@@ -533,8 +544,7 @@ button {
     display: none;
   }
   .sidebar {
-    margin-left: 6px;
-    padding: 6px 3px;
+    padding: 6px 4px;
   }
   .screen-app.sidebar-closed .sidebar {
     display: none;
@@ -555,7 +565,7 @@ button {
 }
 
 .list-view {
-  padding: 14px 20px 60px;
+  padding: 16px 24px 60px;
   max-width: 860px;
 }
 
@@ -563,47 +573,44 @@ button {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin-bottom: 12px;
-}
-
-/* Tiêu đề: chữ thường đậm vừa, khít */
-.list-head h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-}
-
-.list-head .muted {
-  font-size: 13px;
-}
-
-/* Thêm việc nhanh: ô bo tròn, dấu cộng trong vòng tròn xanh ngọc */
-.quick-add {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-sizing: border-box;
-  height: 42px;
-  padding: 0 14px 0 8px;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-md);
-  background: var(--surface);
-  color: var(--muted);
   margin-bottom: 14px;
 }
 
+/* Tiêu đề: chữ đậm vừa, khít */
+.list-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+
+.list-head .muted {
+  font-size: 12.5px;
+}
+
+/* Thêm việc nhanh: ô nhập viền mảnh, dấu cộng xanh ngọc */
+.quick-add {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 12px 0 11px;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-md);
+  background: var(--field);
+  box-shadow: var(--shadow-xs);
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
 .quick-add > svg {
-  box-sizing: content-box;
-  padding: 5px;
-  border-radius: var(--r-pill);
-  background: var(--accent-soft);
   color: var(--accent);
 }
 
 .quick-add:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .quick-add-input {
@@ -616,41 +623,34 @@ button {
 }
 
 .list-section {
-  margin-bottom: 10px;
+  margin-bottom: 18px;
 }
 
-/* Đầu nhóm: nhãn viên thuốc có chấm màu, số việc, đường kẻ mảnh */
+/* Đầu nhóm: chấm đèn LED, tên nhóm chữ nhỏ, số việc; dưới là các dòng ngăn bằng viền mảnh */
 .section-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
   border: 0;
+  border-bottom: 1px solid var(--edge);
   background: transparent;
-  padding: 6px 0;
-  margin-bottom: 4px;
+  padding: 4px 2px 7px;
   cursor: pointer;
   color: var(--muted);
   text-align: left;
 }
 
-.section-head::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  margin-left: 4px;
-  background: var(--edge);
+.section-head:hover {
+  color: var(--text);
 }
 
 .section-label {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 3px 11px 3px 9px;
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--accent-2) 14%, transparent);
-  color: var(--accent-2);
-  font-size: 12px;
+  color: var(--text);
+  font-size: 12.5px;
   font-weight: 600;
 }
 
@@ -659,40 +659,37 @@ button {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--accent-2);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-2) 60%, transparent);
 }
 
-.section-head.danger .section-label {
-  background: var(--danger-soft);
-  color: var(--danger);
+.section-head.danger .section-label::before {
+  background: var(--danger);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 60%, transparent);
 }
 
-/* Việc: thẻ bo tròn nổi nhẹ trên nền */
+/* Việc: dòng phẳng ngăn bằng viền mảnh; rê chuột thì có nền nhạt, đang mở thì có vạch xanh ngọc bên trái */
 .task-row {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 10px 14px 10px 12px;
-  margin-bottom: 6px;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-md);
+  gap: 11px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--edge);
   cursor: pointer;
   outline: none;
 }
 
 .task-row:hover {
-  border-color: var(--edge-strong);
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  background: var(--surface-hi);
 }
 
 .task-row:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 .task-row.selected {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: color-mix(in srgb, var(--accent-soft) 75%, transparent);
+  background: var(--surface-on);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .task-main {
@@ -755,8 +752,8 @@ button {
 .meta.doing {
   background: var(--accent-soft);
   color: var(--accent);
-  border-radius: var(--r-pill);
-  padding: 1px 9px;
+  border-radius: var(--r-sm);
+  padding: 1px 7px;
   font-size: 11.5px;
   font-weight: 600;
 }
@@ -765,17 +762,18 @@ button {
   color: var(--faint);
 }
 
+/* Nhãn: ô chữ nhỏ bo góc, nền pha nhạt từ màu của nhãn */
 .tag-chip {
   display: inline-flex;
   align-items: center;
   gap: 2px;
   color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c) 28%, transparent);
-  border-radius: var(--r-pill);
-  padding: 0 8px;
+  background: color-mix(in srgb, var(--c) 13%, transparent);
+  border-radius: var(--r-sm);
+  padding: 0 6px;
   font-size: 11.5px;
   font-weight: 500;
+  line-height: 18px;
   white-space: nowrap;
 }
 
@@ -791,15 +789,15 @@ button {
   opacity: 0.7;
 }
 
-/* Ô hoàn thành: ô vuông bo tròn, viền theo mức ưu tiên */
+/* Ô hoàn thành: ô vuông bo góc nhỏ, viền theo mức ưu tiên */
 .check {
   --ring: var(--faint);
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   margin-top: 1px;
-  border-radius: 6px;
-  border: 2px solid var(--ring);
+  border-radius: 5px;
+  border: 1.5px solid var(--ring);
   background: transparent;
   display: grid;
   place-items: center;
@@ -811,8 +809,7 @@ button {
 .check.small {
   width: 15px;
   height: 15px;
-  border-width: 1.5px;
-  border-radius: 5px;
+  border-radius: 4px;
 }
 
 .check.prio-1 {
@@ -851,18 +848,17 @@ button {
 
 /* ---------- Khung sửa task ---------- */
 
-/* Khung sửa: khối bo tròn trượt ra từ bên phải, nổi trên danh sách */
+/* Khung sửa: tấm trượt ra sát mép phải (dưới thanh trên), ngăn với danh sách bằng viền trái và bóng mềm */
 .editor {
   position: absolute;
-  top: 52px;
-  right: 10px;
-  bottom: 10px;
+  top: 48px;
+  right: 0;
+  bottom: 0;
   width: min(380px, 74%);
   box-sizing: border-box;
   background-color: var(--panel);
-  border: 1px solid var(--edge-strong);
-  border-radius: var(--r-lg);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+  border-left: 1px solid var(--edge-strong);
+  box-shadow: -16px 0 36px -18px rgba(0, 0, 0, 0.7);
   overflow-y: auto;
   padding: 10px 18px 24px;
   z-index: 5;
@@ -879,9 +875,9 @@ button {
 
 .editor-title {
   font: inherit;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.3px;
   color: inherit;
   border: 0;
   outline: none;
@@ -892,23 +888,22 @@ button {
   overflow: hidden;
 }
 
-/* Bộ chọn: viên thuốc, mục đang chọn là viên sáng chữ tối */
+/* Bộ chọn: nhóm nút trên nền nhạt, mục đang chọn là ô nổi lên */
 .segmented {
   display: inline-flex;
   align-self: flex-start;
   gap: 2px;
   padding: 3px;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-pill);
-  background: var(--surface);
+  border-radius: var(--r-lg);
+  background: var(--surface-on);
   margin-bottom: 4px;
 }
 
 .segmented button {
   border: 0;
-  border-radius: var(--r-pill);
+  border-radius: 7px;
   background: transparent;
-  padding: 4px 12px;
+  padding: 4px 11px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
@@ -917,12 +912,12 @@ button {
 
 .segmented button:hover:not(:disabled) {
   color: var(--text);
-  background: var(--surface-hi);
 }
 
 .segmented button.on {
-  background: var(--text);
-  color: var(--screen-bg);
+  background: var(--panel-2);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
   font-weight: 600;
 }
 
@@ -955,7 +950,7 @@ button {
   border: 0;
   background: transparent;
   padding: 5px 10px;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   cursor: pointer;
   text-align: left;
   max-width: 100%;
@@ -983,7 +978,7 @@ button {
 .prio-btn {
   border: 0;
   background: transparent;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   width: 32px;
   height: 28px;
   cursor: pointer;
@@ -1032,9 +1027,9 @@ button {
   z-index: 3;
   background: var(--panel-2);
   border: 1px solid var(--edge-strong);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow);
-  padding: 6px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-pop);
+  padding: 4px;
   display: flex;
   flex-direction: column;
 }
@@ -1076,7 +1071,7 @@ button {
 }
 
 .block-title > svg {
-  color: var(--accent-2);
+  color: var(--muted);
 }
 
 .checklist-item,
@@ -1109,9 +1104,10 @@ button {
   box-sizing: border-box;
   font: inherit;
   color: inherit;
-  background: var(--surface);
-  border: 1px solid var(--edge);
+  background: var(--field);
+  border: 1px solid var(--edge-strong);
   border-radius: var(--r-md);
+  box-shadow: var(--shadow-xs);
   padding: 10px 12px;
   outline: none;
   resize: none;
@@ -1121,21 +1117,21 @@ button {
 }
 
 .notes:focus {
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 /* ---------- Popover, menu ---------- */
 
-/* Menu nổi: khối bo tròn, viền mảnh, đổ bóng mềm */
+/* Menu nổi: khối bo góc 10px, viền mảnh, đổ bóng */
 .popover {
   position: fixed;
   pointer-events: auto;
-  background-color: var(--panel);
+  background-color: var(--panel-2);
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-lg);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
-  padding: 8px;
+  box-shadow: var(--shadow-pop);
+  padding: 4px;
   overflow-y: auto;
   color: var(--text);
   font-family: var(--font-body);
@@ -1145,7 +1141,7 @@ button {
 .menu {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 170px;
 }
 
@@ -1155,7 +1151,7 @@ button {
   gap: 8px;
   border: 0;
   background: transparent;
-  padding: 7px 10px;
+  padding: 6px 8px;
   border-radius: var(--r-sm);
   cursor: pointer;
   text-align: left;
@@ -1177,14 +1173,14 @@ button {
 .menu-note {
   font-size: 11px;
   color: var(--muted);
-  padding: 4px 10px 0;
+  padding: 4px 8px 2px;
 }
 
 .swatches {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: 4px;
-  padding: 6px 2px;
+  padding: 6px 6px;
 }
 
 .swatch {
@@ -1198,7 +1194,7 @@ button {
 }
 
 .swatch.on {
-  box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--c);
+  box-shadow: 0 0 0 2px var(--panel-2), 0 0 0 4px var(--c);
 }
 
 /* Chọn hạn */
@@ -1206,6 +1202,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 6px;
 }
 
 .due-quick,
@@ -1254,7 +1251,7 @@ button {
 .mini-cal-day {
   border: 0;
   background: transparent;
-  border-radius: var(--r-pill);
+  border-radius: var(--r-md);
   height: 30px;
   cursor: pointer;
   font-size: 12.5px;
@@ -1286,20 +1283,20 @@ button {
   position: absolute;
   inset: 0;
   z-index: 20;
-  background: color-mix(in srgb, var(--screen-bg) 60%, transparent);
+  background: color-mix(in srgb, #000 45%, transparent);
   display: grid;
   place-items: center;
   pointer-events: auto;
 }
 
-/* Hộp xác nhận: khối bo tròn lớn */
+/* Hộp xác nhận: khối bo góc 12px, nút căn phải */
 .modal {
   position: relative;
   box-sizing: border-box;
   background-color: var(--panel);
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-xl);
-  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-pop);
   padding: 20px;
   width: min(340px, 86%);
   overflow: hidden;
@@ -1333,7 +1330,7 @@ button {
   max-width: 90%;
 }
 
-/* Toast: viên bo tròn có chấm màu phía trước, nút hành động là viên nhỏ */
+/* Toast: khối bo góc có chấm đèn phía trước, nút hành động viền mảnh */
 .toast {
   pointer-events: auto;
   display: flex;
@@ -1342,18 +1339,19 @@ button {
   background: var(--panel-2);
   border: 1px solid var(--edge-strong);
   color: var(--text);
-  border-radius: var(--r-md);
-  padding: 7px 8px 7px 14px;
-  box-shadow: var(--shadow);
+  border-radius: var(--r-lg);
+  padding: 7px 8px 7px 13px;
+  box-shadow: var(--shadow-pop);
 }
 
 .toast::before {
   content: '';
   flex: none;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 .toast.error {
@@ -1362,6 +1360,7 @@ button {
 
 .toast.error::before {
   background: var(--danger);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 60%, transparent);
 }
 
 .toast .icon-btn {
@@ -1375,19 +1374,19 @@ button {
 }
 
 .toast-action {
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--accent-soft);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-md);
+  background: transparent;
   color: var(--accent);
   font-size: 12.5px;
   font-weight: 600;
-  padding: 4px 11px;
+  padding: 3px 10px;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .toast-action:hover {
-  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  background: var(--surface-on);
 }
 
 /* ---------- Nhắc việc: phần dùng chung của bong bóng thoại (robot) và banner trong màn hình ---------- */
@@ -1419,8 +1418,8 @@ button {
   font-weight: 700;
   color: var(--accent-text);
   background: var(--accent);
-  border-radius: var(--r-pill);
-  padding: 0 7px;
+  border-radius: var(--r-sm);
+  padding: 0 6px;
 }
 
 .reminder-dismiss {
@@ -1452,12 +1451,12 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 10px 20px 0;
+  margin: 10px 24px 0;
   padding: 10px 10px 10px 14px;
   background: var(--panel-2);
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-pop);
 }
 
 .reminder-banner .reminder-body {
@@ -1491,7 +1490,7 @@ button {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 14px 20px 14px;
+  padding: 16px 24px 16px;
 }
 
 .board {
@@ -1502,16 +1501,16 @@ button {
   overflow-x: auto;
 }
 
-/* Cột: khối bo tròn nổi nhẹ; màu trạng thái chỉ ở nhãn đầu cột */
+/* Cột: nền nhạt bo góc 12px, không viền; màu trạng thái chỉ ở chấm đèn đầu cột */
 .board-col {
   --c: var(--muted);
   flex: 1 1 0;
   min-width: 150px;
   display: flex;
   flex-direction: column;
-  background: color-mix(in srgb, var(--panel) 55%, transparent);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
+  background: var(--surface-hi);
+  border: 1px solid transparent;
+  border-radius: var(--r-xl);
 }
 
 .board-col.col-in_progress {
@@ -1523,33 +1522,30 @@ button {
 }
 
 .board-col.target {
-  border-color: color-mix(in srgb, var(--c) 55%, transparent);
-  background: color-mix(in srgb, var(--c) 7%, var(--panel));
+  border-color: color-mix(in srgb, var(--c) 50%, transparent);
+  background: color-mix(in srgb, var(--c) 7%, transparent);
 }
 
-/* Đầu cột: dải bo tròn, nhãn trạng thái viên thuốc có chấm màu, số việc trong bong bóng tròn */
+/* Đầu cột: chấm đèn màu trạng thái, tên cột, số việc */
 .board-col-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  margin: 8px 8px 6px;
-  padding: 6px 7px 6px 6px;
-  background: var(--surface-hi);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-md);
+  padding: 10px 12px 8px 14px;
+}
+
+.board-col-head .count {
+  background: var(--surface-on);
 }
 
 .board-col-title {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
-  padding: 3px 11px 3px 9px;
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--c) 16%, transparent);
-  color: color-mix(in srgb, var(--c) 82%, var(--text));
-  font-size: 12px;
+  color: var(--text);
+  font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1561,6 +1557,7 @@ button {
   height: 6px;
   border-radius: 50%;
   background: var(--c);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--c) 60%, transparent);
 }
 
 .board-col-body {
@@ -1569,27 +1566,28 @@ button {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 2px 8px 10px;
+  gap: 6px;
+  padding: 0 6px 8px;
 }
 
 .board-empty {
   padding: 18px 8px;
   border: 1px dashed var(--edge-strong);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
   color: var(--faint);
   font-size: 12px;
   text-align: center;
 }
 
-/* Thẻ việc: khối bo tròn; dự án ở dòng trên, hạn, chân thẻ có mức ưu tiên và nhãn */
+/* Thẻ việc: khối bo góc 10px, viền mảnh, bóng rất nhẹ; dự án ở dòng trên, hạn, chân thẻ có mức ưu tiên và nhãn */
 .task-card {
   --p: var(--faint);
   position: relative;
-  padding: 11px 12px 10px;
-  background: var(--panel-2);
+  padding: 10px 12px;
+  background: var(--panel);
   border: 1px solid var(--edge);
-  border-radius: var(--r-md);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs);
   color: var(--text);
   cursor: grab;
   touch-action: none;
@@ -1615,7 +1613,7 @@ button {
 .task-card:focus-visible,
 .task-card.selected {
   border-color: color-mix(in srgb, var(--accent) 60%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .task-card.done .card-title {
@@ -1632,7 +1630,7 @@ button {
 .task-card.overlay {
   cursor: grabbing;
   transform: rotate(1.5deg);
-  box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: var(--shadow-pop), 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .card-top {
@@ -1653,7 +1651,7 @@ button {
 }
 
 .card-title {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.38;
   overflow-wrap: anywhere;
@@ -1677,11 +1675,11 @@ button {
   display: none;
 }
 
-/* "Quá hạn": viên nhỏ đỏ nhạt ở cuối dòng hạn */
+/* "Quá hạn": ô chữ nhỏ đỏ nhạt ở cuối dòng hạn */
 .card-late {
   margin-left: auto;
-  padding: 1px 8px;
-  border-radius: var(--r-pill);
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
   background: var(--danger-soft);
   color: var(--danger);
   font-size: 10.5px;
@@ -1694,19 +1692,20 @@ button {
   align-items: center;
   gap: 6px;
   min-width: 0;
-  margin-top: 10px;
-  padding-top: 9px;
+  margin-top: 9px;
+  padding-top: 8px;
   border-top: 1px solid var(--edge);
 }
 
+/* Mức ưu tiên: ô chữ nhỏ viền mảnh, cờ màu theo mức */
 .prio-pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   flex: none;
-  padding: 2px 9px 2px 7px;
-  border-radius: var(--r-pill);
-  background: var(--surface-on);
+  padding: 1px 7px 1px 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--edge-strong);
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
@@ -1749,6 +1748,10 @@ button {
   margin: 0 0 0 4px;
 }
 
+.cal-head .btn {
+  height: 28px;
+}
+
 /* Dải việc chưa có hạn: kéo xuống một ngày để xếp lịch, kéo lên đây để bỏ hạn */
 .cal-undated {
   display: flex;
@@ -1757,8 +1760,7 @@ button {
   min-height: 34px;
   padding: 4px 10px;
   border: 1px dashed var(--edge-strong);
-  border-radius: var(--r-md);
-  background: var(--surface);
+  border-radius: var(--r-lg);
 }
 
 .cal-undated.over {
@@ -1805,21 +1807,20 @@ button {
 .cal-dow {
   padding: 0 8px;
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--muted);
 }
 
-/* Lưới tháng: khối bo tròn, kẻ ô mảnh */
+/* Lưới tháng: khung bo góc 12px, kẻ ô mảnh */
 .cal-grid {
   flex: 1;
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-template-rows: repeat(6, minmax(0, 1fr));
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-xl);
   overflow: hidden;
-  background: color-mix(in srgb, var(--panel) 40%, transparent);
 }
 
 .cal-cell {
@@ -1844,7 +1845,7 @@ button {
 
 .cal-cell.weekend,
 .cal-week-col.weekend {
-  background: color-mix(in srgb, var(--panel) 55%, transparent);
+  background: var(--surface-hi);
 }
 
 .cal-cell.other .cal-daynum {
@@ -1875,7 +1876,7 @@ button {
   min-width: 20px;
   padding: 0 5px;
   box-sizing: border-box;
-  border-radius: var(--r-pill);
+  border-radius: var(--r-sm);
   font-size: 11.5px;
   font-weight: 500;
   line-height: 20px;
@@ -1891,7 +1892,7 @@ button {
   font-weight: 700;
 }
 
-/* Việc trên lịch: viên bo tròn có chấm theo mức ưu tiên */
+/* Việc trên lịch: ô bo góc nhỏ có chấm theo mức ưu tiên */
 .cal-chip {
   --p: var(--faint);
   display: flex;
@@ -1903,8 +1904,8 @@ button {
   box-sizing: border-box;
   padding: 1px 6px;
   border: 0;
-  border-radius: 6px;
-  background: var(--panel-2);
+  border-radius: 5px;
+  background: var(--surface-on);
   color: var(--text);
   font-size: 11px;
   line-height: 16px;
@@ -1924,7 +1925,7 @@ button {
 }
 
 .cal-chip:hover {
-  background: color-mix(in srgb, var(--accent) 12%, var(--panel-2));
+  background: color-mix(in srgb, var(--text) 14%, transparent);
 }
 
 .cal-chip.prio-1 {
@@ -1955,7 +1956,8 @@ button {
   width: auto;
   max-width: 220px;
   cursor: grabbing;
-  box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--panel-2);
+  box-shadow: var(--shadow-pop), 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .cal-chip-time {
@@ -1975,7 +1977,7 @@ button {
   flex: none;
   padding: 0 4px;
   border: 0;
-  border-radius: var(--r-pill);
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--accent);
   font-size: 11px;
@@ -1992,10 +1994,9 @@ button {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-xl);
   overflow: hidden;
-  background: color-mix(in srgb, var(--panel) 40%, transparent);
 }
 
 .cal-week-col {
@@ -2146,7 +2147,7 @@ button {
 
 .sidebar-foot .settings-btn.on {
   color: var(--accent);
-  background: var(--accent-soft);
+  background: var(--surface-on);
 }
 
 /* Thanh bên chỉ còn biểu tượng: các nút ở chân xếp dọc (khớp lề trong của thanh bên thu gọn) */
@@ -2181,7 +2182,7 @@ button {
   z-index: 12;
   display: grid;
   grid-template-columns: 182px minmax(0, 1fr);
-  grid-template-rows: 52px minmax(0, 1fr);
+  grid-template-rows: 48px minmax(0, 1fr);
   background-color: var(--screen-bg);
   background-image: var(--screen-light, none), var(--grain);
   outline: none;
@@ -2193,15 +2194,16 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 12px 0 20px;
+  padding: 0 12px 0 18px;
   min-width: 0;
+  border-bottom: 1px solid var(--edge);
 }
 
 .settings-head h2 {
   margin: 0;
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.3px;
   white-space: nowrap;
 }
 
@@ -2213,16 +2215,13 @@ button {
   text-overflow: ellipsis;
 }
 
-/* Mục cài đặt: khối bo tròn như thanh bên, mục đang chọn sáng hơn */
+/* Mục cài đặt: cột liền khối như thanh bên, mục đang chọn có nền nhạt */
 .settings-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin: 2px 0 10px 10px;
+  gap: 1px;
   padding: 8px;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
-  background: var(--surface);
+  border-right: 1px solid var(--edge);
   overflow-y: auto;
   min-width: 0;
 }
@@ -2232,11 +2231,11 @@ button {
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   border: 0;
   background: transparent;
-  padding: 8px 10px;
-  border-radius: var(--r-sm);
+  padding: 6px 8px;
+  border-radius: var(--r-md);
   color: var(--muted);
   cursor: pointer;
   text-align: left;
@@ -2269,7 +2268,7 @@ button {
 
 .settings-body {
   overflow-y: auto;
-  padding: 4px 24px 28px;
+  padding: 4px 28px 28px;
   min-width: 0;
   user-select: text;
 }
@@ -2280,9 +2279,8 @@ button {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px 18px;
-  padding: 11px 0;
-  border-bottom: 1px solid transparent;
-  border-bottom-color: var(--edge);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--edge);
 }
 
 .set-text {
@@ -2293,7 +2291,7 @@ button {
 }
 
 .set-label {
-  font-weight: 700;
+  font-weight: 600;
   font-size: 13px;
 }
 
@@ -2324,29 +2322,22 @@ button {
   cursor: default;
 }
 
+/* Tên nhóm thiết lập: tiêu đề nhỏ đậm vừa, cách nhóm trên một khoảng */
 .set-group-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 22px 0 4px;
+  margin: 26px 0 2px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
+  letter-spacing: -0.2px;
   color: var(--text);
 }
 
-/* Chấm hổ phách trước tên nhóm thiết lập */
-.set-group-title::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent-2);
-}
-
-
 .value-btn.boxed {
-  border: 1px solid var(--edge);
-  background: var(--surface);
+  border: 1px solid var(--edge-strong);
+  background: var(--field);
+  box-shadow: var(--shadow-xs);
 }
 
 /* Số liệu, trạng thái máy: chữ mono xanh ngọc */
@@ -2369,48 +2360,46 @@ button {
   gap: 10px;
   margin-top: 14px;
   padding: 8px 8px 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--accent-2) 55%, transparent);
-  border-left-width: 3px;
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--accent-2) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-2) 40%, transparent);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--accent-2) 8%, transparent);
   color: var(--accent-2);
   font-size: 12.5px;
 }
 
-/* Công tắc bật / tắt: rãnh lõm, núm sáng khi bật */
+/* Công tắc bật / tắt: rãnh bo tròn, núm tròn; bật thì rãnh xanh ngọc */
 .switch {
   position: relative;
   flex: none;
   width: 36px;
   height: 20px;
   padding: 0;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--screen-bg) 70%, #000);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  background: var(--edge-strong);
+  box-shadow: var(--shadow-xs);
   cursor: pointer;
 }
 
 .switch i {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 12px;
-  height: 12px;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: var(--muted);
+  background: var(--text);
+  box-shadow: var(--shadow-sm);
   transition: left 0.14s ease-out;
 }
 
 .switch.on {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  background: var(--accent);
 }
 
 .switch.on i {
-  left: 19px;
-  background: var(--accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+  left: 18px;
+  background: var(--accent-text);
 }
 
 /* Thanh trượt âm lượng: phần đã chọn tô xanh ngọc (--p do React đặt) */
@@ -2428,9 +2417,9 @@ button {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--panel-2);
+  background: var(--screen-bg);
   border: 2px solid var(--accent);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 50%, transparent);
+  box-shadow: var(--shadow-sm);
 }
 
 .set-control .readout {
@@ -2455,8 +2444,8 @@ button {
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-xl);
   overflow: hidden;
 }
 
@@ -2473,8 +2462,8 @@ button {
   border-top: 1px solid var(--edge);
 }
 
-.backup-list li:nth-child(odd) {
-  background: color-mix(in srgb, var(--panel) 65%, transparent);
+.backup-list li:hover {
+  background: var(--surface-hi);
 }
 
 .b-when {
@@ -2503,7 +2492,6 @@ button {
 }
 
 .backup-list .btn.ghost:hover {
-  border-color: var(--accent);
   color: var(--accent);
 }
 
@@ -2547,9 +2535,10 @@ button {
   flex-direction: column;
   gap: 5px;
   padding: 10px 12px;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-md);
-  background: var(--panel-2);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-lg);
+  background: transparent;
+  box-shadow: var(--shadow-xs);
   text-align: left;
   cursor: pointer;
 }
@@ -2667,13 +2656,10 @@ button {
   }
   .settings-nav {
     flex-direction: row;
-    margin: 0 10px 4px;
-    padding: 4px;
-    border-radius: var(--r-pill);
+    padding: 4px 10px;
+    border-right: 0;
+    border-bottom: 1px solid var(--edge);
     overflow-x: auto;
-  }
-  .settings-nav button {
-    border-radius: var(--r-pill);
   }
   .settings-nav button {
     grid-template-columns: 15px auto;
@@ -2703,16 +2689,17 @@ button {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 9px 10px;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-md);
-  background: var(--panel);
+  padding: 10px 11px;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-lg);
+  background: transparent;
+  box-shadow: var(--shadow-xs);
   text-align: left;
   cursor: pointer;
 }
 
 .robot-card:hover {
-  border-color: color-mix(in srgb, var(--c) 70%, var(--line));
+  background: var(--surface-hi);
 }
 
 .robot-card.on {
@@ -2758,8 +2745,8 @@ button {
   list-style: none;
   margin: 10px 0 0;
   padding: 0;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--r-xl);
   overflow: hidden;
 }
 
@@ -2773,10 +2760,6 @@ button {
 
 .ai-clients li + li {
   border-top: 1px solid var(--edge);
-}
-
-.ai-clients li:nth-child(odd) {
-  background: color-mix(in srgb, var(--panel) 65%, transparent);
 }
 
 .ai-client-text {
@@ -2850,8 +2833,7 @@ button {
   padding: 6px 4px 6px 10px;
   border: 1px solid var(--edge);
   border-radius: var(--r-md);
-  background: var(--screen-bg);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+  background: color-mix(in srgb, #000 22%, transparent);
 }
 
 .ai-command code {
