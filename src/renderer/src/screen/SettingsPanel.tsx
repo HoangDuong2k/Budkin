@@ -10,6 +10,7 @@ import type { SettingsPatch } from '../../../shared/schemas'
 import type { AiAccess, Quality, Settings } from '../../../shared/types'
 import { useNow } from '../clock'
 import { ApiError, call } from '../ipc'
+import { IS_MAC } from '../platform'
 import { ROBOT, ROBOT_EYES } from '../scene/palette3d'
 import { renderInfo } from '../scene/renderInfo'
 import { PERSONALITY } from '../scene/robots/personality'
@@ -689,7 +690,9 @@ function AiSection({ s }: { s: Settings }): React.JSX.Element {
       </>
     ),
     available: tr('Thêm Budkin vào danh sách công cụ của Claude Desktop'),
-    connected: tr('Chưa thấy Budkin trong Claude Desktop? Thoát hẳn Claude Desktop (cả ở khay hệ thống) rồi mở lại'),
+    connected: IS_MAC
+      ? tr('Chưa thấy Budkin trong Claude Desktop? Thoát hẳn Claude Desktop (⌘Q) rồi mở lại')
+      : tr('Chưa thấy Budkin trong Claude Desktop? Thoát hẳn Claude Desktop (cả ở khay hệ thống) rồi mở lại'),
     outdated: tr('Budkin đã đổi chỗ cài. Bấm Cập nhật để Claude tìm đúng chỗ')
   }
   const codeHint: Record<AiClientState, string> = {

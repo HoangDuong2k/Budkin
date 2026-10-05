@@ -90,8 +90,8 @@ export interface ExportResult {
   counts: EntityCounts
 }
 
-/** Main bảo giao diện chuyển tới đâu (bấm thông báo, menu khay) */
-export type NavigateTarget = { kind: 'task'; taskId: string } | { kind: 'today' } | { kind: 'quickAdd' }
+/** Main bảo giao diện chuyển tới đâu (bấm thông báo, menu khay, menu Budkin → Cài đặt… trên macOS) */
+export type NavigateTarget = { kind: 'task'; taskId: string } | { kind: 'today' } | { kind: 'quickAdd' } | { kind: 'settings' }
 
 export type AiActivityKind = 'create' | 'update' | 'delete'
 

@@ -3,6 +3,7 @@ import { countsFor, isOpen, type SmartListId } from '../../../shared/filters'
 import { LANGS, tr, trKey } from '../../../shared/i18n'
 import { COLOR_KEYS, LABEL_COLORS, type ColorKey } from '../../../shared/palette'
 import { useNow } from '../clock'
+import { modKey } from '../platform'
 import { useData } from '../state/dataStore'
 import { useLang } from '../state/langStore'
 import { useTheme } from '../state/themeStore'
@@ -281,8 +282,8 @@ export function Sidebar(): React.JSX.Element {
           className={`icon-btn settings-btn ${settingsOpen ? 'on' : ''}`}
           onClick={() => (settingsOpen ? closeSettings() : openSettings())}
           aria-pressed={settingsOpen}
-          aria-label={tr('Cài đặt (Ctrl+,)')}
-          title={tr('Cài đặt (Ctrl+,)')}
+          aria-label={tr('Cài đặt ({keys})', { keys: modKey(',') })}
+          title={tr('Cài đặt ({keys})', { keys: modKey(',') })}
         >
           <Icon name="gear" size={16} />
         </button>

@@ -50,10 +50,11 @@ void call('app:status')
   )
   .catch(() => undefined)
 
-// Bấm thông báo, menu khay: main bảo chuyển tới đâu
+// Bấm thông báo, menu khay, menu ứng dụng (macOS): main bảo chuyển tới đâu
 window.api.on('app:navigate', (target: NavigateTarget) => {
   if (target.kind === 'task') openTask(target.taskId)
   else if (target.kind === 'quickAdd') startQuickAdd()
+  else if (target.kind === 'settings') useUi.getState().openSettings()
   else useUi.getState().select({ kind: 'smart', id: 'today' })
 })
 // Kiểm thử đẩy đồng hồ của main tới: renderer theo cùng (danh sách Hôm nay / Quá hạn, nhãn giờ)

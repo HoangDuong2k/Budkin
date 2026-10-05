@@ -1,6 +1,6 @@
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
-import { join } from 'path'
+import { delimiter, join } from 'path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -11,7 +11,7 @@ import { TestClock } from '../src/main/clock'
 import { Db } from '../src/main/db/connection'
 import { migrate } from '../src/main/db/migrations'
 import { BudkinLink, createBridgeServer } from '../src/main/mcp/bridge'
-import { claudeCodeCommand, codeState, connectCode, connectDesktop, desktopState } from '../src/main/mcp/clients'
+import { claudeCodeCommand, cliPath, codeState, connectCode, connectDesktop, desktopState } from '../src/main/mcp/clients'
 import { McpHost } from '../src/main/mcp/host'
 import { mcpSocketPath } from '../src/main/mcp/protocol'
 import { AiRunner, repeatFromRule, ruleFromRepeat } from '../src/main/mcp/runner'
@@ -415,5 +415,24 @@ describe('gắn vào Claude Desktop / Claude Code', () => {
       `mcp add budkin --scope user -e ELECTRON_RUN_AS_NODE=1 -- /new/budkin ${launch.args.join(' ')}`
     ])
     expect(existsSync(join(dir, 'home', '.claude.json'))).toBe(false)
+  })
+
+  it('Claude Code: PATH khi chạy lệnh claude có thư mục của chính lệnh đó và các chỗ Homebrew / bộ cài hay đặt', () => {
+    const e = env({ PATH: ['/usr/bin', '/bin'].join(delimiter) })
+    expect(cliPath('/opt/homebrew/bin/claude', e).split(delimiter)).toEqual(['/opt/homebrew/bin', '/usr/bin', '/bin', '/usr/local/bin', join(dir, 'home', '.local', 'bin')])
+  })
+
+  it.skipIf(process.platform === 'win32')('Claude Code cài qua npm (#!/usr/bin/env node) chạy được cả khi app mở từ Dock / menu (PATH tối thiểu)', async () => {
+    // node giả nằm cạnh lệnh claude (như Homebrew: /opt/homebrew/bin/node và /opt/homebrew/bin/claude), ngoài PATH
+    const bin = join(dir, 'brew', 'bin')
+    mkdirSync(bin, { recursive: true })
+    const log = join(dir, 'calls.txt')
+    writeFileSync(join(bin, 'budkin-fake-node'), `#!/bin/sh\nshift\necho "$@" >> '${log}'\n`)
+    writeFileSync(join(bin, 'claude'), '#!/usr/bin/env budkin-fake-node\n')
+    chmodSync(join(bin, 'budkin-fake-node'), 0o755)
+    chmodSync(join(bin, 'claude'), 0o755)
+    const e = env({ PATH: '/usr/bin:/bin', BUDKIN_CLAUDE_CLI: join(bin, 'claude'), CLAUDE_CONFIG_DIR: join(dir, 'cc') })
+    await connectCode(launch, e)
+    expect(readFileSync(log, 'utf8')).toContain('mcp add budkin --scope user')
   })
 })

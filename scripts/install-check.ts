@@ -1,8 +1,8 @@
 /**
  * Kiểm tra bản đã cài bằng bộ cài thật (CI chạy sau khi cài Setup.exe / .deb), những gì e2e không đụng tới:
  *   - mở với --quick-add (mục "Thêm việc nhanh" trên dock / thanh tác vụ): con trỏ nằm sẵn ở ô thêm việc
- *   - bật "Khởi động cùng máy": có mục thật trong hệ điều hành (Windows: registry Run; Linux: ~/.config/autostart),
- *     trỏ tới đúng file đã cài, kèm --hidden
+ *   - bật "Khởi động cùng máy": có mục thật trong hệ điều hành (Windows: registry Run; Linux: ~/.config/autostart;
+ *     macOS: LaunchAgent ~/Library/LaunchAgents), trỏ tới đúng file đã cài (macOS: đúng mã định danh app), kèm --hidden
  *   - dữ liệu nằm ở thư mục dữ liệu mặc định (để sau khi gỡ cài đặt kiểm tra dữ liệu vẫn còn)
  *   - kết nối AI (MCP): Budkin đang tắt mà app AI gọi tới thì cầu nối tự mở Budkin chạy nền rồi trả lời
  * Chạy: BUDKIN_E2E_EXE=<file đã cài> npm run install-check [-- --keep-autostart]
@@ -21,6 +21,7 @@ const EXE = process.env.BUDKIN_E2E_EXE
 const KEEP = process.argv.includes('--keep-autostart')
 const RUN_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'
 const RUN_NAME = 'com.budkin.app'
+const LAUNCH_AGENT = join(homedir(), 'Library', 'LaunchAgents', 'com.budkin.app.login.plist')
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(`KIỂM TRA THẤT BẠI: ${msg}`)
@@ -52,7 +53,8 @@ function autostartEntry(): string | null {
       return null
     }
   }
-  const file = join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'autostart', 'budkin.desktop')
+  const file =
+    process.platform === 'darwin' ? LAUNCH_AGENT : join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'autostart', 'budkin.desktop')
   return existsSync(file) ? readFileSync(file, 'utf8') : null
 }
 
@@ -127,8 +129,14 @@ async function main(): Promise<void> {
     assert((await invoke(page, 'settings:update', { autostart: true })).ok, 'bật "Khởi động cùng máy"')
     assert(await until(() => autostartEntry() !== null, 5000), 'hệ điều hành có mục tự khởi động')
     const entry = autostartEntry() ?? ''
-    // Windows ghi đường dẫn exe trong ngoặc kép, Linux ghi dòng Exec= của file .desktop
-    assert(entry.toLowerCase().includes(exePath.toLowerCase()) && entry.includes('--hidden'), `mục tự khởi động trỏ đúng ${exePath} --hidden`)
+    if (process.platform === 'darwin') {
+      // macOS mở theo mã định danh app (`open -b com.budkin.app --args --hidden`); plutil kiểm tra file plist hợp lệ
+      execFileSync('plutil', ['-lint', LAUNCH_AGENT], { stdio: 'inherit' })
+      assert(entry.includes(`<string>${RUN_NAME}</string>`) && entry.includes('<string>--hidden</string>'), `LaunchAgent mở ${RUN_NAME} --hidden`)
+    } else {
+      // Windows ghi đường dẫn exe trong ngoặc kép, Linux ghi dòng Exec= của file .desktop
+      assert(entry.toLowerCase().includes(exePath.toLowerCase()) && entry.includes('--hidden'), `mục tự khởi động trỏ đúng ${exePath} --hidden`)
+    }
     if (!KEEP) {
       assert((await invoke(page, 'settings:update', { autostart: false })).ok, 'tắt "Khởi động cùng máy"')
       assert(await until(() => autostartEntry() === null, 5000), 'mục tự khởi động đã được xoá')

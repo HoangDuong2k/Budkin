@@ -28,6 +28,7 @@ import { BRIDGE_ARG, mcpSocketPath } from './mcp/protocol'
 import { AiRunner } from './mcp/runner'
 import { isAutostartOn, setAutostart } from './os/autostart'
 import { appIcon } from './os/icon'
+import { offerMoveToApplications, setMacMenus } from './os/macos'
 import { AppTray, hasTrayHost } from './os/tray'
 import { Notifier, canFlash } from './reminders/notifier'
 import { ReminderService } from './reminders/service'
@@ -320,15 +321,35 @@ function toBackground(win: BrowserWindow): void {
   else win.minimize()
 }
 
+/** Lời hỏi khi bấm nút đóng: ẩn đi đâu, mở lại / thoát hẳn bằng cách nào */
+function closePrompt(): { message: string; detail: string; hide: string } {
+  if (process.platform === 'darwin')
+    return {
+      message: tr('Ẩn cửa sổ Budkin?'),
+      detail: tr('Budkin vẫn chạy nền để nhắc việc đúng giờ. Bấm biểu tượng Budkin trên Dock để mở lại; muốn thoát hẳn thì nhấn ⌘Q.'),
+      hide: tr('Ẩn cửa sổ')
+    }
+  if (tray)
+    return {
+      message: tr('Ẩn Budkin xuống khay hệ thống?'),
+      detail: tr('Budkin vẫn chạy nền để nhắc việc đúng giờ. Muốn thoát hẳn thì chọn Thoát trên biểu tượng ở khay, hoặc nhấn Ctrl+Q.'),
+      hide: tr('Ẩn xuống khay')
+    }
+  return {
+    message: tr('Thu nhỏ Budkin?'),
+    detail: tr('Máy chưa có khay hệ thống (trên Ubuntu cần bật tiện ích AppIndicator). Budkin sẽ thu nhỏ để vẫn nhắc việc đúng giờ. Muốn thoát hẳn thì nhấn Ctrl+Q.'),
+    hide: tr('Thu nhỏ')
+  }
+}
+
 /** Lần đầu bấm đóng: hỏi chạy nền (vẫn nhắc việc) hay thoát hẳn, có ô "nhớ lựa chọn" */
 async function askClose(win: BrowserWindow): Promise<void> {
+  const prompt = closePrompt()
   const { response, checkboxChecked } = await dialog.showMessageBox(win, {
     type: 'question',
-    message: tray ? tr('Ẩn Budkin xuống khay hệ thống?') : tr('Thu nhỏ Budkin?'),
-    detail: tray
-      ? tr('Budkin vẫn chạy nền để nhắc việc đúng giờ. Muốn thoát hẳn thì chọn Thoát trên biểu tượng ở khay, hoặc nhấn Ctrl+Q.')
-      : tr('Máy chưa có khay hệ thống (trên Ubuntu cần bật tiện ích AppIndicator). Budkin sẽ thu nhỏ để vẫn nhắc việc đúng giờ. Muốn thoát hẳn thì nhấn Ctrl+Q.'),
-    buttons: [tray ? tr('Ẩn xuống khay') : tr('Thu nhỏ'), tr('Thoát hẳn'), tr('Huỷ')],
+    message: prompt.message,
+    detail: prompt.detail,
+    buttons: [prompt.hide, tr('Thoát hẳn'), tr('Huỷ')],
     defaultId: 0,
     cancelId: 2,
     noLink: true,
@@ -374,9 +395,19 @@ function setJumpList(): void {
   ])
 }
 
+/** Thanh menu: chỉ macOS có (menu ứng dụng, menu Dock — theo ngôn ngữ đang dùng); Windows / Linux không có */
+function setMenus(): void {
+  if (process.platform !== 'darwin') {
+    Menu.setApplicationMenu(null)
+    return
+  }
+  setMacMenus({ openSettings: () => showWindow({ kind: 'settings' }), quickAdd: () => showWindow({ kind: 'quickAdd' }) })
+}
+
 function onSettingsChanged(settings: Settings): void {
   setLang(settings.language)
   setJumpList()
+  setMenus()
   send('settings:changed', settings)
   // Giờ nhắc task cả ngày có thể đã đổi; menu khay theo ngôn ngữ mới
   reminders?.poke()
@@ -542,8 +573,9 @@ function createWindow(): void {
   })
   win.webContents.on('before-input-event', (e, input) => {
     if (input.type !== 'keyDown') return
-    // Ctrl+Q: thoát hẳn (nút đóng chỉ ẩn xuống khay)
-    if ((input.control || input.meta) && !input.shift && !input.alt && input.key.toLowerCase() === 'q') {
+    // Ctrl+Q (macOS: ⌘Q): thoát hẳn (nút đóng chỉ ẩn xuống khay)
+    const mod = process.platform === 'darwin' ? input.meta : input.control || input.meta
+    if (mod && !input.shift && !input.alt && input.key.toLowerCase() === 'q') {
       e.preventDefault()
       quit()
     } else if (input.key === 'F12' && !app.isPackaged) win.webContents.toggleDevTools()
@@ -559,17 +591,21 @@ else if (!app.requestSingleInstanceLock()) app.quit()
 else {
   // Mở app lần nữa (kể cả từ lối tắt "Thêm việc nhanh"): đưa cửa sổ đang có lên trước
   app.on('second-instance', (_e, argv) => showWindow(argv.includes('--quick-add') ? { kind: 'quickAdd' } : undefined))
+  // macOS: bấm biểu tượng trên Dock (hoặc mở lại app trong Finder) khi cửa sổ đang ẩn
+  app.on('activate', () => showWindow())
 
   void app.whenReady().then(async () => {
     if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
     // Lần đầu mở app: theme theo hệ điều hành
     if (storedBoot === null) saveBoot({ theme: nativeTheme.shouldUseDarkColors ? 'dark' : 'light' })
     nativeTheme.themeSource = 'dark'
-    Menu.setApplicationMenu(null)
     if (!openData()) {
       app.quit()
       return
     }
+    setMenus()
+    // macOS: đang chạy thẳng từ file .dmg / thư mục tải về thì đề nghị chuyển vào Applications (đồng ý: app mở lại từ đó)
+    if (process.platform === 'darwin' && app.isPackaged && !TEST) await offerMoveToApplications()
     registerIpc()
     setJumpList()
     startReminders()

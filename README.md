@@ -2,7 +2,7 @@
 
 # Budkin
 
-Ứng dụng desktop quản lý công việc (Windows / Ubuntu, giao diện **tiếng Việt / English**) với giao diện là **một bàn làm
+Ứng dụng desktop quản lý công việc (Windows / macOS / Ubuntu, giao diện **tiếng Việt / English**) với giao diện là **một bàn làm
 việc 3D**:
 
 - **Máy tính ở giữa** — màn hình của nó chính là nơi quản lý việc (danh sách, Kanban, lịch).
@@ -58,7 +58,7 @@ không có GPU, rê chuột liên tục tốn khoảng 1/3 một lõi CPU (3D v�
 
 Bộ cài có ở trang [Releases](https://github.com/HoangDuong2k/Budkin/releases) (khi đã phát hành), hoặc bản build mới
 nhất trong tab **Actions** → lần chạy xanh gần nhất của nhánh `main` → mục **Artifacts** (`budkin-Windows`,
-`budkin-Linux`; cần đăng nhập GitHub). Muốn tự đóng gói thì xem [Đóng gói bộ cài](#đóng-gói-bộ-cài).
+`budkin-macOS`, `budkin-Linux`; cần đăng nhập GitHub). Muốn tự đóng gói thì xem [Đóng gói bộ cài](#đóng-gói-bộ-cài).
 
 ### Windows 10 / 11
 
@@ -68,6 +68,24 @@ nhất trong tab **Actions** → lần chạy xanh gần nhất của nhánh `ma
    rồi **Run anyway** (Windows tiếng Việt có hai nút tương ứng).
 
 Bấm chuột phải vào biểu tượng Budkin trên thanh tác vụ có mục **Thêm việc nhanh**.
+
+### macOS 13 (Ventura) trở lên
+
+Mac chip Apple (M1 trở lên) dùng `Budkin-x.y.z-arm64.dmg`, Mac chip Intel dùng `Budkin-x.y.z-x64.dmg` (xem ở menu Apple →
+**About This Mac**).
+
+1. Mở file `.dmg`, kéo **Budkin** vào thư mục **Applications** bên cạnh.
+2. Budkin chưa được ký bằng chứng chỉ Apple Developer nên lần đầu mở macOS chặn (**"Budkin" Not Opened** / *Apple could
+   not verify…*): bấm **Done**, vào **System Settings → Privacy & Security**, kéo xuống mục **Security**, bấm **Open
+   Anyway** cạnh dòng báo Budkin bị chặn rồi xác nhận. Chỉ phải làm một lần. (macOS 14 trở về trước: chuột phải vào
+   Budkin trong Applications → **Open** cũng được.) Hoặc chạy trong Terminal:
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/Budkin.app
+   ```
+
+Biểu tượng robot trên **thanh menu** (góc trên bên phải) có menu nhanh; bấm chuột phải vào biểu tượng Budkin trên Dock
+có mục **Thêm việc nhanh**. Phím tắt dùng ⌘ thay cho Ctrl (⌘, mở Cài đặt, ⌘Q thoát hẳn).
 
 ### Ubuntu 24.04 trở lên
 
@@ -93,11 +111,13 @@ Không cần cài `libfuse2`. Máy không có FUSE thì chạy `./Budkin-x.y.z.A
 ### Gỡ cài đặt
 
 - **Windows:** Settings → Apps → Budkin → Uninstall. Mục "khởi động cùng Windows" được xoá theo.
+- **macOS:** nếu đã bật "Khởi động cùng máy", tắt trong Cài đặt trước (hoặc xoá
+  `~/Library/LaunchAgents/com.budkin.app.login.plist`), rồi kéo Budkin từ Applications vào Thùng rác.
 - **Ubuntu:** `sudo apt remove budkin`. Nếu đã bật "Khởi động cùng máy", tắt trong Cài đặt trước khi gỡ (hoặc xoá
   `~/.config/autostart/budkin.desktop`).
 
 Gỡ cài đặt **không xoá dữ liệu** — cài lại là còn nguyên việc. Muốn xoá hẳn thì xoá thư mục dữ liệu:
-`%APPDATA%\Budkin` (Windows) hoặc `~/.config/Budkin` (Ubuntu).
+`%APPDATA%\Budkin` (Windows), `~/Library/Application Support/Budkin` (macOS) hoặc `~/.config/Budkin` (Ubuntu).
 
 ## Danh sách, Kanban, Lịch
 
@@ -115,7 +135,7 @@ Gỡ cài đặt **không xoá dữ liệu** — cài lại là còn nguyên vi�
 - **Chế độ Mở rộng** (phím **F**): giao diện phủ gần kín cửa sổ, cảnh 3D tạm dừng — tiện khi cửa sổ nhỏ.
 
 Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm · **F** Mở rộng · **Esc** đóng / thoát ·
-**Ctrl+Shift+L** bật / tắt đèn · **Ctrl+,** Cài đặt · **Ctrl+Q** thoát hẳn.
+**Ctrl+Shift+L** bật / tắt đèn · **Ctrl+,** Cài đặt · **Ctrl+Q** thoát hẳn (macOS: ⌘ thay cho Ctrl).
 
 ## Việc lặp lại
 
@@ -139,7 +159,8 @@ Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm 
 - Khi đang không dùng app (cửa sổ ẩn / không có focus) thì có thêm thông báo của hệ điều hành. Nhiều việc cùng lúc
   (từ 3 việc) gộp thành một thông báo; nhắc trễ quá 6 giờ (máy tắt, ngủ qua đêm) thì chỉ ghi nhận, không báo.
 - Bấm nút đóng: lần đầu Budkin hỏi ẩn xuống khay (vẫn nhắc việc) hay thoát hẳn. Thoát hẳn lúc nào cũng được bằng
-  **Ctrl+Q** hoặc menu ở khay. Menu khay còn có: thêm việc nhanh, tắt nhắc 1 giờ, khởi động cùng máy.
+  **Ctrl+Q** (macOS: **⌘Q**) hoặc menu ở khay. Menu khay còn có: thêm việc nhanh, tắt nhắc 1 giờ, khởi động cùng máy.
+  Trên macOS, cửa sổ ẩn thì bấm biểu tượng Budkin trên Dock để mở lại.
 - App mở cả ngày mà gần như không tốn gì: cảnh 3D chỉ vẽ khi có gì đổi; để yên thì robot buồn ngủ rồi ngủ, lúc đó
   cả cửa sổ không phải vẽ lại.
 
@@ -147,7 +168,7 @@ Phím tắt: **1 / 2 / 3** đổi cách xem · **N** thêm việc · **/** tìm 
 
 ![Cài đặt](docs/screenshots/settings.png)
 
-Mở **Cài đặt** bằng nút bánh răng ở chân thanh bên hoặc **Ctrl+,**. Đổi là lưu ngay:
+Mở **Cài đặt** bằng nút bánh răng ở chân thanh bên hoặc **Ctrl+,** (macOS: **⌘,**). Đổi là lưu ngay:
 
 - **Chung:** ngôn ngữ, tuần bắt đầu vào thứ Hai hay Chủ nhật, âm thanh và âm lượng, giảm chuyển động.
 - **Nhắc việc:** mức nhắc mặc định, giờ nhắc cho việc cả ngày, tạm tắt nhắc (1 giờ / 4 giờ / 1 ngày), bấm nút đóng
@@ -158,7 +179,8 @@ Mở **Cài đặt** bằng nút bánh răng ở chân thanh bên hoặc **Ctrl+
   [bên dưới](#hỏi-đáp-và-giao-việc-cho-claude)).
 - **Dữ liệu:** xuất / nhập, sao lưu, mở thư mục dữ liệu.
 
-Dữ liệu (SQLite) nằm trong thư mục dữ liệu của app: `~/.config/Budkin` trên Linux, `%APPDATA%\Budkin` trên Windows.
+Dữ liệu (SQLite) nằm trong thư mục dữ liệu của app: `~/.config/Budkin` trên Linux, `%APPDATA%\Budkin` trên Windows,
+`~/Library/Application Support/Budkin` trên macOS.
 
 - **Xuất dữ liệu:** toàn bộ việc, dự án, nhãn, checklist ra một file JSON (kèm các việc đã xoá, để gộp giữa hai máy
   thì việc xoá bên này cũng xoá bên kia). Trạng thái nhắc việc và các thiết lập riêng của máy không đi theo file.
@@ -218,7 +240,13 @@ rồi bật **Ubuntu AppIndicators** trong ứng dụng **Extensions**.
 **Không thấy thông báo nhắc việc.** Thông báo của hệ điều hành chỉ hiện khi bạn đang không dùng Budkin (cửa sổ ẩn hoặc
 đang ở app khác) — lúc đang dùng thì Budkin báo ngay trên bàn. Kiểm tra: Budkin không bị **Tạm tắt nhắc** (Cài đặt →
 Nhắc việc); hệ điều hành không ở chế độ **Không làm phiền** / **Focus assist**; Budkin được phép gửi thông báo
-(Ubuntu: Settings → Notifications; Windows: Settings → System → Notifications).
+(Ubuntu: Settings → Notifications; Windows: Settings → System → Notifications; macOS: System Settings → Notifications →
+Budkin — lần đầu có thông báo, macOS hỏi cho phép).
+
+**macOS: không mở được Budkin** (*"Budkin" Not Opened*, *Apple could not verify…*, *is damaged and can't be opened*).
+Bản hiện tại chưa ký bằng chứng chỉ Apple Developer: làm theo bước 2 ở [macOS](#macos-13-ventura-trở-lên) (**Open
+Anyway**, hoặc lệnh `xattr` trong Terminal). Đang chạy thẳng từ file `.dmg` hay thư mục Downloads thì Budkin đề nghị
+chuyển vào Applications — nên đồng ý, nếu không Claude Desktop / Claude Code không tìm lại được Budkin ở lần mở sau.
 
 **Ubuntu: chạy báo lỗi sandbox** (`The SUID sandbox helper binary was found, but is not configured correctly` hoặc
 `No usable sandbox`). Ubuntu 24.04+ chặn user namespace cho app không có profile AppArmor: dùng bản `.deb` (tự cài
@@ -278,17 +306,23 @@ npm run build && npm run e2e   # mở app thật, điều khiển bằng chuột
 |---|---|---|
 | **Windows** | `npm ci` rồi `npm run dist:win` | `Budkin-Setup-x.y.z.exe` |
 | **Ubuntu** | `npm ci` rồi `npm run dist:linux` | `budkin_x.y.z_amd64.deb` và `Budkin-x.y.z.AppImage` |
+| **macOS** | `npm ci` rồi `npm run dist:mac` | `Budkin-x.y.z-arm64.dmg` (chip Apple) và `Budkin-x.y.z-x64.dmg` (Intel) |
+
+Bản macOS hiện ký ad-hoc (không cần tài khoản Apple Developer, nhưng lần đầu mở phải bấm **Open Anyway**). Khi có chứng
+chỉ Developer ID: trong `electron-builder.yml` bỏ `identity: '-'`, bật lại `hardenedRuntime`, rồi đặt `CSC_LINK`,
+`CSC_KEY_PASSWORD` và `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` (GitHub Secrets) để ký và notarize.
 
 Icon (mặt robot) vẽ bằng SVG trong `build/icon-src/`; sửa xong thì chạy `npm run icons` (máy không có màn hình:
-`xvfb-run -a npm run icons`) để sinh lại PNG các cỡ, `build/icon.ico` và icon khay.
+`xvfb-run -a npm run icons`) để sinh lại PNG các cỡ, `build/icon.ico`, `build/icon.icns` và icon khay / thanh menu.
 
-**GitHub Actions** (`.github/workflows/build.yml`) chạy trên máy Windows và Ubuntu thật:
+**GitHub Actions** (`.github/workflows/build.yml`) chạy trên máy Windows, Ubuntu và macOS thật:
 
 - **test:** kiểm tra kiểu, unit test, build, e2e (WebGL bằng SwiftShader).
 - **build:** đóng gói, rồi kiểm thử trên bản cài thật — Windows: cài `Setup.exe` im lặng, e2e trên bản đã cài, kiểm tra
   lối tắt, "khởi động cùng máy", rồi gỡ cài đặt (mục tự khởi động và lối tắt phải biến mất, dữ liệu người dùng phải
   còn). Ubuntu: e2e trên AppImage; cài `.deb`, e2e **không** tắt sandbox (profile AppArmor), kiểm tra file `.desktop`,
-  icon, "khởi động cùng máy", rồi gỡ gói.
+  icon, "khởi động cùng máy", rồi gỡ gói. macOS: mở cả hai file `.dmg` (kiểm tra kiến trúc, chữ ký), kéo bản chip
+  Apple vào Applications, e2e trên bản đã cài, "khởi động cùng máy", rồi xoá app (dữ liệu người dùng phải còn).
 - **release:** đẩy tag `v*` (`git tag v0.1.0 && git push origin v0.1.0`) thì tạo GitHub Release kèm bộ cài và
   `SHA256SUMS.txt`.
 

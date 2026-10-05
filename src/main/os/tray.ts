@@ -1,6 +1,8 @@
 // Biểu tượng ở khay hệ thống: mặt robot (chấm đỏ khi có nhắc chưa xử lý), menu mở app / thêm việc / tắt nhắc / thoát.
 // GNOME mặc định KHÔNG có khay: cần tiện ích AppIndicator (dịch vụ D-Bus org.kde.StatusNotifierWatcher). Không có
 // thì Tray vẫn tạo được nhưng không hiện ở đâu cả — nên phải dò trước để biết nút đóng nên ẩn xuống khay hay thu nhỏ.
+// macOS: biểu tượng trên thanh menu là ảnh "template" đơn sắc (hệ thống tự tô theo thanh menu sáng / tối); có nhắc
+// chưa xử lý thì đổi sang ảnh màu có chấm đỏ cho nổi bật.
 import { execFile } from 'child_process'
 import { readFileSync } from 'fs'
 import { Menu, Tray, nativeImage, type NativeImage } from 'electron'
@@ -9,8 +11,14 @@ import alert1x from '../../../resources/tray/tray-alert.png?asset'
 import alert2x from '../../../resources/tray/tray-alert@2x.png?asset'
 import normal1x from '../../../resources/tray/tray.png?asset'
 import normal2x from '../../../resources/tray/tray@2x.png?asset'
+import macAlert1x from '../../../resources/tray/mac/tray-alert.png?asset'
+import macAlert2x from '../../../resources/tray/mac/tray-alert@2x.png?asset'
+import macNormal1x from '../../../resources/tray/mac/trayTemplate.png?asset'
+import macNormal2x from '../../../resources/tray/mac/trayTemplate@2x.png?asset'
 
-/** Máy có khay hệ thống không (Windows luôn có; Linux dò trên D-Bus) */
+const MAC = process.platform === 'darwin'
+
+/** Máy có khay hệ thống không (Windows, macOS luôn có; Linux dò trên D-Bus) */
 export function hasTrayHost(): Promise<boolean> {
   if (process.platform !== 'linux') return Promise.resolve(true)
   return new Promise((resolve) => {
@@ -24,16 +32,19 @@ export function hasTrayHost(): Promise<boolean> {
   })
 }
 
-function load(one: string, two: string): NativeImage {
+function load(one: string, two: string, template = false): NativeImage {
   const img = nativeImage.createFromPath(one)
   img.addRepresentation({ scaleFactor: 2, buffer: readFileSync(two) })
+  if (template) img.setTemplateImage(true)
   return img
 }
 
 let icons: { normal: NativeImage; alert: NativeImage } | null = null
 
 export function trayIcons(): { normal: NativeImage; alert: NativeImage } {
-  icons ??= { normal: load(normal1x, normal2x), alert: load(alert1x, alert2x) }
+  icons ??= MAC
+    ? { normal: load(macNormal1x, macNormal2x, true), alert: load(macAlert1x, macAlert2x) }
+    : { normal: load(normal1x, normal2x), alert: load(alert1x, alert2x) }
   return icons
 }
 
@@ -63,8 +74,8 @@ export class AppTray {
   create(): void {
     if (this.tray) return
     this.tray = new Tray(trayIcons().normal)
-    // Windows: bấm biểu tượng mở cửa sổ (Linux / AppIndicator: bấm là hiện menu)
-    this.tray.on('click', () => this.deps.show())
+    // Windows: bấm biểu tượng mở cửa sổ (Linux / AppIndicator, macOS: bấm là hiện menu)
+    if (!MAC) this.tray.on('click', () => this.deps.show())
     this.render()
   }
 

@@ -207,6 +207,36 @@ export const EN: Record<string, string> = {
   'Thu nhỏ': 'Minimize',
   'Thoát hẳn': 'Quit',
   'Nhớ lựa chọn, không hỏi lại': "Remember my choice and don't ask again",
+  'Ẩn cửa sổ Budkin?': 'Hide the Budkin window?',
+  'Budkin vẫn chạy nền để nhắc việc đúng giờ. Bấm biểu tượng Budkin trên Dock để mở lại; muốn thoát hẳn thì nhấn ⌘Q.':
+    'Budkin keeps running in the background so reminders arrive on time. Click the Budkin icon in the Dock to open it again; to quit completely, press ⌘Q.',
+  'Ẩn cửa sổ': 'Hide Window',
+
+  // Thanh menu macOS
+  'Giới thiệu {name}': 'About {name}',
+  'Cài đặt…': 'Settings…',
+  'Dịch vụ': 'Services',
+  'Ẩn {name}': 'Hide {name}',
+  'Ẩn các ứng dụng khác': 'Hide Others',
+  'Hiện tất cả': 'Show All',
+  'Thoát {name}': 'Quit {name}',
+  Sửa: 'Edit',
+  'Làm lại': 'Redo',
+  Cắt: 'Cut',
+  'Sao chép': 'Copy',
+  Dán: 'Paste',
+  'Chọn tất cả': 'Select All',
+  'Cửa sổ': 'Window',
+  'Phóng to': 'Zoom',
+  'Đóng cửa sổ': 'Close Window',
+  'Đưa tất cả lên trước': 'Bring All to Front',
+  'Chuyển Budkin vào thư mục Applications?': 'Move Budkin to the Applications folder?',
+  'Budkin đang chạy thẳng từ file tải về. Chuyển vào Applications để mở lại dễ dàng và để Claude tìm thấy Budkin.':
+    'Budkin is running straight from the download. Move it to Applications so it is easy to open again and Claude can find it.',
+  'Chuyển vào Applications': 'Move to Applications',
+  'Để sau': 'Later',
+  'Không chuyển được Budkin': "Couldn't move Budkin",
+  'Hãy tự kéo Budkin vào thư mục Applications rồi mở lại. ({detail})': 'Drag Budkin into the Applications folder yourself, then open it again. ({detail})',
 
   // Ưu tiên
   'Không ưu tiên': 'No priority',
@@ -224,7 +254,7 @@ export const EN: Record<string, string> = {
 
   // Cài đặt
   'Cài đặt': 'Settings',
-  'Cài đặt (Ctrl+,)': 'Settings (Ctrl+,)',
+  'Cài đặt ({keys})': 'Settings ({keys})',
   'Đóng cài đặt (Esc)': 'Close settings (Esc)',
   'Mục cài đặt': 'Settings sections',
   Chung: 'General',
@@ -389,6 +419,7 @@ export const EN: Record<string, string> = {
   'Tải Claude Desktop': 'Download Claude Desktop',
   'Thêm Budkin vào danh sách công cụ của Claude Desktop': "Add Budkin to Claude Desktop's tools",
   'Chưa thấy Budkin trong Claude Desktop? Thoát hẳn Claude Desktop (cả ở khay hệ thống) rồi mở lại': "Don't see Budkin in Claude Desktop? Quit Claude Desktop completely (including from the system tray) and open it again",
+  'Chưa thấy Budkin trong Claude Desktop? Thoát hẳn Claude Desktop (⌘Q) rồi mở lại': "Don't see Budkin in Claude Desktop? Quit Claude Desktop completely (⌘Q) and open it again",
   'Budkin đã đổi chỗ cài. Bấm Cập nhật để Claude tìm đúng chỗ': 'Budkin was installed in a different place. Click Update so Claude can find it',
   'Không thấy lệnh claude trên máy. Cài Claude Code rồi chạy lệnh dưới đây trong terminal': "The claude command wasn't found. Install Claude Code, then run this command in a terminal",
   'Dùng được ở mọi thư mục làm việc. Cũng có thể tự chạy lệnh dưới đây': 'Works in every project folder. You can also run this command yourself',

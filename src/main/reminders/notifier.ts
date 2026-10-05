@@ -1,6 +1,7 @@
 // Thông báo hệ điều hành cho nhắc việc — chỉ khi cửa sổ đang ẩn / không có focus (lúc đang dùng app thì robot báo).
 // Ubuntu / GNOME: bắt buộc urgency 'normal' (mặc định của Electron là 'low', GNOME không hiện banner), chỉ bấm được.
 // Windows: nút [Hoãn 10 phút] [Xong]; id theo từng task (thông báo mới thay thông báo cũ của cùng task).
+// macOS: chỉ bấm được — nút trên thông báo của macOS chỉ chạy khi app được ký bằng chứng chỉ Apple Developer.
 import { Notification, type BrowserWindow, type NativeImage } from 'electron'
 import { tr } from '../../shared/i18n'
 import { buildNotices, type AlertItem } from '../../shared/reminders'
@@ -22,8 +23,11 @@ interface Deps {
   act(taskId: string, action: 'snooze' | 'done'): void
 }
 
-/** Wayland không có "nháy cửa sổ trên thanh tác vụ" (flashFrame không làm gì hoặc lỗi) */
-export const canFlash = process.platform === 'win32' || (process.platform === 'linux' && process.env.XDG_SESSION_TYPE !== 'wayland' && !process.env.WAYLAND_DISPLAY)
+/** Nháy cửa sổ trên thanh tác vụ (macOS: biểu tượng trên Dock nảy lên). Wayland không có (flashFrame không làm gì hoặc lỗi) */
+export const canFlash =
+  process.platform === 'win32' ||
+  process.platform === 'darwin' ||
+  (process.platform === 'linux' && process.env.XDG_SESSION_TYPE !== 'wayland' && !process.env.WAYLAND_DISPLAY)
 
 export class Notifier {
   /** Kiểm thử đọc các thông báo đã "hiện" */

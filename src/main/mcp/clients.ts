@@ -3,7 +3,7 @@
 import { execFile } from 'child_process'
 import { copyFileSync, existsSync, readdirSync, readFileSync } from 'fs'
 import { homedir } from 'os'
-import { delimiter, join } from 'path'
+import { delimiter, dirname, join } from 'path'
 import type { AiClientState, McpLaunch } from '../../shared/api'
 import { writeFileAtomicSync } from '../fsutil'
 import { SERVER_NAME } from './tools'
@@ -146,13 +146,24 @@ export function claudeCodeCommand(launch: McpLaunch, platform: NodeJS.Platform =
   return ['claude', ...addArgs(launch)].map((a) => quote(a, platform)).join(' ')
 }
 
-function runCli(cli: string, args: string[]): Promise<void> {
+/**
+ * PATH khi chạy lệnh claude: thêm thư mục chứa chính lệnh đó và các chỗ Homebrew / bộ cài hay đặt. App mở từ Dock (macOS)
+ * hay menu ứng dụng chỉ có PATH tối thiểu, mà claude cài qua npm là script `#!/usr/bin/env node` — thiếu node trong PATH
+ * thì không chạy được.
+ */
+export function cliPath(cli: string, e: Env = here()): string {
+  const dirs = [dirname(cli), ...(e.env.PATH ?? '').split(delimiter), '/opt/homebrew/bin', '/usr/local/bin', join(e.home, '.local', 'bin')]
+  return [...new Set(dirs.filter(Boolean))].join(delimiter)
+}
+
+function runCli(cli: string, args: string[], e: Env): Promise<void> {
   // claude.cmd (cài qua npm trên Windows) phải chạy qua cmd.exe
   const viaCmd = /\.cmd$/i.test(cli)
   const file = viaCmd ? (process.env.ComSpec ?? 'cmd.exe') : cli
   const argv = viaCmd ? ['/d', '/s', '/c', `"${[cli, ...args].map((a) => `"${a}"`).join(' ')}"`] : args
+  const env = e.platform === 'win32' ? e.env : { ...e.env, PATH: cliPath(cli, e) }
   return new Promise((resolve, reject) => {
-    execFile(file, argv, { timeout: 30_000, windowsHide: true, windowsVerbatimArguments: viaCmd }, (err, _stdout, stderr) => {
+    execFile(file, argv, { timeout: 30_000, windowsHide: true, windowsVerbatimArguments: viaCmd, env }, (err, _stdout, stderr) => {
       if (err) reject(new Error(String(stderr || err.message).trim().slice(0, 400)))
       else resolve()
     })
@@ -163,6 +174,6 @@ function runCli(cli: string, args: string[]): Promise<void> {
 export async function connectCode(launch: McpLaunch, e: Env = here()): Promise<void> {
   const cli = findClaudeCli(e)
   if (!cli) throw new Error('Không tìm thấy lệnh claude')
-  if (codeState(launch, e).state !== 'available') await runCli(cli, ['mcp', 'remove', SERVER_NAME, '--scope', 'user']).catch(() => undefined)
-  await runCli(cli, addArgs(launch))
+  if (codeState(launch, e).state !== 'available') await runCli(cli, ['mcp', 'remove', SERVER_NAME, '--scope', 'user'], e).catch(() => undefined)
+  await runCli(cli, addArgs(launch), e)
 }

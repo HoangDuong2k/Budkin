@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Icon trên thanh menu macOS — ảnh "template": macOS chỉ dùng độ trong suốt, tự tô màu theo thanh menu sáng / tối.
+       Cùng hình đầu robot với icon khay: vỏ là đường viền, mặt kính rỗng, hai mắt đặc -->
+  <rect x="30" y="9" width="4" height="12" rx="2"/>
+  <circle cx="32" cy="9" r="6"/>
+  <path fill-rule="evenodd" d="M17 19h30a13 13 0 0 1 13 13v15a13 13 0 0 1-13 13H17A13 13 0 0 1 4 47V32a13 13 0 0 1 13-13ZM19 25h26a9 9 0 0 1 9 9v11a9 9 0 0 1-9 9H19a9 9 0 0 1-9-9V34a9 9 0 0 1 9-9Z"/>
+  <rect x="20" y="30" width="9" height="16" rx="4.5"/>
+  <rect x="35" y="30" width="9" height="16" rx="4.5"/>
+</svg>

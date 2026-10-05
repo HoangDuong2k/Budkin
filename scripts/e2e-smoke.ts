@@ -3,6 +3,7 @@
  * Chạy: npm run build && npm run e2e
  * Bản đã đóng gói: BUDKIN_E2E_EXE=release/linux-unpacked/budkin npm run e2e
  *   (Windows: BUDKIN_E2E_EXE="release/win-unpacked/Budkin.exe")
+ *   (macOS: BUDKIN_E2E_EXE=/Applications/Budkin.app/Contents/MacOS/Budkin)
  * Máy không có GPU (CI): BUDKIN_E2E_SWIFTSHADER=1 — WebGL vẽ bằng CPU
  * Chạy bản deb đã cài mà không tắt sandbox (kiểm tra profile AppArmor): BUDKIN_E2E_SANDBOX=1
  * Giả lập màn hình nhỏ (máy ảo Windows 1024×768 của GitHub): BUDKIN_E2E_WINDOW=1000x660
@@ -287,7 +288,7 @@ async function uiFlow(page: Page): Promise<void> {
   const editor = page.locator('.editor')
   await editor.waitFor()
   await press(editor.locator('.editor-title'))
-  await page.keyboard.press('Control+A')
+  await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.type('Mua sữa và pate cho mèo')
   await page.keyboard.press('Enter')
   assert(await until(async () => (await row('Mua sữa và pate cho mèo').count()) === 1), 'sửa tiêu đề trong khung sửa')
