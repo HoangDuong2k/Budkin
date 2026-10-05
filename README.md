@@ -345,5 +345,8 @@ Icon (mặt robot) vẽ bằng SVG trong `build/icon-src/`; sửa xong thì ch�
   Sửa momi-ui cùng lúc: đổi thành `"momi-ui": "file:../momi-ui"` và chạy `npm run dev:lib` trong repo momi-ui.
 - `src/shared` — kiểu dữ liệu, hợp đồng IPC, i18n, bảng màu, định dạng file xuất dùng chung.
 
-Phông chữ Be Vietnam Pro, Oswald, JetBrains Mono dùng theo giấy phép SIL Open Font License
+## Giấy phép
+
+Budkin miễn phí và là mã nguồn mở theo giấy phép [MIT](LICENSE): dùng, sửa, chia sẻ lại thoải mái, chỉ cần giữ dòng
+bản quyền. Phông chữ Be Vietnam Pro, Oswald, JetBrains Mono đi kèm dùng theo giấy phép SIL Open Font License
 (`src/renderer/src/assets/fonts/OFL.txt`).

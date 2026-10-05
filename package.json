@@ -6,7 +6,7 @@
   "main": "./out/main/index.js",
   "author": "Hoang Duong",
   "homepage": "https://github.com/HoangDuong2k/Budkin",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "desktopName": "budkin.desktop",
   "engines": {
