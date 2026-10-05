@@ -1,5 +1,5 @@
-// Thẻ việc trên Kanban: dự án ở dòng trên, tiêu đề, hạn (kèm "Quá hạn"), nhắc, lặp, checklist; chân thẻ có mức ưu tiên
-// và nhãn. Dùng chung cho thẻ nằm trong cột và bản sao nổi đi theo con trỏ khi kéo (DragOverlay)
+// Nội dung thẻ việc trên Kanban (ô thẻ do Kanban của momi-ui vẽ): dự án ở dòng trên, tiêu đề, hạn (kèm "Quá hạn"),
+// nhắc, lặp, checklist; chân thẻ có mức ưu tiên và nhãn. Dùng chung cho thẻ trong cột và bản sao nổi khi kéo
 import { forwardRef, type CSSProperties, type HTMLAttributes } from 'react'
 import { Badge } from 'momi-ui'
 import { isOverdue, type Now } from '../../../shared/filters'

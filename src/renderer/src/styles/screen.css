@@ -43,107 +43,7 @@ button {
   outline-offset: 1px;
 }
 
-/* ---------- Nút ---------- */
-
-/* Nút: bo góc 8px, viền mảnh, nền trong; rê chuột thì có mặt nền nhạt */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 32px;
-  box-sizing: border-box;
-  border: 1px solid var(--edge-strong);
-  background: transparent;
-  border-radius: var(--r-md);
-  padding: 0 12px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: var(--bk-shadow-xs);
-}
-
-.btn:hover:not(:disabled) {
-  background: var(--surface-hi);
-}
-
-.btn:active:not(:disabled) {
-  background: var(--surface-on);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.btn.small {
-  height: 28px;
-  padding: 0 10px;
-  font-size: 12.5px;
-}
-
-/* Nút chính: nền xanh ngọc đặc, chữ tối */
-.btn.primary {
-  background: var(--bk-accent);
-  border-color: transparent;
-  color: var(--bk-accent-text);
-  font-weight: 600;
-}
-
-.btn.primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--bk-accent) 88%, #fff);
-}
-
-.btn.danger {
-  background: var(--danger);
-  border-color: transparent;
-  color: #140806;
-  font-weight: 600;
-}
-
-.btn.danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger) 88%, #fff);
-}
-
-.btn.ghost {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.btn.ghost:hover:not(:disabled) {
-  background: var(--surface-hi);
-}
-
-/* Nút biểu tượng: ô vuông bo góc, chỉ hiện nền khi rê chuột */
-.icon-btn {
-  display: inline-grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: var(--r-md);
-  background: transparent;
-  color: var(--bk-muted);
-  cursor: pointer;
-  flex: none;
-}
-
-.icon-btn:hover {
-  background: var(--surface-on);
-  color: var(--text);
-}
-
-.icon-btn.subtle {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--r-sm);
-}
-
-.icon-btn.danger:hover {
-  color: var(--danger);
-  background: var(--danger-soft);
-}
+/* ---------- Ô nhập trơn, chấm màu, số đếm (nút, ô nhập, bộ chọn… là thành phần của momi-ui) ---------- */
 
 /* Chữ gợi ý trong ô nhập (reset của Tailwind đổi màu mặc định) */
 ::placeholder {
@@ -209,10 +109,6 @@ button {
   border-bottom: 1px solid var(--edge);
 }
 
-.topbar .btn {
-  height: 30px;
-}
-
 .brand {
   display: inline-flex;
   align-items: center;
@@ -263,9 +159,6 @@ button {
 @container screen (max-width: 640px) {
   .add-task .label {
     display: none;
-  }
-  .topbar .add-task {
-    padding: 0 8px;
   }
 }
 
@@ -580,7 +473,7 @@ button {
   white-space: nowrap;
 }
 
-.tag-chip.removable button {
+.tag-chip.removable [role='button'] {
   display: inline-grid;
   place-items: center;
   border: 0;
@@ -690,39 +583,6 @@ button {
   overflow: hidden;
 }
 
-/* Bộ chọn: nhóm nút trên nền nhạt, mục đang chọn là ô nổi lên */
-.segmented {
-  display: inline-flex;
-  align-self: flex-start;
-  gap: 2px;
-  padding: 3px;
-  border-radius: var(--r-lg);
-  background: var(--surface-on);
-  margin-bottom: 4px;
-}
-
-.segmented button {
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  padding: 4px 11px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--bk-muted);
-}
-
-.segmented button:hover:not(:disabled) {
-  color: var(--text);
-}
-
-.segmented button.on {
-  background: var(--panel-2);
-  color: var(--text);
-  box-shadow: var(--bk-shadow-sm);
-  font-weight: 600;
-}
-
 .field {
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr);
@@ -748,52 +608,6 @@ button {
 .prio-picker {
   display: flex;
   gap: 4px;
-}
-
-.tag-picker {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  min-width: 0;
-  flex: 1;
-  position: relative;
-}
-
-.suggest {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 3;
-  background: var(--panel-2);
-  border: 1px solid var(--edge-strong);
-  border-radius: var(--r-lg);
-  box-shadow: var(--bk-shadow-pop);
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-}
-
-.suggest-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 0;
-  background: transparent;
-  padding: 6px 9px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  text-align: left;
-}
-
-.suggest-item:hover {
-  background: var(--surface-on);
-}
-
-.suggest-item.create {
-  color: var(--bk-accent);
 }
 
 .editor-block {
@@ -1000,105 +814,29 @@ button {
   padding: 16px 24px 16px;
 }
 
-.board {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-}
-
-/* Cột: nền nhạt bo góc 12px, không viền; màu trạng thái chỉ ở chấm đèn đầu cột */
-.board-col {
-  --c: var(--bk-muted);
-  flex: 1 1 0;
-  min-width: 150px;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface-hi);
-  border: 1px solid transparent;
-  border-radius: var(--r-xl);
-}
-
-.board-col.col-in_progress {
-  --c: var(--bk-accent);
-}
-
-.board-col.col-done {
-  --c: var(--ok);
-}
-
-.board-col.target {
-  border-color: color-mix(in srgb, var(--c) 50%, transparent);
-  background: color-mix(in srgb, var(--c) 7%, transparent);
-}
-
-/* Đầu cột: chấm đèn màu trạng thái, tên cột, số việc */
-.board-col-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 10px 12px 8px 14px;
-}
-
-.board-col-head .count {
-  background: var(--surface-on);
-}
-
-.board-col-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.board-col-title::before {
-  content: '';
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--c);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--c) 60%, transparent);
-}
-
-.board-col-body {
-  flex: 1;
-  min-height: 60px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 0 6px 8px;
-}
-
 .board-empty {
-  padding: 18px 8px;
-  border: 1px dashed var(--edge-strong);
-  border-radius: var(--r-lg);
   color: var(--faint);
   font-size: 12px;
-  text-align: center;
 }
 
-/* Thẻ việc: khối bo góc 10px, viền mảnh, bóng rất nhẹ; dự án ở dòng trên, hạn, chân thẻ có mức ưu tiên và nhãn */
+/* Kanban của momi-ui lấp hết chiều cao còn lại dưới ô thêm việc; cột cuộn riêng */
+.board-view .board {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Thẻ việc trong Kanban của momi-ui: ô của Kanban lo viền, nền, khoảng đệm, bóng; ở đây chỉ còn nội dung — dự án ở
+   dòng trên, hạn, chân thẻ có mức ưu tiên và nhãn */
 .task-card {
   --p: var(--faint);
   position: relative;
-  padding: 10px 12px;
-  background: var(--panel);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-lg);
-  box-shadow: var(--bk-shadow-xs);
   color: var(--text);
-  cursor: grab;
-  touch-action: none;
-  outline: none;
+}
+
+/* Việc đang mở trong khung sửa: viền xanh ngọc cho ô chứa thẻ */
+[data-kanban-card]:has(.task-card.selected) {
+  border-color: color-mix(in srgb, var(--bk-accent) 60%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bk-accent) 16%, transparent);
 }
 
 .task-card.prio-1 {
@@ -1113,31 +851,9 @@ button {
   --p: var(--prio-3);
 }
 
-.task-card:hover {
-  border-color: var(--edge-strong);
-}
-
-.task-card:focus-visible,
-.task-card.selected {
-  border-color: color-mix(in srgb, var(--bk-accent) 60%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bk-accent) 16%, transparent);
-}
-
 .task-card.done .card-title {
   color: var(--bk-muted);
   text-decoration: line-through;
-}
-
-/* Thẻ gốc đang được kéo: chỉ còn khung chừa chỗ */
-.task-card.dragging {
-  opacity: 0.3;
-}
-
-/* Bản sao nổi theo con trỏ */
-.task-card.overlay {
-  cursor: grabbing;
-  transform: rotate(1.5deg);
-  box-shadow: var(--bk-shadow-pop), 0 0 0 1px color-mix(in srgb, var(--bk-accent) 40%, transparent);
 }
 
 .card-top {
@@ -1223,14 +939,6 @@ button {
   align-items: center;
   gap: 6px;
   margin: 0;
-}
-
-.cal-head .segmented {
-  margin: 0 0 0 4px;
-}
-
-.cal-head .btn {
-  height: 28px;
 }
 
 /* Dải việc chưa có hạn: kéo xuống một ngày để xếp lịch, kéo lên đây để bỏ hạn */

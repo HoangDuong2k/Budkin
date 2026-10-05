@@ -3,6 +3,7 @@
 // xếp lịch. Việc đang kéo vẽ ở #portal-root để nổi trên mọi thứ.
 import { DndContext, DragOverlay, PointerSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Button, IconButton, ToggleGroup, ToggleGroupItem } from 'momi-ui'
 import { createPortal } from 'react-dom'
 import { addMonths, monthGrid, tasksByDate, weekDays } from '../../../shared/board'
 import { upcomingDues } from '../../../shared/recurrence'
@@ -217,23 +218,19 @@ export function CalendarView(): React.JSX.Element {
       <header className="list-head cal-head">
         <h2>{title}</h2>
         <div className="grow" />
-        <button className="btn small" onClick={() => setCursor(null)}>
+        <Button size="xs" variant="outline" onClick={() => setCursor(null)}>
           {tr('Hôm nay')}
-        </button>
-        <button className="icon-btn" onClick={() => shift(-1)} aria-label={mode === 'month' ? tr('Tháng trước') : tr('Tuần trước')}>
+        </Button>
+        <IconButton variant="ghost" size="sm" onClick={() => shift(-1)} aria-label={mode === 'month' ? tr('Tháng trước') : tr('Tuần trước')}>
           <Icon name="chevronLeft" />
-        </button>
-        <button className="icon-btn" onClick={() => shift(1)} aria-label={mode === 'month' ? tr('Tháng sau') : tr('Tuần sau')}>
+        </IconButton>
+        <IconButton variant="ghost" size="sm" onClick={() => shift(1)} aria-label={mode === 'month' ? tr('Tháng sau') : tr('Tuần sau')}>
           <Icon name="chevronRight" />
-        </button>
-        <div className="segmented" role="radiogroup" aria-label={tr('Kiểu lịch')}>
-          <button role="radio" aria-checked={mode === 'month'} className={mode === 'month' ? 'on' : ''} onClick={() => setMode('month')}>
-            {tr('Tháng')}
-          </button>
-          <button role="radio" aria-checked={mode === 'week'} className={mode === 'week' ? 'on' : ''} onClick={() => setMode('week')}>
-            {tr('Tuần')}
-          </button>
-        </div>
+        </IconButton>
+        <ToggleGroup type="single" variant="segmented" size="xs" className="ms-1" value={mode} onValueChange={(m) => setMode(m as typeof mode)} aria-label={tr('Kiểu lịch')}>
+          <ToggleGroupItem value="month">{tr('Tháng')}</ToggleGroupItem>
+          <ToggleGroupItem value="week">{tr('Tuần')}</ToggleGroupItem>
+        </ToggleGroup>
       </header>
       <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={({ active }) => setDragId(String(active.id).slice(5))} onDragEnd={onDragEnd} onDragCancel={() => setDragId(null)}>
         <UndatedStrip tasks={undated} />

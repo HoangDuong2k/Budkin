@@ -307,7 +307,8 @@ async function uiFlow(page: Page): Promise<void> {
   await press(editor.locator('.checklist-add input'))
   await page.keyboard.type('Pate cá hồi')
   await page.keyboard.press('Enter')
-  await press(editor.locator('[data-field="tags"] input'))
+  // Ô nhãn (Combobox của momi-ui): bấm để mở, gõ tên nhãn chưa có rồi Enter là tạo
+  await press(editor.locator('[data-field="tags"] [data-slot="combobox-trigger"]'))
   await page.keyboard.type('Nhà')
   await page.keyboard.press('Enter')
   assert(
@@ -782,11 +783,11 @@ async function boardFlow(app: ElectronApplication, page: Page): Promise<string> 
   await press(page.locator('.list-head').first())
   await page.keyboard.press('2')
   assert(await until(async () => (await page.locator('.board').count()) === 1), 'phím 2: chuyển sang Kanban')
-  const cardSel = `.board-col.col-todo .task-card[data-task-id="${card.id}"]`
+  const cardSel = `[data-kanban-column="todo"] .task-card[data-task-id="${card.id}"]`
   assert(await until(async () => (await page.locator(cardSel).count()) === 1), 'việc mới nằm ở cột "Cần làm"')
-  await dragTo(page, await centerOf(page, cardSel), await centerOf(page, '.board-col.col-in_progress .board-col-body'))
+  await dragTo(page, await centerOf(page, cardSel), await centerOf(page, '[data-kanban-column="in_progress"] [data-kanban-list]'))
   assert(await until(async () => (await taskTitled(page, card.title))?.status === 'in_progress'), 'kéo thẻ bằng chuột sang "Đang làm": việc chuyển sang Đang làm')
-  assert((await page.locator(`.board-col.col-in_progress .task-card[data-task-id="${card.id}"]`).count()) === 1, 'thẻ nằm trong cột "Đang làm"')
+  assert((await page.locator(`[data-kanban-column="in_progress"] .task-card[data-task-id="${card.id}"]`).count()) === 1, 'thẻ nằm trong cột "Đang làm"')
   await shot(page, '14-kanban.png')
 
   // Lịch: việc hạn 3 ngày nữa, nhắc trước 3 ngày (báo ngay) → kéo sang ngày hôm sau nữa → nhắc việc đặt lại theo hạn
@@ -1207,7 +1208,7 @@ async function main(): Promise<void> {
   assert(summary.length === 1 && summary[0].taskId === null && summary[0].title === 'Bạn có 3 việc cần làm', `mở lại app sau khi tắt: đúng 1 thông báo gộp (${JSON.stringify(summary.map((n) => n.title))})`)
   assert(await until(async () => (await page.locator('.reminder-more').textContent().catch(() => '')) === '+2'), 'mở lại app: robot vẫn báo các nhắc chưa xử lý (+2)')
   assert(
-    await until(async () => (await page.locator(`.board-col.col-in_progress .task-card[data-task-id="${movedCard}"]`).count()) === 1, 5000),
+    await until(async () => (await page.locator(`[data-kanban-column="in_progress"] .task-card[data-task-id="${movedCard}"]`).count()) === 1, 5000),
     'mở lại app: vẫn đang xem Kanban, thẻ đã kéo vẫn ở cột "Đang làm"'
   )
   // ---- Xuất / nhập, sao lưu / khôi phục (đóng app này, mở profile mới) ----

@@ -1,10 +1,9 @@
 // Khung sửa task (trượt ra bên phải màn hình). Tự lưu: tiêu đề khi rời ô / Enter, ghi chú sau 0,5 s, còn lại lưu ngay.
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Button, Checkbox, IconButton, Textarea, ToggleGroup, ToggleGroupItem, cn } from 'momi-ui'
+import { Button, Checkbox, Combobox, IconButton, Textarea, ToggleGroup, ToggleGroupItem, cn } from 'momi-ui'
 import { tr, trKey } from '../../../shared/i18n'
 import { LABEL_COLORS } from '../../../shared/palette'
 import type { TaskPatch } from '../../../shared/schemas'
-import { normalizeText } from '../../../shared/search'
 import { DEFAULT_SETTINGS, type Priority, type Task, type TaskStatus } from '../../../shared/types'
 import { useNow } from '../clock'
 import { useData } from '../state/dataStore'
@@ -57,71 +56,52 @@ function Field({ name, icon, label, children }: { name: string; icon: Parameters
   )
 }
 
+/** Nhãn của việc: Combobox chọn nhiều của momi-ui — gõ để lọc (không dấu cũng được), Enter tạo nhãn mới khi chưa có */
 function TagPicker({ task, patch }: { task: Task; patch: (p: TaskPatch) => void }): React.JSX.Element {
   const tags = useData((s) => s.tags)
   const theme = useTheme((s) => s.theme)
-  const [q, setQ] = useState('')
-  const norm = normalizeText(q)
-  const suggestions = Object.values(tags)
-    .filter((t) => !task.tagIds.includes(t.id) && normalizeText(t.name).includes(norm))
+  const options = Object.values(tags)
     .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(0, 6)
-  const add = (id: string): void => {
-    patch({ tagIds: [...task.tagIds, id] })
-    setQ('')
-  }
-  const create = async (): Promise<void> => {
-    const name = q.trim().replace(/^#/, '')
-    if (!name) return
-    const exact = Object.values(tags).find((t) => normalizeText(t.name) === normalizeText(name))
-    if (exact) {
-      if (!task.tagIds.includes(exact.id)) add(exact.id)
-      return
-    }
-    const res = await run('tags:create', { name, color: nextColor(Object.keys(tags).length) })
-    if (res.ok) add(res.value.id)
-  }
+    .map((t) => ({ value: t.id, label: t.name, icon: <span style={{ color: LABEL_COLORS[t.color][theme] }}>#</span> }))
   return (
-    <div className="tag-picker">
-      {task.tagIds.map((id) => {
-        const tag = tags[id]
-        if (!tag) return null
+    <Combobox
+      multiple
+      size="sm"
+      className="tag-picker w-full font-normal"
+      // Đóng là biến mất ngay: lúc đang chạy hiệu ứng đóng, popover vẫn bắt phím Esc (Esc kế tiếp phải đóng khung sửa)
+      contentClassName="data-[state=closed]:animate-none!"
+      value={task.tagIds}
+      onValueChange={(tagIds) => patch({ tagIds })}
+      options={options}
+      placeholder={tr('Thêm nhãn…')}
+      aria-label={tr('Nhãn')}
+      labels={{ create: (query) => tr('Tạo nhãn "{name}"', { name: query.trim().replace(/^#/, '') }) }}
+      onCreate={async (query) => {
+        const name = query.trim().replace(/^#/, '').slice(0, 40)
+        if (!name) return
+        const res = await run('tags:create', { name, color: nextColor(Object.keys(tags).length) })
+        return res.ok ? { value: res.value.id, label: res.value.name } : undefined
+      }}
+      renderChip={(option, remove) => {
+        const tag = tags[option.value]
         return (
-          <span key={id} className="tag-chip removable" style={{ '--c': LABEL_COLORS[tag.color][theme] } as CSSProperties}>
-            #{tag.name}
-            <button aria-label={tr('Gỡ nhãn')} onClick={() => patch({ tagIds: task.tagIds.filter((x) => x !== id) })}>
+          <span key={option.value} className="tag-chip removable" style={{ '--c': tag ? LABEL_COLORS[tag.color][theme] : 'var(--bk-muted)' } as CSSProperties}>
+            #{option.label}
+            <span
+              role="button"
+              aria-label={tr('Gỡ nhãn')}
+              onPointerDown={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                remove()
+              }}
+            >
               <Icon name="x" size={11} />
-            </button>
+            </span>
           </span>
         )
-      })}
-      <input
-        className="inline-input"
-        value={q}
-        maxLength={40}
-        placeholder={task.tagIds.length ? '' : tr('Thêm nhãn…')}
-        onChange={(e) => setQ(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.nativeEvent.isComposing) void create()
-        }}
-      />
-      {q && (
-        <div className="suggest">
-          {suggestions.map((t) => (
-            <button key={t.id} className="suggest-item" onClick={() => add(t.id)}>
-              <span style={{ color: LABEL_COLORS[t.color][theme] }}>#</span>
-              {t.name}
-            </button>
-          ))}
-          {!suggestions.some((t) => normalizeText(t.name) === norm) && (
-            <button className="suggest-item create" onClick={() => void create()}>
-              <Icon name="plus" size={12} />
-              {tr('Tạo nhãn "{name}"', { name: q.trim().replace(/^#/, '') })}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+      }}
+    />
   )
 }
 
