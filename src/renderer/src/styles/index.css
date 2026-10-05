@@ -7,6 +7,7 @@
 @import './tokens.css' layer(legacy);
 @import './app.css' layer(legacy);
 @import './screen.css' layer(legacy);
+@import './robot-art.css' layer(legacy);
 @import './flat.css' layer(legacy);
 /* Không nằm trong layer: bảng màu Budkin ghi đè token mặc định của momi-ui */
 @import './momi-theme.css';

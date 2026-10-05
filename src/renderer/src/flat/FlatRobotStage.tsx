@@ -11,6 +11,7 @@ import { useFlatFrame } from './flatLoop'
 import type { FlatLayout } from './flatLayout'
 import { op, tf } from './rig2d'
 import { EYE_COLOR, FLAT_ROBOTS } from './robots'
+import { RobotDefs } from './robots/art'
 
 /** Khung vẽ của robot (mm, gốc ở tâm mặt bệ): đủ chỗ cho lúc nhảy, xoay, bay vòng */
 export const ROBOT_VIEW = { x: -140, y: -300, w: 280, h: 340 }
@@ -86,39 +87,7 @@ export function FlatRobotStage({ l }: { l: FlatLayout }): React.JSX.Element {
           <rect x={v.x} y={v.y} width={v.w} height={-v.y} />
           <ellipse cx={0} cy={0} rx={PED.r} ry={PED.ry} />
         </clipPath>
-        <linearGradient id="fr-shell" x1="0" x2="1" y1="0" y2="0.35">
-          <stop offset="0" style={{ stopColor: 'var(--rb-shell-hi)' }} />
-          <stop offset="0.55" style={{ stopColor: 'var(--rb-shell)' }} />
-          <stop offset="1" style={{ stopColor: 'var(--rb-shell-lo)' }} />
-        </linearGradient>
-        <linearGradient id="fr-graphite" x1="0" x2="1" y1="0" y2="0.3">
-          <stop offset="0" style={{ stopColor: 'var(--rb-gr-hi)' }} />
-          <stop offset="1" style={{ stopColor: 'var(--rb-gr-lo)' }} />
-        </linearGradient>
-        <linearGradient id="fr-alu" x1="0" x2="1" y1="0" y2="0.6">
-          <stop offset="0" style={{ stopColor: 'var(--rb-alu-hi)' }} />
-          <stop offset="1" style={{ stopColor: 'var(--rb-alu-lo)' }} />
-        </linearGradient>
-        <linearGradient id="fr-glass" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor="#1b1f23" />
-          <stop offset="1" stopColor="#040506" />
-        </linearGradient>
-        <radialGradient id="fr-halo-led">
-          <stop offset="0" style={{ stopColor: 'var(--rb-led)', stopOpacity: 0.55 }} />
-          <stop offset="1" style={{ stopColor: 'var(--rb-led)', stopOpacity: 0 }} />
-        </radialGradient>
-        <radialGradient id="fr-halo-alert">
-          <stop offset="0" style={{ stopColor: 'var(--rb-alert)', stopOpacity: 0.6 }} />
-          <stop offset="1" style={{ stopColor: 'var(--rb-alert)', stopOpacity: 0 }} />
-        </radialGradient>
-        <radialGradient id="fr-halo-eye">
-          <stop offset="0" style={{ stopColor: 'var(--rb-eye)', stopOpacity: 0.5 }} />
-          <stop offset="1" style={{ stopColor: 'var(--rb-eye)', stopOpacity: 0 }} />
-        </radialGradient>
-        <radialGradient id="fr-shadow">
-          <stop offset="0" stopColor="#000" stopOpacity="0.55" />
-          <stop offset="1" stopColor="#000" stopOpacity="0" />
-        </radialGradient>
+        <RobotDefs />
       </defs>
       <Pedestal flareAt={flareAt} />
       <g clipPath="url(#fr-sink)">
