@@ -1,10 +1,12 @@
 // Chọn quy tắc lặp lại: vài mẫu nhanh theo hạn của việc (hằng ngày, ngày làm việc, hằng tuần / tháng / năm) và phần
 // tuỳ chỉnh (mỗi N ngày / tuần / tháng / năm, chọn thứ, ngày cuối tháng, kết thúc, tính lần sau từ hạn hay ngày hoàn thành)
 import { useState } from 'react'
-import { daysInMonth, isoWeekday, parseYmd } from '../../../shared/datetime'
+import { Button, DatePicker, NumberField, RadioGroup, RadioGroupItem, ToggleGroup, ToggleGroupItem } from 'momi-ui'
+import { dateAtNoon, daysInMonth, isoWeekday, parseYmd, ymd } from '../../../shared/datetime'
 import { tr, trKey } from '../../../shared/i18n'
 import type { RecurrenceRule } from '../../../shared/types'
 import { describeRule, weekdayName } from './format'
+import { MenuItem } from './ui'
 
 type Unit = 'day' | 'week' | 'month' | 'year'
 
@@ -97,86 +99,87 @@ export function RecurrencePicker({ value, dueDate, weekStart, onChange }: Props)
     <div className="recur">
       <div className="menu">
         {list.map((p) => (
-          <button key={JSON.stringify(p)} className={`menu-item ${same(p, value) ? 'on' : ''}`} onClick={() => onChange(p)}>
+          <MenuItem key={JSON.stringify(p)} on={same(p, value)} onClick={() => onChange(p)}>
             {describeRule(p, dueDate)}
-          </button>
+          </MenuItem>
         ))}
-        <button className={`menu-item ${custom ? 'on' : ''}`} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <MenuItem on={custom} aria-expanded={open} onClick={() => setOpen(!open)}>
           {tr('Tuỳ chỉnh…')}
-        </button>
+        </MenuItem>
       </div>
       {open && (
         <div className="recur-custom">
           <div className="recur-row">
             <span>{tr('Mỗi')}</span>
-            <input className="input recur-n" type="number" min={1} max={maxN} value={f.n} onChange={(e) => set({ n: Number(e.target.value) })} aria-label={tr('Số lần lặp')} />
-            <div className="segmented">
+            <NumberField size="xs" wrapperClassName="recur-n w-16 shrink-0" min={1} max={maxN} value={f.n} onValueChange={(n) => set({ n })} aria-label={tr('Số lần lặp')} />
+            <ToggleGroup
+              type="single"
+              variant="segmented"
+              size="xs"
+              value={f.unit}
+              onValueChange={(u) => set({ unit: u as Unit, n: u === 'year' ? Math.min(f.n, 8) : f.n })}
+              aria-label={tr('Đơn vị')}
+            >
               {UNITS.map((u) => (
-                <button key={u.id} className={f.unit === u.id ? 'on' : ''} onClick={() => set({ unit: u.id, n: u.id === 'year' ? Math.min(f.n, 8) : f.n })}>
+                <ToggleGroupItem key={u.id} value={u.id}>
                   {tr(u.label)}
-                </button>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           </div>
           {f.unit === 'week' && f.basis === 'due' && (
-            <div className="recur-days" role="group" aria-label={tr('Vào các thứ')}>
+            <ToggleGroup
+              type="multiple"
+              variant="outline"
+              size="xs"
+              className="recur-days flex-wrap"
+              value={f.days.map(String)}
+              onValueChange={(days) => set({ days: days.map(Number) })}
+              aria-label={tr('Vào các thứ')}
+            >
               {order.map((d) => (
-                <button
-                  key={d}
-                  className={`chip-btn small ${f.days.includes(d) ? 'on' : ''}`}
-                  aria-pressed={f.days.includes(d)}
-                  onClick={() => set({ days: f.days.includes(d) ? f.days.filter((x) => x !== d) : [...f.days, d] })}
-                >
+                <ToggleGroupItem key={d} value={String(d)} className="min-w-9">
                   {weekdayName(d, true)}
-                </button>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           )}
           {f.unit === 'month' && f.basis === 'due' && (
-            <div className="recur-row">
-              <label className="recur-radio">
-                <input type="radio" checked={!f.lastDay} onChange={() => set({ lastDay: false })} />
-                {tr('Ngày {d}', { d: parseYmd(dueDate).d })}
-              </label>
-              <label className="recur-radio">
-                <input type="radio" checked={f.lastDay} onChange={() => set({ lastDay: true })} />
-                {tr('Ngày cuối tháng')}
-              </label>
-            </div>
+            <RadioGroup className="flex gap-4" value={f.lastDay ? 'last' : 'day'} onValueChange={(v) => set({ lastDay: v === 'last' })}>
+              <RadioGroupItem value="day" label={tr('Ngày {d}', { d: parseYmd(dueDate).d })} />
+              <RadioGroupItem value="last" label={tr('Ngày cuối tháng')} />
+            </RadioGroup>
           )}
           <div className="recur-label">{tr('Kết thúc')}</div>
-          <div className="recur-col">
-            <label className="recur-radio">
-              <input type="radio" checked={f.end === 'never'} onChange={() => set({ end: 'never' })} />
-              {tr('Không kết thúc')}
-            </label>
-            <label className="recur-radio">
-              <input type="radio" checked={f.end === 'until'} onChange={() => set({ end: 'until' })} />
-              {tr('Đến ngày')}
-              <input className="input" type="date" min={dueDate} value={f.until} onChange={(e) => set({ end: 'until', until: e.target.value || dueDate })} />
-            </label>
-            <label className="recur-radio">
-              <input type="radio" checked={f.end === 'count'} onChange={() => set({ end: 'count' })} />
-              {tr('Sau')}
-              <input className="input recur-n" type="number" min={1} max={999} value={f.count} onChange={(e) => set({ end: 'count', count: Number(e.target.value) })} />
+          <RadioGroup className="gap-2" value={f.end} onValueChange={(v) => set({ end: v as typeof f.end })}>
+            <RadioGroupItem value="never" label={tr('Không kết thúc')} />
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="until" label={tr('Đến ngày')} />
+              <DatePicker
+                size="xs"
+                className="w-36"
+                value={dateAtNoon(f.until)}
+                minDate={dateAtNoon(dueDate)}
+                weekStartsOn={weekStart}
+                aria-label={tr('Đến ngày')}
+                onValueChange={(d) => d && set({ end: 'until', until: ymd(d.getFullYear(), d.getMonth() + 1, d.getDate()) })}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="count" label={tr('Sau')} />
+              <NumberField size="xs" wrapperClassName="recur-n w-16 shrink-0" min={1} max={999} value={f.count} onValueChange={(count) => set({ end: 'count', count })} aria-label={tr('Số lần')} />
               {tr('lần')}
-            </label>
-          </div>
+            </div>
+          </RadioGroup>
           <div className="recur-label">{tr('Tính lần sau từ')}</div>
-          <div className="recur-row">
-            <label className="recur-radio">
-              <input type="radio" checked={f.basis === 'due'} onChange={() => set({ basis: 'due' })} />
-              {tr('Hạn của lần này')}
-            </label>
-            <label className="recur-radio">
-              <input type="radio" checked={f.basis === 'completion'} onChange={() => set({ basis: 'completion' })} />
-              {tr('Ngày hoàn thành')}
-            </label>
-          </div>
+          <RadioGroup className="flex gap-4" value={f.basis} onValueChange={(v) => set({ basis: v as typeof f.basis })}>
+            <RadioGroupItem value="due" label={tr('Hạn của lần này')} />
+            <RadioGroupItem value="completion" label={tr('Ngày hoàn thành')} />
+          </RadioGroup>
           <div className="recur-actions">
-            <button className="btn primary small" onClick={apply}>
+            <Button size="xs" onClick={apply}>
               {tr('Áp dụng')}
-            </button>
+            </Button>
           </div>
         </div>
       )}

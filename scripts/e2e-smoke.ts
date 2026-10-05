@@ -118,7 +118,11 @@ async function press(target: Locator): Promise<void> {
   } catch (err) {
     // Sự kiện có thể tới nơi muộn: nút đã biến mất thì thôi
     if (await until(async () => (await target.count()) === 0, 1500)) return
-    problems.push(`[e2e] bấm chuột bị treo, bấm qua DOM: ${String((err as Error).message ?? err).split('\n')[0]}`)
+    const log = String((err as Error).message ?? err).split('\n')
+    // Dòng đầu: lỗi; vài dòng cuối của call log: vì sao (phần tử bị che, đang chuyển động…)
+    // Lý do Playwright ghi lại (phần tử bị che, đang chuyển động…): dòng có "intercepts" / "not stable" / "not visible"
+    const why = log.filter((l) => /intercepts|not stable|not visible|not enabled|outside of the viewport/.test(l)).slice(-2)
+    problems.push(`[e2e] bấm chuột bị treo, bấm qua DOM (${String(target)}): ${[log[0], ...why].join(' | ').replace(/\x1b\[\d+m/g, '').slice(0, 600)}`)
     // Như bấm chuột thật: ô nhập thì nhận con trỏ; chỗ khác thì ô đang gõ mất con trỏ (phím tắt dùng được)
     await target
       .evaluate(
@@ -156,6 +160,9 @@ async function shot(page: Page, name: string): Promise<void> {
 function hex(c: string): Rgb {
   return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)) as Rgb
 }
+
+/** Toast của momi-ui (Toaster trong màn hình máy tính) */
+const TOAST = '[data-slot="toast"]'
 
 function near(a: Rgb, b: Rgb, tol = 6): boolean {
   return a.every((v, i) => Math.abs(v - b[i]) <= tol)
@@ -295,7 +302,7 @@ async function uiFlow(page: Page): Promise<void> {
   assert(await until(async () => (await row('Mua sữa và pate cho mèo').count()) === 1), 'sửa tiêu đề trong khung sửa')
   await press(editor.locator('.prio-btn.prio-3'))
   await press(editor.locator('[data-field="due"] .value-btn'))
-  await press(page.locator('.popover .time-suggest button', { hasText: '18:00' }))
+  await press(page.locator('.popover [data-slot="date-time-picker-panel"]').getByText('18:00', { exact: true }))
   await page.keyboard.press('Escape')
   await press(editor.locator('.checklist-add input'))
   await page.keyboard.type('Pate cá hồi')
@@ -325,9 +332,9 @@ async function uiFlow(page: Page): Promise<void> {
   await page.keyboard.press('Enter')
   await until(async () => (await row('Việc sẽ bị xoá').count()) === 1)
   await press(row('Việc sẽ bị xoá'))
-  await press(editor.locator('.icon-btn.danger'))
+  await press(editor.locator('.delete-task'))
   assert(await until(async () => (await taskTitled(page, 'Việc sẽ bị xoá')) === undefined), 'xoá việc từ khung sửa')
-  await press(page.locator('.toast-action'))
+  await press(page.locator(TOAST).getByRole('button', { name: 'Hoàn tác' }))
   assert(await until(async () => (await row('Việc sẽ bị xoá').count()) === 1), 'bấm "Hoàn tác" trên toast: việc quay lại')
 
   // Tìm kiếm không dấu
@@ -386,8 +393,8 @@ async function recurrenceFlow(page: Page): Promise<void> {
     }),
     'hoàn thành việc hằng ngày: lần ngày mai tự xuất hiện'
   )
-  assert(await until(async () => /Lần tới: Ngày mai/.test((await page.locator('.toast').first().textContent()) ?? '')), 'toast báo "Lần tới: Ngày mai"')
-  await press(page.locator('.toast .toast-action').first())
+  assert(await until(async () => /Lần tới: Ngày mai/.test((await page.locator(TOAST).first().textContent()) ?? '')), 'toast báo "Lần tới: Ngày mai"')
+  await press(page.locator(TOAST).getByRole('button', { name: 'Hoàn tác' }).first())
   assert(
     await until(async () => {
       const list = await instances()
@@ -856,7 +863,7 @@ async function openDataSettings(page: Page): Promise<void> {
 async function dataFlow(app: ElectronApplication, page: Page): Promise<void> {
   const file = join(OUT, 'budkin-export.json')
   // Trang đổi sau mỗi lần mở lại app: luôn lấy theo `page` hiện tại
-  const toast = (): Locator => page.locator('.toast').last()
+  const toast = (): Locator => page.locator(TOAST).last()
   await stubDialogs(app, file)
   await openDataSettings(page)
   await press(page.getByRole('button', { name: 'Xuất file…' }))
@@ -972,7 +979,7 @@ async function aiFlow(page: Page): Promise<void> {
   )
   assert(await until(async () => (await toasts()).includes('Claude đã thêm 2 việc')), 'toast "Claude đã thêm 2 việc" kèm nút Hoàn tác')
   await page.keyboard.press('Escape')
-  await press(page.locator('.toast', { hasText: 'Claude đã thêm 2 việc' }).getByRole('button', { name: 'Hoàn tác' }))
+  await press(page.locator(TOAST, { hasText: 'Claude đã thêm 2 việc' }).getByRole('button', { name: 'Hoàn tác' }))
   assert(
     await until(async () => (await tasksNow(page)).every((t) => !['Gọi điện cho mẹ', 'Mua quà sinh nhật'].includes(t.title))),
     'bấm Hoàn tác: hai việc Claude vừa tạo biến mất'

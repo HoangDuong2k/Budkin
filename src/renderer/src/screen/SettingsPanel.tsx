@@ -1,6 +1,23 @@
 // Màn hình Cài đặt: phủ lên giao diện trên màn hình máy tính (Ctrl+, hoặc nút bánh răng ở thanh bên, Esc để đóng).
 // Mục bên trái, thiết lập bên phải; đổi là lưu ngay, không có nút Lưu.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  Alert,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  IconButton,
+  Input,
+  Switch as MomiSwitch,
+  RadioGroup,
+  RadioGroupItem,
+  Slider,
+  ToggleGroup,
+  ToggleGroupItem
+} from 'momi-ui'
 import type { AiClientState, AiStatus, AppInfo, AppStatus, BackupInfo, BackupKind, BootPatch } from '../../../shared/api'
 import type { ImportMode, ImportPreview } from '../../../shared/exportFormat'
 import { parseTimeInput } from '../../../shared/datetime'
@@ -22,7 +39,7 @@ import { useUi, type SettingsSection } from '../state/uiStore'
 import { run } from './actions'
 import { REMIND_TIMED, clockTime, fileSize, reminderText, shortDateTime, weekdayName } from './format'
 import { Icon, type IconName } from './icons'
-import { Confirm, Popover } from './ui'
+import { Confirm, MenuItem, Popover } from './ui'
 
 const SECTIONS: Array<{ id: SettingsSection; icon: IconName; label: string }> = [
   { id: 'general', icon: 'gear', label: trKey('Chung') },
@@ -75,23 +92,28 @@ function Choice<T extends string | number | boolean | null>({
   label: string
   disabled?: boolean
 }): React.JSX.Element {
+  // ToggleGroup của momi-ui chỉ nhận giá trị chuỗi: dùng chỉ số của lựa chọn
   return (
-    <div className={`segmented ${disabled ? 'disabled' : ''}`} role="radiogroup" aria-label={label}>
-      {options.map((o) => (
-        <button key={String(o.value)} role="radio" aria-checked={o.value === value} className={o.value === value ? 'on' : ''} disabled={disabled} onClick={() => onChange(o.value)}>
+    <ToggleGroup
+      type="single"
+      variant="segmented"
+      size="sm"
+      value={String(options.findIndex((o) => o.value === value))}
+      onValueChange={(i) => onChange(options[Number(i)].value)}
+      disabled={disabled}
+      aria-label={label}
+    >
+      {options.map((o, i) => (
+        <ToggleGroupItem key={String(o.value)} value={String(i)}>
           {o.label}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 }
 
 function Switch({ on, onChange, label }: { on: boolean; onChange: (on: boolean) => void; label: string }): React.JSX.Element {
-  return (
-    <button role="switch" aria-checked={on} aria-label={label} className={`switch ${on ? 'on' : ''}`} onClick={() => onChange(!on)}>
-      <i />
-    </button>
-  )
+  return <MomiSwitch checked={on} onCheckedChange={onChange} aria-label={label} />
 }
 
 /** Ô giờ gõ tự do như ở khung sửa việc ("9", "930", "9:30"…); sai thì trả lại giá trị cũ */
@@ -111,8 +133,10 @@ function TimeField({ value, label, onCommit }: { value: string; label: string; o
     if (t !== value) onCommit(t)
   }
   return (
-    <input
-      className={`input time-input ${bad ? 'bad' : ''}`}
+    <Input
+      size="sm"
+      className="time-input w-20"
+      aria-invalid={bad || undefined}
       aria-label={label}
       value={text}
       onChange={(e) => {
@@ -131,32 +155,27 @@ function TimeField({ value, label, onCommit }: { value: string; label: string; o
 
 function Volume({ value }: { value: number }): React.JSX.Element {
   const [v, setV] = useState(value)
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => setV(value), [value])
-  useEffect(() => () => clearTimeout(timer.current), [])
   return (
     <>
-      <input
-        type="range"
-        className="range"
-        min={0}
-        max={1}
-        step={0.05}
-        value={v}
-        aria-label={tr('Âm lượng')}
-        style={{ '--p': `${v * 100}%` } as React.CSSProperties}
-        onChange={(e) => {
-          const next = Number(e.target.value)
-          setV(next)
+      {/* Slider của momi-ui rộng hết chỗ: bọc trong khối rộng cố định */}
+      <div className="w-32 shrink-0">
+        <Slider
+          size="sm"
+          min={0}
+          max={1}
+          step={0.05}
+          value={[v]}
+          thumbLabels={[tr('Âm lượng')]}
+          onValueChange={([next]) => setV(next)}
           // Kéo thanh trượt: ghi khi dừng tay
-          clearTimeout(timer.current)
-          timer.current = setTimeout(() => save({ volume: next }), 250)
-        }}
-      />
+          onValueCommit={([next]) => save({ volume: next })}
+        />
+      </div>
       <span className="readout">{Math.round(v * 100)}%</span>
-      <button className="btn small" onClick={() => playChirp('poke')}>
+      <Button size="xs" variant="outline" onClick={() => playChirp('poke')}>
         {tr('Nghe thử')}
-      </button>
+      </Button>
     </>
   )
 }
@@ -166,28 +185,34 @@ const EYE_COLOR: Record<RobotModel, string> = { budkin: ROBOT.eye, ...ROBOT_EYES
 /** Chọn robot đứng trên bàn: robot đổi ngay (chìm vào bệ, robot mới trồi lên chào), nghe thử giọng */
 function RobotPicker({ value }: { value: RobotModel }): React.JSX.Element {
   return (
-    <div className="robot-grid" role="radiogroup" aria-label={tr('Robot trên bàn')}>
+    <RadioGroup
+      className="robot-grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2"
+      value={value}
+      onValueChange={(id) => {
+        save({ robot: id as RobotModel })
+        previewVoice(id as RobotModel)
+      }}
+      aria-label={tr('Robot trên bàn')}
+    >
       {ROBOT_MODELS.map((id) => (
-        <button
+        <RadioGroupItem
           key={id}
-          role="radio"
-          aria-checked={id === value}
-          className={`robot-card ${id === value ? 'on' : ''}`}
+          value={id}
+          variant="card"
+          className="robot-card"
+          wrapperClassName="gap-2.5 p-3"
           data-robot={id}
           style={{ '--c': EYE_COLOR[id] } as React.CSSProperties}
-          onClick={() => {
-            save({ robot: id })
-            previewVoice(id)
-          }}
-        >
-          <span className="rc-name">
-            <i className="rc-dot" />
-            {PERSONALITY[id].name}
-          </span>
-          <span className="rc-blurb">{tr(PERSONALITY[id].blurb)}</span>
-        </button>
+          label={
+            <span className="rc-name">
+              <i className="rc-dot" style={{ '--c': EYE_COLOR[id] } as React.CSSProperties} />
+              {PERSONALITY[id].name}
+            </span>
+          }
+          description={tr(PERSONALITY[id].blurb)}
+        />
       ))}
-    </div>
+    </RadioGroup>
   )
 }
 
@@ -248,23 +273,22 @@ function Reminders({ s, status }: { s: Settings; status: AppStatus | null }): Re
   return (
     <>
       <Row id="defaultRemind" label={tr('Nhắc mặc định')} hint={tr('Áp dụng khi đặt hạn có giờ cho một việc')}>
-        <button ref={anchor} className="value-btn boxed" aria-haspopup="menu" onClick={() => setMenu(!menu)}>
+        <Button ref={anchor} size="sm" variant="outline" className="font-normal" aria-haspopup="menu" onClick={() => setMenu(!menu)} rightIcon={<Icon name="chevronDown" size={13} />}>
           {reminderText(s.defaultRemindBeforeMin, false)}
-          <Icon name="chevronDown" size={13} />
-        </button>
+        </Button>
         <Popover anchor={anchor.current} open={menu} onClose={() => setMenu(false)} width={190} align="end">
           <div className="menu">
             {[null, ...REMIND_TIMED].map((m) => (
-              <button
+              <MenuItem
                 key={String(m)}
-                className={`menu-item ${s.defaultRemindBeforeMin === m ? 'on' : ''}`}
+                on={s.defaultRemindBeforeMin === m}
                 onClick={() => {
                   save({ defaultRemindBeforeMin: m })
                   setMenu(false)
                 }}
               >
                 {reminderText(m, false)}
-              </button>
+              </MenuItem>
             ))}
           </div>
         </Popover>
@@ -278,14 +302,14 @@ function Reminders({ s, status }: { s: Settings; status: AppStatus | null }): Re
         hint={mutedUntil ? tr('Đang tắt tới {time}. Nhắc việc vẫn được ghi nhận, chỉ không kêu, không hiện thông báo.', { time: clockTime(mutedUntil) }) : tr('Nhắc việc vẫn được ghi nhận, chỉ không kêu, không hiện thông báo')}
       >
         {mutedUntil ? (
-          <button className="btn small primary" onClick={() => void run('reminders:mute', null)}>
+          <Button size="xs" onClick={() => void run('reminders:mute', null)}>
             {tr('Bật lại')}
-          </button>
+          </Button>
         ) : (
           [60, 240, 1440].map((m) => (
-            <button key={m} className="chip-btn" onClick={() => void run('reminders:mute', m)}>
+            <Button key={m} size="xs" variant="outline" onClick={() => void run('reminders:mute', m)}>
               {m === 1440 ? tr('1 ngày') : tr('{n} giờ', { n: m / 60 })}
-            </button>
+            </Button>
           ))
         )}
       </Row>
@@ -404,13 +428,19 @@ function Display({ s, status, setStatus }: { s: Settings; status: AppStatus | nu
         </Row>
       )}
       {pending && (
-        <div className="set-notice" role="status">
-          <Icon name="power" size={15} />
-          <span className="grow">{tr('Cần khởi động lại Budkin để áp dụng.')}</span>
-          <button className="btn small primary" onClick={() => void run('app:relaunch')}>
-            {tr('Khởi động lại')}
-          </button>
-        </div>
+        <Alert
+          tone="warning"
+          role="status"
+          className="set-notice mt-3.5"
+          icon={<Icon name="power" size={15} />}
+          action={
+            <Button size="xs" onClick={() => void run('app:relaunch')}>
+              {tr('Khởi động lại')}
+            </Button>
+          }
+        >
+          {tr('Cần khởi động lại Budkin để áp dụng.')}
+        </Alert>
       )}
     </>
   )
@@ -436,38 +466,35 @@ function ImportDialog({ preview, busy, onApply, onCancel }: { preview: ImportPre
   const localTasks = useData((s) => Object.keys(s.tasks).length)
   const [confirmReplace, setConfirmReplace] = useState(false)
   const first = useRef<HTMLButtonElement>(null)
+  // Dialog tự đưa focus vào phần tử đầu tiên; đổi sang bước xác nhận thì đưa về nút đầu của bước đó
   useEffect(() => first.current?.focus(), [confirmReplace])
   const c = preview.counts
   return (
-    <div
-      className="modal-backdrop"
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          e.stopPropagation()
-          onCancel()
-        }
-      }}
-    >
-      <div className="modal import-modal" role="alertdialog" aria-label={tr('Nhập dữ liệu')}>
-        <div className="modal-kicker">{tr('Nhập dữ liệu')}</div>
-        <p className="import-file">
-          <Icon name="note" size={15} />
-          <span>{preview.fileName}</span>
-        </p>
-        <p className="import-meta">
-          {tr('Xuất lúc {when}', { when: shortDateTime(preview.exportedAt, now.date) })} · {tr('{tasks} việc, {projects} dự án, {tags} nhãn', { ...c })}
-        </p>
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent size="md" className="modal import-modal" showClose={false} aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle className="text-sm text-primary">{tr('Nhập dữ liệu')}</DialogTitle>
+        </DialogHeader>
+        <div>
+          <p className="import-file">
+            <Icon name="note" size={15} />
+            <span>{preview.fileName}</span>
+          </p>
+          <p className="import-meta">
+            {tr('Xuất lúc {when}', { when: shortDateTime(preview.exportedAt, now.date) })} · {tr('{tasks} việc, {projects} dự án, {tags} nhãn', { ...c })}
+          </p>
+        </div>
         {confirmReplace ? (
           <>
             <p>{tr('Xoá toàn bộ dữ liệu đang có trên máy và thay bằng dữ liệu trong file?')}</p>
-            <div className="modal-actions">
-              <button ref={first} className="btn ghost" onClick={() => setConfirmReplace(false)} disabled={busy}>
+            <DialogFooter>
+              <Button ref={first} size="sm" variant="ghost" onClick={() => setConfirmReplace(false)} disabled={busy}>
                 {tr('Quay lại')}
-              </button>
-              <button className="btn danger" onClick={() => onApply('replace')} disabled={busy}>
+              </Button>
+              <Button size="sm" tone="danger" onClick={() => onApply('replace')} disabled={busy}>
                 {tr('Thay thế')}
-              </button>
-            </div>
+              </Button>
+            </DialogFooter>
           </>
         ) : (
           <>
@@ -482,15 +509,15 @@ function ImportDialog({ preview, busy, onApply, onCancel }: { preview: ImportPre
               </button>
             </div>
             <p className="set-hint">{tr('Budkin tự sao lưu trước khi nhập — nhập nhầm thì khôi phục lại được.')}</p>
-            <div className="modal-actions">
-              <button className="btn ghost" onClick={onCancel} disabled={busy}>
+            <DialogFooter>
+              <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
                 {tr('Huỷ')}
-              </button>
-            </div>
+              </Button>
+            </DialogFooter>
           </>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -543,27 +570,25 @@ function DataSection({ status }: { status: AppStatus | null }): React.JSX.Elemen
     <>
       <GroupTitle>{tr('Chuyển dữ liệu')}</GroupTitle>
       <Row id="export" label={tr('Xuất dữ liệu')} hint={tr('Toàn bộ việc, dự án, nhãn ra một file JSON — để cất giữ hoặc chuyển sang máy khác')}>
-        <button className="btn small" onClick={() => void exportData()}>
-          <Icon name="download" size={14} />
+        <Button size="xs" variant="outline" onClick={() => void exportData()} leftIcon={<Icon name="download" size={14} />}>
           {tr('Xuất file…')}
-        </button>
+        </Button>
       </Row>
       <Row id="import" label={tr('Nhập dữ liệu')} hint={tr('Từ file JSON đã xuất: gộp với dữ liệu trên máy hoặc thay thế')}>
-        <button className="btn small" onClick={() => void pick()}>
-          <Icon name="upload" size={14} />
+        <Button size="xs" variant="outline" onClick={() => void pick()} leftIcon={<Icon name="upload" size={14} />}>
           {tr('Chọn file…')}
-        </button>
+        </Button>
       </Row>
 
       <GroupTitle>{tr('Sao lưu tự động')}</GroupTitle>
       <div className="backup-bar">
         <span className="set-hint grow">{tr('Mỗi ngày một bản, giữ 7 ngày gần nhất. Khôi phục thì Budkin khởi động lại.')}</span>
-        <button className="btn small" onClick={() => void backupNow()}>
+        <Button size="xs" variant="outline" onClick={() => void backupNow()}>
           {tr('Sao lưu ngay')}
-        </button>
-        <button className="btn small ghost" onClick={() => void run('data:openFolder', 'backups')}>
+        </Button>
+        <Button size="xs" variant="ghost" onClick={() => void run('data:openFolder', 'backups')}>
           {tr('Mở thư mục')}
-        </button>
+        </Button>
       </div>
       {backups && backups.length === 0 && <p className="set-hint backup-empty">{tr('Chưa có bản sao lưu nào.')}</p>}
       {backups && backups.length > 0 && (
@@ -573,10 +598,9 @@ function DataSection({ status }: { status: AppStatus | null }): React.JSX.Elemen
               <span className="b-when">{shortDateTime(b.createdAt, now.date)}</span>
               <span className="b-kind">{tr(KIND_LABEL[b.kind])}</span>
               <span className="b-size">{fileSize(b.size)}</span>
-              <button className="btn small ghost" onClick={() => setRestore(b)}>
-                <Icon name="restore" size={13} />
+              <Button size="xs" variant="ghost" onClick={() => setRestore(b)} leftIcon={<Icon name="restore" size={13} />}>
                 {tr('Khôi phục')}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -584,9 +608,9 @@ function DataSection({ status }: { status: AppStatus | null }): React.JSX.Elemen
 
       <GroupTitle>{tr('Nơi lưu')}</GroupTitle>
       <Row id="dataDir" label={tr('Thư mục dữ liệu')} hint={status ? <span className="path">{status.dataDir}</span> : undefined}>
-        <button className="btn small ghost" onClick={() => void run('data:openFolder', 'data')}>
+        <Button size="xs" variant="ghost" onClick={() => void run('data:openFolder', 'data')}>
           {tr('Mở')}
-        </button>
+        </Button>
       </Row>
 
       {preview && <ImportDialog preview={preview} busy={busy} onApply={(m) => void apply(m)} onCancel={() => setPreview(null)} />}
@@ -649,9 +673,9 @@ function ClientState({ state }: { state: AiClientState }): React.JSX.Element {
 function ConnectButton({ state, busy, onClick }: { state: AiClientState; busy: boolean; onClick: () => void }): React.JSX.Element {
   const label = state === 'outdated' ? tr('Cập nhật') : state === 'connected' ? tr('Kết nối lại') : tr('Kết nối')
   return (
-    <button className={`btn small ${state === 'connected' ? 'ghost' : 'primary'}`} disabled={busy} onClick={onClick}>
+    <Button size="xs" variant={state === 'connected' ? 'outline' : 'solid'} loading={busy} onClick={onClick}>
       {busy ? tr('Đang kết nối…') : label}
-    </button>
+    </Button>
   )
 }
 
@@ -744,9 +768,9 @@ function AiSection({ s }: { s: Settings }): React.JSX.Element {
               <span className="set-hint">{codeHint[code.state]}</span>
               <div className="ai-command">
                 <code>{code.command}</code>
-                <button className="icon-btn" onClick={() => copyText(code.command)} aria-label={tr('Chép lệnh')} title={tr('Chép lệnh')}>
+                <IconButton variant="ghost" size="xs" onClick={() => copyText(code.command)} aria-label={tr('Chép lệnh')} title={tr('Chép lệnh')}>
                   <Icon name="copy" size={14} />
-                </button>
+                </IconButton>
               </div>
             </div>
             {code.cli && <ConnectButton state={code.state} busy={busy === 'code'} onClick={() => void connect('code')} />}
@@ -757,9 +781,9 @@ function AiSection({ s }: { s: Settings }): React.JSX.Element {
       <GroupTitle>{tr('Thử hỏi Claude')}</GroupTitle>
       <div className="ai-examples">
         {AI_EXAMPLES.map((q) => (
-          <button key={q} className="chip-btn" title={tr('Bấm để chép')} onClick={() => copyText(tr(q))}>
+          <Button key={q} size="xs" variant="outline" className="h-auto min-h-6 py-1 text-start font-normal whitespace-normal" title={tr('Bấm để chép')} onClick={() => copyText(tr(q))} leftIcon={<span className="text-primary">›</span>}>
             {tr(q)}
-          </button>
+          </Button>
         ))}
       </div>
       {status?.lastUse && (
@@ -776,9 +800,9 @@ function AiSection({ s }: { s: Settings }): React.JSX.Element {
           <p className="set-hint">{tr('Thêm một máy chủ MCP kiểu stdio với cấu hình sau:')}</p>
           <div className="ai-command block">
             <code>{manual}</code>
-            <button className="icon-btn" onClick={() => copyText(manual)} aria-label={tr('Chép cấu hình')} title={tr('Chép cấu hình')}>
+            <IconButton variant="ghost" size="xs" onClick={() => copyText(manual)} aria-label={tr('Chép cấu hình')} title={tr('Chép cấu hình')}>
               <Icon name="copy" size={14} />
-            </button>
+            </IconButton>
           </div>
         </details>
       )}
@@ -820,10 +844,12 @@ function About(): React.JSX.Element {
           </div>
         ))}
       </dl>
-      <a className="btn small ghost about-link" href={REPO_URL} target="_blank" rel="noreferrer">
-        <Icon name="globe" size={14} />
-        {tr('Mã nguồn trên GitHub')}
-      </a>
+      <Button asChild size="xs" variant="ghost" className="about-link">
+        <a href={REPO_URL} target="_blank" rel="noreferrer">
+          <Icon name="globe" size={14} />
+          {tr('Mã nguồn trên GitHub')}
+        </a>
+      </Button>
     </>
   )
 }
@@ -851,9 +877,9 @@ export function SettingsPanel(): React.JSX.Element | null {
         <h2>{tr('Cài đặt')}</h2>
         <span className="settings-crumb">/ {tr(current.label)}</span>
         <div className="grow" />
-        <button className="icon-btn" onClick={close} aria-label={tr('Đóng cài đặt (Esc)')} title={tr('Đóng cài đặt (Esc)')}>
+        <IconButton variant="ghost" size="sm" onClick={close} aria-label={tr('Đóng cài đặt (Esc)')} title={tr('Đóng cài đặt (Esc)')}>
           <Icon name="x" />
-        </button>
+        </IconButton>
       </header>
       <nav className="settings-nav" role="tablist" aria-label={tr('Mục cài đặt')}>
         {SECTIONS.map((x, i) => (

@@ -1,5 +1,6 @@
 // Khung sửa task (trượt ra bên phải màn hình). Tự lưu: tiêu đề khi rời ô / Enter, ghi chú sau 0,5 s, còn lại lưu ngay.
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Button, Checkbox, IconButton, Textarea, ToggleGroup, ToggleGroupItem, cn } from 'momi-ui'
 import { tr, trKey } from '../../../shared/i18n'
 import { LABEL_COLORS } from '../../../shared/palette'
 import type { TaskPatch } from '../../../shared/schemas'
@@ -14,7 +15,7 @@ import { DuePicker, type Due } from './DuePicker'
 import { PRIORITY_LABELS, REMIND_ALL_DAY, REMIND_TIMED, describeRule, dueText, nextColor, reminderText } from './format'
 import { Icon } from './icons'
 import { RecurrencePicker } from './RecurrencePicker'
-import { Popover } from './ui'
+import { MenuItem, Popover } from './ui'
 
 const STATUSES: Array<{ id: TaskStatus; label: string }> = [
   { id: 'todo', label: trKey('Cần làm') },
@@ -30,6 +31,18 @@ function useAutosize(ref: React.RefObject<HTMLTextAreaElement | null>, value: st
     el.style.height = 'auto'
     el.style.height = `${el.scrollHeight}px`
   }, [ref, value])
+}
+
+/** Nút mở bộ chọn của một trường (Hạn, Nhắc, Lặp lại, Dự án): nút ghost, chưa có giá trị thì chữ nhạt */
+function ValueButton({ empty, className, ...props }: React.ComponentProps<typeof Button> & { empty?: boolean; children: ReactNode }): React.JSX.Element {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className={cn('value-btn max-w-full justify-start px-2.5 font-normal', empty && 'is-empty text-muted-foreground', className)}
+      {...props}
+    />
+  )
 }
 
 function Field({ name, icon, label, children }: { name: string; icon: Parameters<typeof Icon>[0]['name']; label: string; children: React.ReactNode }): React.JSX.Element {
@@ -152,9 +165,7 @@ function ChecklistRow({ id, text, done }: { id: string; text: string; done: bool
   }
   return (
     <div className={`checklist-item ${done ? 'done' : ''}`}>
-      <button className={`check small ${done ? 'done' : ''}`} aria-label={tr('Đánh dấu xong')} onClick={() => void run('checklist:update', id, { done: !done })}>
-        {done && <Icon name="check" size={10} strokeWidth={3} />}
-      </button>
+      <Checkbox size="sm" checked={done} aria-label={tr('Đánh dấu xong')} onCheckedChange={() => void run('checklist:update', id, { done: !done })} />
       <input
         className="inline-input"
         value={value}
@@ -165,9 +176,9 @@ function ChecklistRow({ id, text, done }: { id: string; text: string; done: bool
           if (e.key === 'Enter' && !e.nativeEvent.isComposing) (e.target as HTMLInputElement).blur()
         }}
       />
-      <button className="icon-btn subtle" aria-label={tr('Xoá mục')} onClick={() => void run('checklist:delete', id)}>
+      <IconButton variant="ghost" size="xs" className="checklist-del" aria-label={tr('Xoá mục')} onClick={() => void run('checklist:delete', id)}>
         <Icon name="x" size={12} />
-      </button>
+      </IconButton>
     </div>
   )
 }
@@ -190,7 +201,6 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
     delete: useRef<HTMLButtonElement>(null)
   }
   useAutosize(titleRef, title)
-  useAutosize(notesRef, notes)
 
   // Dữ liệu đổi từ nơi khác (robot, Kanban…) khi không đang gõ thì cập nhật ô nhập
   useEffect(() => {
@@ -233,33 +243,36 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
   return (
     <aside className="editor" aria-label={tr('Chi tiết việc')}>
       <div className="editor-top">
-        <button className="icon-btn" onClick={onClose} aria-label={tr('Đóng')}>
+        <IconButton variant="ghost" size="sm" onClick={onClose} aria-label={tr('Đóng')}>
           <Icon name="x" />
-        </button>
+        </IconButton>
         <div className="grow" />
         {task.recurrence && task.status !== 'done' && (
-          <button className="icon-btn" onClick={() => void skipOccurrence(task)} aria-label={tr('Bỏ qua lần này')} title={tr('Bỏ qua lần này')}>
+          <IconButton variant="ghost" size="sm" onClick={() => void skipOccurrence(task)} aria-label={tr('Bỏ qua lần này')} title={tr('Bỏ qua lần này')}>
             <Icon name="skip" />
-          </button>
+          </IconButton>
         )}
-        <button
+        <IconButton
           ref={anchors.delete}
-          className="icon-btn danger"
+          variant="ghost"
+          tone="danger"
+          size="sm"
+          className="delete-task"
           // Việc lặp lại: hỏi xoá lần này hay cả chuỗi
           onClick={() => (task.seriesId ? setPop(pop === 'delete' ? null : 'delete') : void deleteTask(task))}
           aria-label={tr('Xoá việc')}
           title={tr('Xoá việc')}
         >
           <Icon name="trash" />
-        </button>
+        </IconButton>
         <Popover anchor={anchors.delete.current} open={pop === 'delete'} onClose={() => setPop(null)} align="end">
           <div className="menu">
-            <button className="menu-item danger" onClick={() => void deleteTask(task, 'one')}>
+            <MenuItem danger onClick={() => void deleteTask(task, 'one')}>
               {tr('Chỉ xoá lần này')}
-            </button>
-            <button className="menu-item danger" onClick={() => void deleteTask(task, 'series')}>
+            </MenuItem>
+            <MenuItem danger onClick={() => void deleteTask(task, 'series')}>
               {tr('Xoá cả chuỗi lặp lại')}
-            </button>
+            </MenuItem>
             <div className="menu-note">{tr('Các lần đã xong vẫn được giữ lại.')}</div>
           </div>
         </Popover>
@@ -279,53 +292,55 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
           }
         }}
       />
-      <div className="segmented" role="radiogroup" aria-label={tr('Trạng thái')}>
+      <ToggleGroup
+        type="single"
+        variant="segmented"
+        size="sm"
+        className="status-switch mb-1 self-start"
+        value={task.status}
+        // Xong: robot ăn mừng, việc lặp lại báo lần tới
+        onValueChange={(v) => void (v === 'done' && task.status !== 'done' ? completeTask(task) : run('tasks:setStatus', task.id, v as TaskStatus))}
+        aria-label={tr('Trạng thái')}
+      >
         {STATUSES.map((s) => (
-          <button
-            key={s.id}
-            role="radio"
-            aria-checked={task.status === s.id}
-            className={task.status === s.id ? 'on' : ''}
-            // Xong: robot ăn mừng, việc lặp lại báo lần tới
-            onClick={() => void (s.id === 'done' && task.status !== 'done' ? completeTask(task) : run('tasks:setStatus', task.id, s.id))}
-          >
+          <ToggleGroupItem key={s.id} value={s.id}>
             {tr(s.label)}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
 
       <Field name="due" icon="calendar" label={tr('Hạn')}>
-        <button ref={anchors.due} className={`value-btn ${task.dueDate ? '' : 'empty'}`} onClick={() => setPop(pop === 'due' ? null : 'due')}>
+        <ValueButton ref={anchors.due} empty={!task.dueDate} onClick={() => setPop(pop === 'due' ? null : 'due')}>
           {task.dueDate ? dueText(task, now.date) : tr('Thêm hạn')}
-        </button>
-        <Popover anchor={anchors.due.current} open={pop === 'due'} onClose={() => setPop(null)} width={264}>
+        </ValueButton>
+        <Popover anchor={anchors.due.current} open={pop === 'due'} onClose={() => setPop(null)}>
           <DuePicker value={{ dueDate: task.dueDate, dueTime: task.dueTime }} today={now.date} weekStart={settings.weekStart} onChange={setDue} />
         </Popover>
       </Field>
 
       <Field name="remind" icon="bell" label={tr('Nhắc')}>
-        <button
+        <ValueButton
           ref={anchors.remind}
-          className={`value-btn ${task.remindBeforeMin === null ? 'empty' : ''}`}
+          empty={task.remindBeforeMin === null}
           disabled={!task.dueDate}
           title={task.dueDate ? undefined : tr('Đặt hạn trước để nhắc việc')}
           onClick={() => setPop(pop === 'remind' ? null : 'remind')}
         >
           {task.dueDate ? reminderText(task.remindBeforeMin, allDay) : tr('Cần có hạn')}
-        </button>
+        </ValueButton>
         <Popover anchor={anchors.remind.current} open={pop === 'remind'} onClose={() => setPop(null)}>
           <div className="menu">
             {[null, ...(allDay ? REMIND_ALL_DAY : REMIND_TIMED)].map((m) => (
-              <button
+              <MenuItem
                 key={String(m)}
-                className={`menu-item ${task.remindBeforeMin === m ? 'on' : ''}`}
+                on={task.remindBeforeMin === m}
                 onClick={() => {
                   patch({ remindBeforeMin: m })
                   setPop(null)
                 }}
               >
                 {reminderText(m, allDay)}
-              </button>
+              </MenuItem>
             ))}
             {allDay && <div className="menu-note">{tr('Việc cả ngày nhắc lúc {time}', { time: settings.allDayRemindTime })}</div>}
           </div>
@@ -333,15 +348,15 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
       </Field>
 
       <Field name="repeat" icon="repeat" label={tr('Lặp lại')}>
-        <button
+        <ValueButton
           ref={anchors.repeat}
-          className={`value-btn ${task.recurrence ? '' : 'empty'}`}
+          empty={!task.recurrence}
           disabled={!task.dueDate}
           title={task.dueDate ? undefined : tr('Đặt hạn trước để lặp lại')}
           onClick={() => setPop(pop === 'repeat' ? null : 'repeat')}
         >
           {task.dueDate ? describeRule(task.recurrence, task.dueDate) : tr('Cần có hạn')}
-        </button>
+        </ValueButton>
         {task.dueDate && (
           <Popover anchor={anchors.repeat.current} open={pop === 'repeat'} onClose={() => setPop(null)} width={290}>
             <RecurrencePicker
@@ -360,15 +375,26 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
       <Field name="priority" icon="flag" label={tr('Ưu tiên')}>
         <div className="prio-picker">
           {([0, 1, 2, 3] as Priority[]).map((p) => (
-            <button key={p} className={`prio-btn prio-${p} ${task.priority === p ? 'on' : ''}`} title={tr(PRIORITY_LABELS[p])} aria-label={tr(PRIORITY_LABELS[p])} onClick={() => patch({ priority: p })}>
+            <IconButton
+              key={p}
+              variant={task.priority === p ? 'outline' : 'ghost'}
+              size="sm"
+              className={`prio-btn prio-${p} ${task.priority === p ? 'on' : ''}`}
+              // Màu cờ theo mức ưu tiên (đang chọn thì có viền và nền pha cùng màu)
+              style={{ color: p ? `var(--prio-${p})` : 'var(--faint)' }}
+              aria-pressed={task.priority === p}
+              title={tr(PRIORITY_LABELS[p])}
+              aria-label={tr(PRIORITY_LABELS[p])}
+              onClick={() => patch({ priority: p })}
+            >
               <Icon name="flag" size={14} />
-            </button>
+            </IconButton>
           ))}
         </div>
       </Field>
 
       <Field name="project" icon="folder" label={tr('Dự án')}>
-        <button ref={anchors.project} className={`value-btn ${project ? '' : 'empty'}`} onClick={() => setPop(pop === 'project' ? null : 'project')}>
+        <ValueButton ref={anchors.project} empty={!project} onClick={() => setPop(pop === 'project' ? null : 'project')}>
           {project ? (
             <>
               <i className="dot" style={{ background: LABEL_COLORS[project.color][theme] }} />
@@ -377,11 +403,11 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
           ) : (
             tr('Hộp thư')
           )}
-        </button>
+        </ValueButton>
         <Popover anchor={anchors.project.current} open={pop === 'project'} onClose={() => setPop(null)}>
           <div className="menu">
-            <button
-              className={`menu-item ${task.projectId === null ? 'on' : ''}`}
+            <MenuItem
+              on={task.projectId === null}
               onClick={() => {
                 patch({ projectId: null })
                 setPop(null)
@@ -389,14 +415,14 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
             >
               <Icon name="inbox" size={13} />
               {tr('Hộp thư (không dự án)')}
-            </button>
+            </MenuItem>
             {Object.values(projects)
               .filter((p) => p.archivedAt === null)
               .sort((a, b) => a.sortOrder - b.sortOrder)
               .map((p) => (
-                <button
+                <MenuItem
                   key={p.id}
-                  className={`menu-item ${task.projectId === p.id ? 'on' : ''}`}
+                  on={task.projectId === p.id}
                   onClick={() => {
                     patch({ projectId: p.id })
                     setPop(null)
@@ -404,7 +430,7 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
                 >
                   <i className="dot" style={{ background: LABEL_COLORS[p.color][theme] }} />
                   {p.name}
-                </button>
+                </MenuItem>
               ))}
           </div>
         </Popover>
@@ -432,10 +458,11 @@ function EditorBody({ task, onClose }: { task: Task; onClose: () => void }): Rea
           <Icon name="note" size={14} />
           {tr('Ghi chú')}
         </div>
-        <textarea
+        <Textarea
           ref={notesRef}
           className="notes"
           rows={3}
+          autoResize
           value={notes}
           maxLength={20000}
           placeholder={tr('Thêm ghi chú…')}

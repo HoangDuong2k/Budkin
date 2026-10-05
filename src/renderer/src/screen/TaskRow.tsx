@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { Badge } from 'momi-ui'
 import { isOverdue, type Now } from '../../../shared/filters'
 import { tr } from '../../../shared/i18n'
 import { LABEL_COLORS } from '../../../shared/palette'
@@ -48,7 +49,11 @@ export function TaskRow({ task, now, showProject }: { task: Task; now: Now; show
       <div className="task-main">
         <span className="task-title">{task.title}</span>
         <span className="task-meta">
-          {task.status === 'in_progress' && <span className="meta doing">{tr('Đang làm')}</span>}
+          {task.status === 'in_progress' && (
+            <Badge tone="primary" size="sm" shape="rounded" className="meta doing">
+              {tr('Đang làm')}
+            </Badge>
+          )}
           {task.dueDate && (
             <span className={`meta due ${late ? 'late' : task.dueDate === now.date ? 'today' : ''}`}>
               <Icon name="calendar" size={12} />

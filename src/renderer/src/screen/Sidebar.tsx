@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { IconButton, Input, ToggleGroup, ToggleGroupItem } from 'momi-ui'
 import { countsFor, isOpen, type SmartListId } from '../../../shared/filters'
 import { LANGS, tr, trKey } from '../../../shared/i18n'
 import { COLOR_KEYS, LABEL_COLORS, type ColorKey } from '../../../shared/palette'
@@ -11,7 +12,7 @@ import { useUi } from '../state/uiStore'
 import { run } from './actions'
 import { nextColor } from './format'
 import { Icon, type IconName } from './icons'
-import { Confirm, Popover } from './ui'
+import { Confirm, MenuItem, Popover } from './ui'
 
 const SMART: Array<{ id: SmartListId; icon: IconName; label: string }> = [
   { id: 'today', icon: 'sun', label: trKey('Hôm nay') },
@@ -41,7 +42,7 @@ function NavItem({
   swatch?: { color: string; shape: 'dot' | 'hash' }
 }): React.JSX.Element {
   return (
-    <div className={`nav-item ${active ? 'on' : ''}`}>
+    <div className={`nav-item group ${active ? 'on' : ''}`}>
       <button
         className="nav-main"
         title={label}
@@ -58,9 +59,15 @@ function NavItem({
         {!!count && <span className={`count ${danger ? 'danger' : ''}`}>{count}</span>}
       </button>
       {onMenu && (
-        <button className="icon-btn subtle nav-more" aria-label={tr('Tuỳ chọn')} onClick={(e) => onMenu(e.currentTarget)}>
+        <IconButton
+          variant="ghost"
+          size="xs"
+          className="nav-more me-1 hidden group-hover:inline-flex focus-visible:inline-flex"
+          aria-label={tr('Tuỳ chọn')}
+          onClick={(e) => onMenu(e.currentTarget)}
+        >
           <Icon name="dots" size={14} />
-        </button>
+        </IconButton>
       )}
     </div>
   )
@@ -71,9 +78,10 @@ function NewItemInput({ placeholder, onSubmit, onDone }: { placeholder: string; 
   const ref = useRef<HTMLInputElement>(null)
   useEffect(() => ref.current?.focus(), [])
   return (
-    <input
+    <Input
       ref={ref}
-      className="input nav-input"
+      size="xs"
+      className="nav-input"
       value={value}
       placeholder={placeholder}
       maxLength={120}
@@ -123,8 +131,8 @@ function ItemMenu({ menu, onClose }: { menu: ItemMenuState; onClose: () => void 
     <>
       <Popover anchor={menu.anchor} open={!confirm} onClose={onClose} width={220}>
         <div className="menu">
-          <input
-            className="input"
+          <Input
+            size="sm"
             value={name}
             maxLength={menu.kind === 'project' ? 120 : 40}
             onChange={(e) => setName(e.target.value)}
@@ -147,10 +155,10 @@ function ItemMenu({ menu, onClose }: { menu: ItemMenuState; onClose: () => void 
               />
             ))}
           </div>
-          <button className="menu-item danger" onClick={() => setConfirm(true)}>
+          <MenuItem danger onClick={() => setConfirm(true)}>
             <Icon name="trash" size={13} />
             {menu.kind === 'project' ? tr('Xoá dự án') : tr('Xoá nhãn')}
-          </button>
+          </MenuItem>
         </div>
       </Popover>
       {confirm && (
@@ -222,9 +230,9 @@ export function Sidebar(): React.JSX.Element {
 
       <div className="nav-title">
         <span className="label">{tr('Dự án')}</span>
-        <button className="icon-btn subtle" aria-label={tr('Thêm dự án')} onClick={() => setAdding('project')}>
+        <IconButton variant="ghost" size="xs" aria-label={tr('Thêm dự án')} onClick={() => setAdding('project')}>
           <Icon name="plus" size={14} />
-        </button>
+        </IconButton>
       </div>
       {adding === 'project' && (
         <NewItemInput
@@ -247,9 +255,9 @@ export function Sidebar(): React.JSX.Element {
 
       <div className="nav-title">
         <span className="label">{tr('Nhãn')}</span>
-        <button className="icon-btn subtle" aria-label={tr('Thêm nhãn')} onClick={() => setAdding('tag')}>
+        <IconButton variant="ghost" size="xs" aria-label={tr('Thêm nhãn')} onClick={() => setAdding('tag')}>
           <Icon name="plus" size={14} />
-        </button>
+        </IconButton>
       </div>
       {adding === 'tag' && (
         <NewItemInput
@@ -271,25 +279,43 @@ export function Sidebar(): React.JSX.Element {
       ))}
 
       <div className="sidebar-foot">
-        <div className="lang-switch" role="radiogroup" aria-label={tr('Ngôn ngữ')}>
+        <ToggleGroup
+          type="single"
+          variant="segmented"
+          size="xs"
+          className="lang-switch"
+          value={lang}
+          onValueChange={(v) => setLang(v as typeof lang)}
+          aria-label={tr('Ngôn ngữ')}
+        >
           {LANGS.map((l) => (
-            <button key={l.id} role="radio" aria-checked={lang === l.id} className={lang === l.id ? 'on' : ''} title={l.label} onClick={() => setLang(l.id)}>
+            <ToggleGroupItem key={l.id} value={l.id} title={l.label}>
               {l.short}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
-        <button
-          className={`icon-btn settings-btn ${settingsOpen ? 'on' : ''}`}
+        </ToggleGroup>
+        <IconButton
+          variant={settingsOpen ? 'soft' : 'ghost'}
+          tone={settingsOpen ? 'primary' : 'neutral'}
+          size="sm"
+          className="settings-btn"
           onClick={() => (settingsOpen ? closeSettings() : openSettings())}
           aria-pressed={settingsOpen}
           aria-label={tr('Cài đặt ({keys})', { keys: modKey(',') })}
           title={tr('Cài đặt ({keys})', { keys: modKey(',') })}
         >
           <Icon name="gear" size={16} />
-        </button>
-        <button className="icon-btn theme-toggle" onClick={toggleTheme} aria-label={theme === 'light' ? tr('Tắt đèn') : tr('Bật đèn')} title={theme === 'light' ? tr('Tắt đèn') : tr('Bật đèn')}>
+        </IconButton>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          className="theme-toggle"
+          onClick={toggleTheme}
+          aria-label={theme === 'light' ? tr('Tắt đèn') : tr('Bật đèn')}
+          title={theme === 'light' ? tr('Tắt đèn') : tr('Bật đèn')}
+        >
           <Icon name="sun" size={16} />
-        </button>
+        </IconButton>
       </div>
       {menu && <ItemMenu key={`${menu.kind}:${menu.id}`} menu={menu} onClose={() => setMenu(null)} />}
     </nav>

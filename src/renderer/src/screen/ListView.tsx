@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Input } from 'momi-ui'
 import { addDays } from '../../../shared/datetime'
 import { isOpen, matchesTerms, sectionsFor, type Now, type Section, type Selection } from '../../../shared/filters'
 import { tr, trKey } from '../../../shared/i18n'
@@ -35,21 +36,20 @@ export function QuickAdd({ sel, today }: { sel: Selection; today: string }): Rea
     await run('tasks:create', input)
   }
   return (
-    <div className="quick-add">
-      <Icon name="plus" size={15} />
-      <input
-        ref={ref}
-        className="quick-add-input"
-        value={text}
-        maxLength={500}
-        placeholder={tr('Thêm việc mới… (Enter để lưu)')}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.nativeEvent.isComposing) void submit()
-          if (e.key === 'Escape') (e.target as HTMLInputElement).blur()
-        }}
-      />
-    </div>
+    <Input
+      ref={ref}
+      wrapperClassName="quick-add mb-4"
+      className="quick-add-input"
+      leftSection={<Icon name="plus" size={15} className="text-primary" />}
+      value={text}
+      maxLength={500}
+      placeholder={tr('Thêm việc mới… (Enter để lưu)')}
+      onChange={(e) => setText(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && !e.nativeEvent.isComposing) void submit()
+        if (e.key === 'Escape') (e.target as HTMLInputElement).blur()
+      }}
+    />
   )
 }
 

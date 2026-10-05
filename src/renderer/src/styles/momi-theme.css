@@ -4,6 +4,9 @@
 :root[data-theme] {
   color-scheme: dark;
   --font-sans: var(--font-body);
+  /* Màn hình máy tính nhỏ: chữ cỡ "sm" của Tailwind / momi-ui bằng cỡ chữ thường của Budkin (13px) */
+  --text-sm: 13px;
+  --text-sm--line-height: 1.45;
 
   --background: var(--screen-bg);
   --foreground: var(--text);

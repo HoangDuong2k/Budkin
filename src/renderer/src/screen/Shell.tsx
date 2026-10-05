@@ -1,5 +1,6 @@
 // Giao diện "hệ điều hành" trên màn hình máy tính: thanh trên, thanh bên, danh sách, khung sửa, toast
 import { useEffect, useRef } from 'react'
+import { Button, IconButton, Input, Toaster, ToggleGroup, ToggleGroupItem } from 'momi-ui'
 import { pad2 } from '../../../shared/datetime'
 import { tr, trKey } from '../../../shared/i18n'
 import { useNow } from '../clock'
@@ -27,21 +28,22 @@ function ViewSwitch(): React.JSX.Element {
   const view = useUi((s) => s.view)
   const setView = useUi((s) => s.setView)
   return (
-    <div className="view-switch" role="radiogroup" aria-label={tr('Cách xem')}>
+    <ToggleGroup
+      type="single"
+      variant="segmented"
+      size="sm"
+      className="view-switch ms-1"
+      value={view}
+      onValueChange={(v) => setView(v as View)}
+      aria-label={tr('Cách xem')}
+    >
       {VIEWS.map((v) => (
-        <button
-          key={v.id}
-          role="radio"
-          aria-checked={view === v.id}
-          className={view === v.id ? 'on' : ''}
-          title={`${tr(v.label)} (${v.key})`}
-          onClick={() => setView(v.id)}
-        >
+        <ToggleGroupItem key={v.id} value={v.id} label={tr(v.label)} shortcut={[v.key]}>
           <Icon name={v.icon} size={14} />
           <span className="label">{tr(v.label)}</span>
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 }
 
@@ -60,9 +62,9 @@ function TopBar(): React.JSX.Element {
   }, [searchFocus])
   return (
     <header className="topbar">
-      <button className="icon-btn" onClick={toggleSidebar} aria-label={tr('Ẩn / hiện thanh bên')}>
+      <IconButton variant="ghost" size="sm" onClick={toggleSidebar} aria-label={tr('Ẩn / hiện thanh bên')}>
         <Icon name="sidebar" />
-      </button>
+      </IconButton>
       <span className="brand">
         <span className="brand-mark">
           <Icon name="bot" size={15} />
@@ -71,76 +73,50 @@ function TopBar(): React.JSX.Element {
       </span>
       <ViewSwitch />
       <div className="grow" />
-      <div className="search">
-        <Icon name="search" size={14} />
-        <input
-          ref={ref}
-          value={search}
-          maxLength={200}
-          placeholder={tr('Tìm việc… ( / )')}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              e.stopPropagation()
-              setSearch('')
-              ref.current?.blur()
-            }
-          }}
-        />
-        {search && (
-          <button className="icon-btn subtle" aria-label={tr('Xoá tìm kiếm')} onClick={() => setSearch('')}>
-            <Icon name="x" size={12} />
-          </button>
-        )}
-      </div>
-      <button className="btn primary small add-task" onClick={startQuickAdd} title={tr('Thêm việc (N)')}>
-        <Icon name="plus" size={14} />
+      <Input
+        ref={ref}
+        size="sm"
+        wrapperClassName="search w-60 min-w-28 shrink"
+        leftSection={<Icon name="search" size={14} />}
+        rightSection={
+          search ? (
+            <IconButton variant="ghost" size="xs" aria-label={tr('Xoá tìm kiếm')} onClick={() => setSearch('')}>
+              <Icon name="x" size={12} />
+            </IconButton>
+          ) : undefined
+        }
+        value={search}
+        maxLength={200}
+        placeholder={tr('Tìm việc… ( / )')}
+        onChange={(e) => setSearch(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.stopPropagation()
+            setSearch('')
+            ref.current?.blur()
+          }
+        }}
+      />
+      <Button size="sm" className="add-task" onClick={startQuickAdd} title={tr('Thêm việc (N)')} leftIcon={<Icon name="plus" size={14} />}>
         <span className="label">{tr('Thêm việc')}</span>
-      </button>
+      </Button>
       {scene && (
-        <button
-          className="icon-btn expand-btn"
+        <IconButton
+          variant="ghost"
+          size="sm"
+          className="expand-btn"
           onClick={() => setExpanded(!expanded)}
           aria-pressed={expanded}
           aria-label={expanded ? tr('Thu về màn hình (F)') : tr('Mở rộng (F)')}
           title={expanded ? tr('Thu về màn hình (F)') : tr('Mở rộng (F)')}
         >
           <Icon name={expanded ? 'collapse' : 'expand'} size={15} />
-        </button>
+        </IconButton>
       )}
       <span className="clock" aria-hidden>
         {pad2(Math.floor(now.minutes / 60))}:{pad2(now.minutes % 60)}
       </span>
     </header>
-  )
-}
-
-function Toasts(): React.JSX.Element {
-  const toasts = useUi((s) => s.toasts)
-  const dismiss = useUi((s) => s.dismissToast)
-  const hold = useUi((s) => s.holdToast)
-  return (
-    <div className="toasts" aria-live="polite">
-      {toasts.map((t) => (
-        <div key={t.id} className={`toast ${t.tone ?? ''}`} onPointerEnter={() => hold(t.id, true)} onPointerLeave={() => hold(t.id, false)}>
-          <span>{t.text}</span>
-          {t.action && (
-            <button
-              className="toast-action"
-              onClick={() => {
-                t.action?.run()
-                dismiss(t.id)
-              }}
-            >
-              {t.action.label}
-            </button>
-          )}
-          <button className="icon-btn subtle" aria-label={tr('Đóng')} onClick={() => dismiss(t.id)}>
-            <Icon name="x" size={12} />
-          </button>
-        </div>
-      ))}
-    </div>
   )
 }
 
@@ -210,7 +186,8 @@ export function Shell(): React.JSX.Element {
       </main>
       <TaskEditor />
       {settingsOpen && <SettingsPanel />}
-      <Toasts />
+      {/* Thông báo nhỏ (useUi().toast): giữa mép dưới màn hình máy tính */}
+      <Toaster position="bottom-center" visibleToasts={3} closeButton clearAll={false} />
     </div>
   )
 }

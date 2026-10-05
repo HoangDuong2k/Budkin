@@ -85,8 +85,6 @@ export const EN: Record<string, string> = {
 
   // Chọn hạn
   'Không hạn': 'No date',
-  'Giờ': 'Time',
-  'Cả ngày': 'All day',
   'Thứ Hai tới': 'Next Monday',
   'Tháng trước': 'Previous month',
   'Tháng sau': 'Next month',
@@ -164,6 +162,8 @@ export const EN: Record<string, string> = {
   năm: 'years',
   'Tuỳ chỉnh…': 'Custom…',
   Mỗi: 'Every',
+  'Đơn vị': 'Unit',
+  'Số lần': 'Number of times',
   'Số lần lặp': 'Repeat interval',
   'Vào các thứ': 'On these days',
   'Ngày {d}': 'Day {d}',

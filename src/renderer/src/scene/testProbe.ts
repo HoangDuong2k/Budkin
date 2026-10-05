@@ -82,13 +82,8 @@ const toastLog: string[] = []
 
 export function installTestProbe(): void {
   if (!window.api.boot.test) return
-  const seen = new Set<number>()
-  useUi.subscribe((s) => {
-    for (const t of s.toasts)
-      if (!seen.has(t.id)) {
-        seen.add(t.id)
-        toastLog.push(t.text)
-      }
+  useUi.subscribe((s, prev) => {
+    if (s.lastToast && s.lastToast !== prev.lastToast) toastLog.push(s.lastToast.text)
   })
   ;(window as unknown as { __budkin: unknown }).__budkin = {
     get renderMode() {

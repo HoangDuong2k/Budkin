@@ -1,6 +1,7 @@
 // Thẻ việc trên Kanban: dự án ở dòng trên, tiêu đề, hạn (kèm "Quá hạn"), nhắc, lặp, checklist; chân thẻ có mức ưu tiên
 // và nhãn. Dùng chung cho thẻ nằm trong cột và bản sao nổi đi theo con trỏ khi kéo (DragOverlay)
 import { forwardRef, type CSSProperties, type HTMLAttributes } from 'react'
+import { Badge } from 'momi-ui'
 import { isOverdue, type Now } from '../../../shared/filters'
 import { tr, trKey } from '../../../shared/i18n'
 import { LABEL_COLORS } from '../../../shared/palette'
@@ -64,15 +65,19 @@ export const TaskCard = forwardRef<HTMLDivElement, Props>(function TaskCard({ ta
             {checked}/{task.checklist.length}
           </span>
         )}
-        {late && <span className="card-late">{tr('Quá hạn')}</span>}
+        {late && (
+          <Badge tone="danger" size="sm" shape="rounded" className="card-late ms-auto">
+            {tr('Quá hạn')}
+          </Badge>
+        )}
       </div>
       {(task.priority > 0 || tagList.length > 0) && (
         <div className="card-foot">
           {task.priority > 0 && (
-            <span className="prio-pill">
+            <Badge variant="outline" size="sm" shape="rounded" className="prio-pill">
               <Icon name="flag" size={11} />
               {tr(PRIORITY_LABEL[task.priority])}
-            </span>
+            </Badge>
           )}
           {tagList.length > 0 && (
             <span className="card-tags">

@@ -1,4 +1,5 @@
 // Trạng thái giao diện trên màn hình: đang xem gì, đang sửa task nào, thông báo nhỏ (toast)
+import { toast as showToast } from 'momi-ui'
 import { create } from 'zustand'
 import type { Selection } from '../../../shared/filters'
 
@@ -7,7 +8,6 @@ export type CalendarMode = 'month' | 'week'
 export type SettingsSection = 'general' | 'reminders' | 'display' | 'ai' | 'data' | 'about'
 
 export interface Toast {
-  id: number
   text: string
   tone?: 'error'
   action?: { label: string; run: () => void }
@@ -20,7 +20,8 @@ interface UiState {
   /** Task đang mở trong khung sửa */
   editingId: string | null
   sidebarOpen: boolean
-  toasts: Toast[]
+  /** Toast vừa hiện (kiểm thử ghi lại: toast tự tắt sau vài giây, máy chậm đọc không kịp) */
+  lastToast: { seq: number; text: string } | null
   /** Đếm tăng mỗi lần muốn đưa con trỏ vào ô thêm việc nhanh (phím N) */
   quickAddFocus: number
   searchFocus: number
@@ -37,10 +38,8 @@ interface UiState {
   setSearch: (search: string) => void
   openEditor: (id: string | null) => void
   toggleSidebar: () => void
-  toast: (t: Omit<Toast, 'id'>) => void
-  dismissToast: (id: number) => void
-  /** Con trỏ đang ở trên toast: không tự tắt (đang định bấm "Hoàn tác"); rời ra thì tắt sau một lúc */
-  holdToast: (id: number, hold: boolean) => void
+  /** Thông báo nhỏ (Toaster của momi-ui, giữa mép dưới màn hình); rê chuột lên thì không tự tắt */
+  toast: (t: Toast) => void
   focusQuickAdd: () => void
   focusSearch: () => void
   setExpanded: (expanded: boolean) => void
@@ -63,14 +62,8 @@ function loadPrefs(): Partial<Pick<UiState, 'view' | 'selection' | 'sidebarOpen'
 
 const prefs = loadPrefs()
 let toastSeq = 0
-const toastTimers = new Map<number, ReturnType<typeof setTimeout>>()
 /** Kiểm thử trên máy ảo chậm: toast ở lâu hơn để kịp bấm */
 const TOAST_SCALE = window.api.boot.test ? 3 : 1
-
-function armToast(id: number, ms: number): void {
-  clearTimeout(toastTimers.get(id))
-  toastTimers.set(id, setTimeout(() => useUi.getState().dismissToast(id), ms * TOAST_SCALE))
-}
 
 export const useUi = create<UiState>((set, get) => ({
   view: prefs.view === 'kanban' || prefs.view === 'calendar' ? prefs.view : 'list',
@@ -78,7 +71,7 @@ export const useUi = create<UiState>((set, get) => ({
   search: '',
   editingId: null,
   sidebarOpen: prefs.sidebarOpen ?? true,
-  toasts: [],
+  lastToast: null,
   quickAddFocus: 0,
   searchFocus: 0,
   expanded: false,
@@ -93,19 +86,13 @@ export const useUi = create<UiState>((set, get) => ({
   openEditor: (editingId) => set(editingId ? { editingId, settingsOpen: false } : { editingId }),
   toggleSidebar: () => set({ sidebarOpen: !get().sidebarOpen }),
   toast: (t) => {
-    const id = ++toastSeq
-    set({ toasts: [...get().toasts.slice(-2), { ...t, id }] })
-    armToast(id, t.action ? 6000 : 3500)
-  },
-  dismissToast: (id) => {
-    clearTimeout(toastTimers.get(id))
-    toastTimers.delete(id)
-    set({ toasts: get().toasts.filter((t) => t.id !== id) })
-  },
-  holdToast: (id, hold) => {
-    if (!get().toasts.some((t) => t.id === id)) return
-    if (hold) clearTimeout(toastTimers.get(id))
-    else armToast(id, 2500)
+    showToast(t.text, {
+      tone: t.tone === 'error' ? 'danger' : 'neutral',
+      // Có nút (vd. "Hoàn tác") thì ở lâu hơn để kịp bấm
+      duration: (t.action ? 6000 : 3500) * TOAST_SCALE,
+      action: t.action && { label: t.action.label, onClick: t.action.run }
+    })
+    set({ lastToast: { seq: ++toastSeq, text: t.text } })
   },
   focusQuickAdd: () => set({ quickAddFocus: get().quickAddFocus + 1, editingId: null, settingsOpen: false }),
   focusSearch: () => set({ searchFocus: get().searchFocus + 1, settingsOpen: false }),

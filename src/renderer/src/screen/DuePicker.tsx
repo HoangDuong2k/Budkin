@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { parseTimeInput } from '../../../shared/datetime'
+// Chọn hạn: DateTimePickerPanel của momi-ui — mốc nhanh (Hôm nay, Ngày mai, Thứ Hai tới, Không hạn), lịch tháng, giờ
+// gõ tự do ("9h30", "930", "21:15"…) với các giờ gợi ý, "Cả ngày" (hạn không có giờ).
+import { DateTimePickerPanel, type DateTimePreset } from 'momi-ui'
+import { dateAtNoon, ymd } from '../../../shared/datetime'
 import { tr } from '../../../shared/i18n'
 import { quickDates } from './format'
-import { MiniCalendar } from './MiniCalendar'
 
 export interface Due {
   dueDate: string | null
@@ -11,63 +12,28 @@ export interface Due {
 
 const TIME_SUGGESTIONS = ['08:00', '09:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00']
 
-/** Chọn hạn: nút nhanh, lịch tháng, giờ (gõ tự do "9h30", "930", "21:15"…) */
+const toDate = (s: string | null): Date | null => (s ? dateAtNoon(s) : null)
+const fromDate = (d: Date | null): string | null => (d ? ymd(d.getFullYear(), d.getMonth() + 1, d.getDate()) : null)
+
 export function DuePicker({ value, today, weekStart, onChange }: { value: Due; today: string; weekStart: 0 | 1; onChange: (d: Due) => void }): React.JSX.Element {
-  const [timeText, setTimeText] = useState(value.dueTime ?? '')
-  const [bad, setBad] = useState(false)
-  useEffect(() => setTimeText(value.dueTime ?? ''), [value.dueTime])
-
-  const commitTime = (raw: string): void => {
-    if (!raw.trim()) {
-      setBad(false)
-      if (value.dueTime) onChange({ ...value, dueTime: null })
-      return
-    }
-    const t = parseTimeInput(raw)
-    setBad(t === null)
-    if (t && t !== value.dueTime) onChange({ dueDate: value.dueDate ?? today, dueTime: t })
-  }
-
+  const presets: DateTimePreset[] = [
+    ...quickDates(today).map((q) => ({ label: q.label, date: toDate(q.date) })),
+    { label: tr('Không hạn'), date: null, time: null }
+  ]
   return (
-    <div className="due-picker">
-      <div className="due-quick">
-        {quickDates(today).map((q) => (
-          <button key={q.label} className={`chip-btn ${value.dueDate === q.date ? 'on' : ''}`} onClick={() => onChange({ ...value, dueDate: q.date })}>
-            {q.label}
-          </button>
-        ))}
-        <button className="chip-btn" onClick={() => onChange({ dueDate: null, dueTime: null })}>
-          {tr('Không hạn')}
-        </button>
-      </div>
-      <MiniCalendar value={value.dueDate} today={today} weekStart={weekStart} onPick={(d) => onChange({ ...value, dueDate: d })} />
-      <div className="due-time">
-        <label>
-          <span>{tr('Giờ')}</span>
-          <input
-            className={`input time-input ${bad ? 'bad' : ''}`}
-            value={timeText}
-            placeholder={tr('Cả ngày')}
-            onChange={(e) => setTimeText(e.target.value)}
-            onBlur={(e) => commitTime(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commitTime((e.target as HTMLInputElement).value)
-            }}
-          />
-        </label>
-        <div className="time-suggest">
-          {TIME_SUGGESTIONS.map((t) => (
-            <button key={t} className={`chip-btn small ${value.dueTime === t ? 'on' : ''}`} onClick={() => onChange({ dueDate: value.dueDate ?? today, dueTime: t })}>
-              {t}
-            </button>
-          ))}
-          {value.dueTime && (
-            <button className="chip-btn small" onClick={() => onChange({ ...value, dueTime: null })}>
-              {tr('Cả ngày')}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    <DateTimePickerPanel
+      className="due-picker"
+      value={{ date: toDate(value.dueDate), time: value.dueTime }}
+      // Chọn giờ khi chưa có ngày: hạn là hôm nay
+      onValueChange={(v) => {
+        const dueDate = fromDate(v.date) ?? (v.time ? today : null)
+        onChange({ dueDate, dueTime: dueDate ? v.time : null })
+      }}
+      presets={presets}
+      timeSuggestions={TIME_SUGGESTIONS}
+      allowAllDay
+      hourCycle="h23"
+      weekStartsOn={weekStart}
+    />
   )
 }

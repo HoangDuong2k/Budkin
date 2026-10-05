@@ -1,16 +1,20 @@
-// Thành phần giao diện dùng chung: popover (luôn nằm trong khung màn hình máy tính), hộp xác nhận
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
+// Thành phần giao diện dùng chung, dựng trên momi-ui: popover gắn vào một phần tử, hộp xác nhận. Cả hai vẽ bên trong
+// màn hình máy tính và không tràn ra ngoài (PortalProvider ở App.tsx).
+import { useRef, type ComponentProps, type ReactNode } from 'react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  Button,
+  Popover as MomiPopover,
+  PopoverAnchor,
+  PopoverContent,
+  cn
+} from 'momi-ui'
 import { tr } from '../../../shared/i18n'
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, v))
-}
-
-/** Khung giới hạn: vùng màn hình máy tính (popover không được tràn ra ngoài màn hình 3D) */
-function screenBounds(): DOMRect {
-  return (document.querySelector('.screen') ?? document.body).getBoundingClientRect()
-}
 
 interface PopoverProps {
   anchor: HTMLElement | null
@@ -23,66 +27,50 @@ interface PopoverProps {
 }
 
 /**
- * Popover gắn vào một phần tử. Vẽ ở #portal-root (ngoài .screen — .screen là container query nên
- * position: fixed bên trong sẽ bị tính theo .screen), vị trí kẹp trong vùng màn hình máy tính.
+ * Popover gắn vào một phần tử (nút đang bấm). Bấm ra ngoài / Esc thì đóng; bấm lại vào chính phần tử đó thì để nút
+ * tự xử lý (bật / tắt), không đóng rồi mở lại ngay.
  */
 export function Popover({ anchor, open, onClose, children, width, align = 'start', className = '' }: PopoverProps): React.JSX.Element | null {
-  const ref = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null)
+  const anchorRef = useRef<HTMLElement | null>(anchor)
+  anchorRef.current = anchor
+  if (!anchor) return null
+  return (
+    <MomiPopover open={open} onOpenChange={(next) => !next && onClose()}>
+      <PopoverAnchor virtualRef={anchorRef as React.RefObject<HTMLElement>} />
+      <PopoverContent
+        align={align}
+        sideOffset={4}
+        // Đóng là biến mất ngay (không chạy hiệu ứng đóng): lúc đang chạy hiệu ứng, popover vẫn bắt phím Esc —
+        // bấm Esc ngay sau khi chọn sẽ bị nuốt thay vì đóng khung sửa
+        className={cn('popover w-auto p-1 data-[state=closed]:animate-none!', className)}
+        style={{ width }}
+        onInteractOutside={(e) => {
+          if (anchor.contains(e.target as Node)) e.preventDefault()
+        }}
+        // Giữ con trỏ ở chỗ cũ khi mở (ô nhập trong popover tự lấy focus nếu cần)
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        // Đóng: con trỏ về lại nút đã mở popover (Esc lần nữa thì đóng khung chứa nó, như trước)
+        onCloseAutoFocus={(e) => {
+          e.preventDefault()
+          if (anchor.isConnected) anchor.focus({ preventScroll: true })
+        }}
+      >
+        {children}
+      </PopoverContent>
+    </MomiPopover>
+  )
+}
 
-  useLayoutEffect(() => {
-    if (!open || !anchor) return
-    const place = (): void => {
-      const el = ref.current
-      if (!el) return
-      const a = anchor.getBoundingClientRect()
-      const s = screenBounds()
-      const w = el.offsetWidth
-      const h = el.offsetHeight
-      const left = clamp(align === 'end' ? a.right - w : a.left, s.left + 6, s.right - 6 - w)
-      let top = a.bottom + 4
-      if (top + h > s.bottom - 6 && a.top - 4 - h >= s.top + 6) top = a.top - 4 - h
-      setPos({ left, top: clamp(top, s.top + 6, Math.max(s.top + 6, s.bottom - 6 - h)), maxHeight: s.height - 12 })
-    }
-    place()
-    const ro = new ResizeObserver(place)
-    ro.observe(document.querySelector('.screen') ?? document.body)
-    if (ref.current) ro.observe(ref.current)
-    return () => ro.disconnect()
-  }, [open, anchor, align])
-
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: PointerEvent): void => {
-      const t = e.target as Node
-      if (!ref.current?.contains(t) && !anchor?.contains(t)) onClose()
-    }
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        onClose()
-      }
-    }
-    document.addEventListener('pointerdown', onDown, true)
-    document.addEventListener('keydown', onKey, true)
-    return () => {
-      document.removeEventListener('pointerdown', onDown, true)
-      document.removeEventListener('keydown', onKey, true)
-    }
-  }, [open, anchor, onClose])
-
-  const root = document.getElementById('portal-root')
-  if (!open || !root) return null
-  return createPortal(
-    <div
-      ref={ref}
-      className={`popover ${className}`}
-      style={{ left: pos?.left ?? -9999, top: pos?.top ?? -9999, width, maxHeight: pos?.maxHeight }}
-      role="dialog"
-    >
-      {children}
-    </div>,
-    root
+/** Một dòng trong menu của popover: nút ghost của momi-ui; `on` là mục đang chọn (chữ xanh ngọc), `danger` chữ đỏ */
+export function MenuItem({ on, danger, className, ...props }: ComponentProps<typeof Button> & { on?: boolean; danger?: boolean }): React.JSX.Element {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      tone={danger ? 'danger' : 'neutral'}
+      className={cn('menu-item h-8 w-full justify-start px-2 font-normal', on && 'on font-semibold text-primary hover:text-primary', className)}
+      {...props}
+    />
   )
 }
 
@@ -100,29 +88,17 @@ export function Confirm({
   onConfirm: () => void
   onCancel: () => void
 }): React.JSX.Element {
-  const ok = useRef<HTMLButtonElement>(null)
-  useEffect(() => ok.current?.focus(), [])
   return (
-    <div
-      className="modal-backdrop"
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          e.stopPropagation()
-          onCancel()
-        }
-      }}
-    >
-      <div className="modal" role="alertdialog">
-        <p>{text}</p>
-        <div className="modal-actions">
-          <button className="btn ghost" onClick={onCancel}>
-            {tr('Huỷ')}
-          </button>
-          <button ref={ok} className={`btn ${danger ? 'danger' : 'primary'}`} onClick={onConfirm}>
+    <AlertDialog open onOpenChange={(open) => !open && onCancel()}>
+      <AlertDialogContent size="sm" className="modal" aria-describedby={undefined}>
+        <AlertDialogTitle className="text-sm leading-normal font-normal">{text}</AlertDialogTitle>
+        <AlertDialogFooter>
+          <AlertDialogCancel size="sm">{tr('Huỷ')}</AlertDialogCancel>
+          <AlertDialogAction size="sm" tone={danger ? 'danger' : 'primary'} onClick={onConfirm} autoFocus>
             {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
