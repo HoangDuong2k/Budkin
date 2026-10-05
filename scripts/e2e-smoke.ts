@@ -166,7 +166,8 @@ async function launch(extraEnv: Record<string, string> = {}): Promise<{ app: Ele
   const args = [
     ...(exe ? [] : [ROOT]),
     ...(process.platform === 'linux' && !process.env.BUDKIN_E2E_SANDBOX ? ['--no-sandbox'] : []),
-    ...(process.env.BUDKIN_E2E_SWIFTSHADER ? ['--use-gl=angle', '--use-angle=swiftshader'] : [])
+    // macOS: SwiftShader (qua Vulkan) không khởi tạo được trên máy ảo macOS của GitHub — dùng GPU ảo (Metal) của máy
+    ...(process.env.BUDKIN_E2E_SWIFTSHADER && process.platform !== 'darwin' ? ['--use-gl=angle', '--use-angle=swiftshader'] : [])
   ]
   const app = (appRef = await electron.launch({
     executablePath: exe ?? (require('electron') as unknown as string),
