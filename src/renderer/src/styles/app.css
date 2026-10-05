@@ -50,6 +50,9 @@ body {
   background-image: var(--screen-light), var(--grain);
   container-type: size;
   container-name: screen;
+  /* Khung chứa của mọi phần tử position: fixed bên trong (container-type không làm việc này): toast, hộp thoại, thẻ
+     đang kéo của momi-ui (vẽ vào đây qua PortalProvider) nằm trong màn hình máy tính, không phủ lên cả cảnh */
+  contain: layout;
 }
 
 /* Thanh cuộn mảnh theo màu theme (thanh mặc định của Chromium quá dày trên màn hình nhỏ) */
@@ -276,7 +279,8 @@ body {
   color: var(--bk-accent-2);
 }
 
-/* Popover, menu nổi: ngoài .screen (container query làm position: fixed bên trong bị tính theo .screen) */
+/* Việc đang kéo trên Lịch (DragOverlay của dnd-kit, toạ độ theo cửa sổ): ngoài .screen. Menu, popover, hộp thoại,
+   toast của momi-ui thì vẽ bên trong .screen (PortalProvider) */
 #portal-root {
   position: fixed;
   inset: 0;

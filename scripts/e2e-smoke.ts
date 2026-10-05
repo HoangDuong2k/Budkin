@@ -763,6 +763,14 @@ async function dragTo(page: Page, from: { x: number; y: number }, to: { x: numbe
   await page.mouse.up()
 }
 
+/** Phần tử nằm trọn trong màn hình máy tính (toast, hộp thoại… không được phủ lên cảnh 3D / 2D xung quanh) */
+async function insideScreen(page: Page, selector: string): Promise<boolean> {
+  const box = await page.locator(selector).first().boundingBox()
+  const screen = await page.locator('.screen').boundingBox()
+  if (!box || !screen) return false
+  return box.x >= screen.x - 1 && box.y >= screen.y - 1 && box.x + box.width <= screen.x + screen.width + 1 && box.y + box.height <= screen.y + screen.height + 1
+}
+
 async function centerOf(page: Page, selector: string): Promise<{ x: number; y: number }> {
   // Cột / ô lịch có thanh cuộn riêng: đưa phần tử vào tầm nhìn trước
   await page.locator(selector).first().scrollIntoViewIfNeeded()
@@ -902,6 +910,7 @@ async function dataFlow(app: ElectronApplication, page: Page): Promise<void> {
   await value(page, 'tasks:create', { title: 'Việc thêm sau khi sao lưu' })
   await press(manual.getByRole('button', { name: 'Khôi phục' }))
   const closed = app.waitForEvent('close')
+  assert(await until(() => insideScreen(page, '.modal')), 'hộp xác nhận nằm trong màn hình máy tính')
   await press(page.locator('.modal').getByRole('button', { name: 'Khôi phục' }))
   await closed
   assert(true, 'khôi phục: Budkin đóng lại để thay dữ liệu')
@@ -979,6 +988,7 @@ async function aiFlow(page: Page): Promise<void> {
     'việc Claude tạo hiện ngay trong Budkin'
   )
   assert(await until(async () => (await toasts()).includes('Claude đã thêm 2 việc')), 'toast "Claude đã thêm 2 việc" kèm nút Hoàn tác')
+  assert(await until(() => insideScreen(page, TOAST)), 'toast nằm trong màn hình máy tính (không phủ lên cảnh xung quanh)')
   await page.keyboard.press('Escape')
   await press(page.locator(TOAST, { hasText: 'Claude đã thêm 2 việc' }).getByRole('button', { name: 'Hoàn tác' }))
   assert(

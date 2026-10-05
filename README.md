@@ -338,6 +338,11 @@ Icon (mặt robot) vẽ bằng SVG trong `build/icon-src/`; sửa xong thì ch�
 - `src/renderer` — React: cảnh 3D (React Three Fiber) + lớp DOM đặt khít lên màn hình máy tính 3D (chữ sắc nét,
   bộ gõ tiếng Việt chạy bình thường). `src/renderer/src/flat` — bàn làm việc 2D (SVG) dùng chung máy trạng thái robot,
   hiệu ứng đèn, lời thoại, âm thanh với cảnh 3D; cả hai chỉ vẽ khi có gì chuyển động.
+- `src/renderer/src/screen` — giao diện trên màn hình, dựng bằng [momi-ui](https://github.com/HoangDuong2k/momi-ui)
+  (Tailwind CSS v4 + Radix, ghim theo tag trong `package.json`): CSS riêng của Budkin nằm trong layer `legacy`
+  (`styles/index.css`) để không đè lên momi-ui; bảng màu Budkin (đổi theo đèn bàn) gán vào token của momi-ui ở
+  `styles/momi-theme.css`; menu, popover, hộp thoại, thẻ đang kéo vẽ bên trong màn hình máy tính (`PortalProvider`).
+  Sửa momi-ui cùng lúc: đổi thành `"momi-ui": "file:../momi-ui"` và chạy `npm run dev:lib` trong repo momi-ui.
 - `src/shared` — kiểu dữ liệu, hợp đồng IPC, i18n, bảng màu, định dạng file xuất dùng chung.
 
 Phông chữ Be Vietnam Pro, Oswald, JetBrains Mono dùng theo giấy phép SIL Open Font License
