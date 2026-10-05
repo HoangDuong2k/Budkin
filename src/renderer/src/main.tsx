@@ -15,10 +15,7 @@ import { subscribeAlerts } from './state/alertStore'
 import { subscribeData, useData } from './state/dataStore'
 import { useUi } from './state/uiStore'
 import { installGrain } from './styles/grain'
-import './styles/tokens.css'
-import './styles/app.css'
-import './styles/screen.css'
-import './styles/flat.css'
+import './styles/index.css'
 
 const boot = window.api.boot
 // Đặt theme, ngôn ngữ trước lần vẽ đầu tiên (cửa sổ đã có màu nền đúng theme do main đặt)

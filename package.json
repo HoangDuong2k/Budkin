@@ -37,6 +37,7 @@
     "@modelcontextprotocol/sdk": "^1.31.0",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.19.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -46,9 +47,11 @@
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "maath": "^0.10.8",
+    "momi-ui": "github:HoangDuong2k/momi-ui#v0.3.0",
     "playwright-core": "^1.63.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
     "three": "^0.186.1",
     "tsx": "^4.23.15",
     "typescript": "5.9",
@@ -60,6 +63,7 @@
   "allowScripts": {
     "esbuild@0.25.12": true,
     "esbuild@0.28.2": true,
-    "electron-winstaller": false
+    "electron-winstaller": false,
+    "github:HoangDuong2k/momi-ui#0cd2b3caf40ce47a29ffb1ba3aeeba21bf01911b": true
   }
 }

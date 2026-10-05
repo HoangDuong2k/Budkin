@@ -1,0 +1,12 @@
+/* CSS của giao diện: Tailwind v4 + momi-ui, cùng CSS riêng của Budkin.
+   Thứ tự layer: CSS riêng của Budkin (legacy) thắng reset của Tailwind (base) nhưng thua class của momi-ui
+   (components, utilities) — xem README của momi-ui, mục "Dùng chung với CSS có sẵn". Dòng @layer phải đứng đầu. */
+@layer theme, base, legacy, components, utilities;
+@import 'tailwindcss';
+@import 'momi-ui/tailwind.css';
+@import './tokens.css' layer(legacy);
+@import './app.css' layer(legacy);
+@import './screen.css' layer(legacy);
+@import './flat.css' layer(legacy);
+/* Không nằm trong layer: bảng màu Budkin ghi đè token mặc định của momi-ui */
+@import './momi-theme.css';

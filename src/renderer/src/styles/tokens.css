@@ -131,7 +131,7 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   /* Hình khối giao diện (kiểu Modern Minimal): góc bo vừa phải — nút, ô nhập 8px; thẻ, khung nổi 10–12px; chỉ công tắc,
      chấm trạng thái là tròn. Các vùng ngăn bằng viền mảnh, không phải khối nổi. */
-  --radius: 8px;
+  --bk-radius: 8px;
   --r-sm: 6px;
   --r-md: 8px;
   --r-lg: 10px;
@@ -146,9 +146,9 @@
   /* Nền ô nhập: tối hơn mặt khối một chút */
   --field: color-mix(in srgb, var(--text) 3%, transparent);
   /* Bóng đổ: rất nhẹ cho nút / thẻ, đậm hơn cho khung nổi (menu, hộp thoại) */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
-  --shadow-pop: 0 10px 30px -6px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --bk-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --bk-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+  --bk-shadow-pop: 0 10px 30px -6px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
 
@@ -159,13 +159,13 @@
   --panel-2: #24272b;
   --line: #34373c;
   --text: #e7e4de;
-  --muted: #9e9b95;
+  --bk-muted: #9e9b95;
   --faint: #605e5a;
-  --accent: #3fc2b8;
-  --accent-soft: #15332f;
-  --accent-text: #041413;
+  --bk-accent: #3fc2b8;
+  --bk-accent-soft: #15332f;
+  --bk-accent-text: #041413;
   /* Điểm nhấn phụ: hổ phách */
-  --accent-2: #d9a863;
+  --bk-accent-2: #d9a863;
   --glow: #3fc2b8;
   --danger: #ec6a5c;
   --danger-soft: #3b1d1a;
@@ -173,7 +173,7 @@
   --prio-1: #74b0e2;
   --prio-2: #e3b04b;
   --prio-3: #ec6a5c;
-  --shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  --bk-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
   /* Ánh đèn bàn loang nhẹ trên mép trên màn hình */
   --screen-light: radial-gradient(120% 70% at 50% 0%, rgba(255, 214, 160, 0.035), transparent 70%);
 }
@@ -185,12 +185,12 @@
   --panel-2: #161a1c;
   --line: #22282b;
   --text: #dde5e3;
-  --muted: #7c8886;
+  --bk-muted: #7c8886;
   --faint: #434b4b;
-  --accent: #4fe0d4;
-  --accent-soft: #0e2e2b;
-  --accent-text: #021311;
-  --accent-2: #e3b567;
+  --bk-accent: #4fe0d4;
+  --bk-accent-soft: #0e2e2b;
+  --bk-accent-text: #021311;
+  --bk-accent-2: #e3b567;
   --glow: #4fe0d4;
   --danger: #ff6257;
   --danger-soft: #37140f;
@@ -198,7 +198,7 @@
   --prio-1: #82bdf2;
   --prio-2: #f0bd55;
   --prio-3: #ff6257;
-  --shadow: 0 10px 28px rgba(0, 0, 0, 0.8);
+  --bk-shadow: 0 10px 28px rgba(0, 0, 0, 0.8);
   /* Màn hình chạy nguồn dự phòng: ánh xanh ngọc loang từ mép trên */
   --screen-light: radial-gradient(120% 70% at 50% 0%, rgba(79, 224, 212, 0.06), transparent 70%);
 }

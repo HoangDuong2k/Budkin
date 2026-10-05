@@ -1,0 +1,44 @@
+/* Bảng màu Budkin → token của momi-ui. Cả hai theme của Budkin (bật / tắt đèn) đều nền tối: <html> luôn có class
+   .dark (các biến thể dark: của momi-ui), còn màu cụ thể lấy từ biến của Budkin, đổi theo [data-theme] (đèn bàn).
+   :root[data-theme] có độ ưu tiên cao hơn :root / .dark / [data-theme='light'] của momi-ui nên luôn thắng. */
+:root[data-theme] {
+  color-scheme: dark;
+  --font-sans: var(--font-body);
+
+  --background: var(--screen-bg);
+  --foreground: var(--text);
+  --card: var(--panel);
+  --card-foreground: var(--text);
+  --popover: var(--panel-2);
+  --popover-foreground: var(--text);
+
+  /* Màu nhấn xanh ngọc, chữ tối trên nền nhấn */
+  --primary: var(--bk-accent);
+  --primary-foreground: var(--bk-accent-text);
+  /* Mặt nền nhạt (nút soft, rãnh của bộ chọn, cột Kanban…) và nền khi rê chuột: pha từ màu chữ lên nền màn hình */
+  --secondary: color-mix(in srgb, var(--text) 10%, var(--screen-bg));
+  --secondary-foreground: var(--text);
+  --muted: color-mix(in srgb, var(--text) 8%, var(--screen-bg));
+  --muted-foreground: var(--bk-muted);
+  --accent: color-mix(in srgb, var(--text) 10%, var(--screen-bg));
+  --accent-foreground: var(--text);
+
+  --destructive: var(--danger);
+  --destructive-foreground: #140806;
+  --success: var(--ok);
+  --success-foreground: #04130b;
+  /* Cảnh báo: hổ phách (màu nhấn phụ của Budkin) */
+  --warning: var(--bk-accent-2);
+  --warning-foreground: #1c1407;
+  --info: var(--prio-1);
+  --info-foreground: #06121c;
+
+  --border: var(--edge);
+  --input: var(--edge-strong);
+  --ring: var(--bk-accent);
+
+  /* Bề mặt kiểu app desktop: ô nhập lõm hơn nền một chút, menu / hộp thoại nổi lên */
+  --surface-sunken: color-mix(in srgb, var(--text) 4%, var(--screen-bg));
+  --surface-raised: var(--panel-2);
+  --border-strong: var(--edge-strong);
+}

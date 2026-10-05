@@ -29,7 +29,7 @@
 }
 
 .muted {
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 button {
@@ -39,7 +39,7 @@ button {
 
 /* Đang dùng bàn phím: vòng sáng xanh ngọc mềm quanh phần tử */
 :focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--bk-accent) 55%, transparent);
   outline-offset: 1px;
 }
 
@@ -60,7 +60,7 @@ button {
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--bk-shadow-xs);
 }
 
 .btn:hover:not(:disabled) {
@@ -84,14 +84,14 @@ button {
 
 /* Nút chính: nền xanh ngọc đặc, chữ tối */
 .btn.primary {
-  background: var(--accent);
+  background: var(--bk-accent);
   border-color: transparent;
-  color: var(--accent-text);
+  color: var(--bk-accent-text);
   font-weight: 600;
 }
 
 .btn.primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 88%, #fff);
+  background: color-mix(in srgb, var(--bk-accent) 88%, #fff);
 }
 
 .btn.danger {
@@ -124,7 +124,7 @@ button {
   border: 0;
   border-radius: var(--r-md);
   background: transparent;
-  color: var(--muted);
+  color: var(--bk-muted);
   cursor: pointer;
   flex: none;
 }
@@ -166,9 +166,9 @@ button {
 }
 
 .chip-btn.on {
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
-  color: var(--accent);
+  background: var(--bk-accent-soft);
+  border-color: color-mix(in srgb, var(--bk-accent) 50%, transparent);
+  color: var(--bk-accent);
   font-weight: 600;
 }
 
@@ -182,16 +182,22 @@ button {
   padding: 6px 10px;
   outline: none;
   min-width: 0;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--bk-shadow-xs);
 }
 
 .input:focus {
-  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--bk-accent) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bk-accent) 18%, transparent);
 }
 
 .input.bad {
   border-color: var(--danger);
+}
+
+/* Chữ gợi ý trong ô nhập (reset của Tailwind đổi màu mặc định) */
+::placeholder {
+  color: var(--bk-muted);
+  opacity: 1;
 }
 
 .inline-input {
@@ -229,7 +235,7 @@ button {
   border-radius: var(--r-sm);
   font-size: 11px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--bk-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -274,8 +280,8 @@ button {
   width: 24px;
   height: 24px;
   border-radius: 7px;
-  background: var(--accent);
-  color: var(--accent-text);
+  background: var(--bk-accent);
+  color: var(--bk-accent-text);
   flex: none;
 }
 
@@ -291,7 +297,7 @@ button {
   height: 30px;
   flex: 0 1 240px;
   min-width: 110px;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .search:hover {
@@ -299,8 +305,8 @@ button {
 }
 
 .search:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--bk-accent) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bk-accent) 18%, transparent);
 }
 
 .search input {
@@ -318,7 +324,7 @@ button {
   font-family: var(--font-mono);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--accent);
+  color: var(--bk-accent);
   font-size: 12px;
   padding: 0 4px;
 }
@@ -343,7 +349,7 @@ button {
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: var(--muted);
+  color: var(--bk-muted);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
@@ -356,7 +362,7 @@ button {
 .view-switch button.on {
   color: var(--text);
   background: var(--panel-2);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--bk-shadow-sm);
   font-weight: 600;
 }
 
@@ -404,7 +410,7 @@ button {
   display: flex;
   align-items: center;
   border-radius: var(--r-md);
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .nav-item:hover {
@@ -420,7 +426,7 @@ button {
 }
 
 .nav-item.on .nav-main > svg {
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .nav-main {
@@ -470,7 +476,7 @@ button {
   padding: 14px 2px 4px 8px;
   font-size: 11.5px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .nav-input {
@@ -507,7 +513,7 @@ button {
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .lang-switch button:hover {
@@ -517,7 +523,7 @@ button {
 .lang-switch button.on {
   background: var(--panel-2);
   color: var(--text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--bk-shadow-sm);
 }
 
 /* Thanh bên thu gọn: chỉ còn biểu tượng */
@@ -566,7 +572,7 @@ button {
 
 .list-view {
   padding: 16px 24px 60px;
-  max-width: 860px;
+  max-width: 908px;
 }
 
 .list-head {
@@ -599,18 +605,18 @@ button {
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-md);
   background: var(--field);
-  box-shadow: var(--shadow-xs);
-  color: var(--muted);
+  box-shadow: var(--bk-shadow-xs);
+  color: var(--bk-muted);
   margin-bottom: 18px;
 }
 
 .quick-add > svg {
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .quick-add:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--bk-accent) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bk-accent) 18%, transparent);
 }
 
 .quick-add-input {
@@ -637,7 +643,7 @@ button {
   background: transparent;
   padding: 4px 2px 7px;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--bk-muted);
   text-align: left;
 }
 
@@ -659,8 +665,8 @@ button {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent-2);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-2) 60%, transparent);
+  background: var(--bk-accent-2);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--bk-accent-2) 60%, transparent);
 }
 
 .section-head.danger .section-label::before {
@@ -684,12 +690,12 @@ button {
 }
 
 .task-row:focus-visible {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bk-accent) 60%, transparent);
 }
 
 .task-row.selected {
   background: var(--surface-on);
-  box-shadow: inset 2px 0 0 var(--accent);
+  box-shadow: inset 2px 0 0 var(--bk-accent);
 }
 
 .task-main {
@@ -711,7 +717,7 @@ button {
 }
 
 .task-row.done .task-title {
-  color: var(--muted);
+  color: var(--bk-muted);
   text-decoration: line-through;
 }
 
@@ -721,7 +727,7 @@ button {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .meta {
@@ -736,7 +742,7 @@ button {
 }
 
 .meta.due.today {
-  color: var(--accent);
+  color: var(--bk-accent);
   font-weight: 600;
 }
 
@@ -750,8 +756,8 @@ button {
 }
 
 .meta.doing {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--bk-accent-soft);
+  color: var(--bk-accent);
   border-radius: var(--r-sm);
   padding: 1px 7px;
   font-size: 11.5px;
@@ -803,7 +809,7 @@ button {
   place-items: center;
   cursor: pointer;
   padding: 0;
-  color: var(--accent-text);
+  color: var(--bk-accent-text);
 }
 
 .check.small {
@@ -833,8 +839,8 @@ button {
 }
 
 .check.done {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--bk-accent);
+  border-color: var(--bk-accent);
 }
 
 .empty {
@@ -907,7 +913,7 @@ button {
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .segmented button:hover:not(:disabled) {
@@ -917,7 +923,7 @@ button {
 .segmented button.on {
   background: var(--panel-2);
   color: var(--text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--bk-shadow-sm);
   font-weight: 600;
 }
 
@@ -932,7 +938,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--muted);
+  color: var(--bk-muted);
   font-size: 12.5px;
 }
 
@@ -962,7 +968,7 @@ button {
 
 .value-btn.empty,
 .value-btn:disabled {
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .value-btn:disabled {
@@ -1028,7 +1034,7 @@ button {
   background: var(--panel-2);
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-pop);
+  box-shadow: var(--bk-shadow-pop);
   padding: 4px;
   display: flex;
   flex-direction: column;
@@ -1051,7 +1057,7 @@ button {
 }
 
 .suggest-item.create {
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .editor-block {
@@ -1071,7 +1077,7 @@ button {
 }
 
 .block-title > svg {
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .checklist-item,
@@ -1083,7 +1089,7 @@ button {
 }
 
 .checklist-item.done .inline-input {
-  color: var(--muted);
+  color: var(--bk-muted);
   text-decoration: line-through;
 }
 
@@ -1096,7 +1102,7 @@ button {
 }
 
 .checklist-add {
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .notes {
@@ -1107,7 +1113,7 @@ button {
   background: var(--field);
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-md);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--bk-shadow-xs);
   padding: 10px 12px;
   outline: none;
   resize: none;
@@ -1117,20 +1123,22 @@ button {
 }
 
 .notes:focus {
-  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--bk-accent) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bk-accent) 18%, transparent);
 }
 
 /* ---------- Popover, menu ---------- */
 
 /* Menu nổi: khối bo góc 10px, viền mảnh, đổ bóng */
 .popover {
+  /* Chiều rộng do JS đặt tính phần nội dung (reset của Tailwind mặc định border-box) */
+  box-sizing: content-box;
   position: fixed;
   pointer-events: auto;
   background-color: var(--panel-2);
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-pop);
+  box-shadow: var(--bk-shadow-pop);
   padding: 4px;
   overflow-y: auto;
   color: var(--text);
@@ -1162,7 +1170,7 @@ button {
 }
 
 .menu-item.on {
-  color: var(--accent);
+  color: var(--bk-accent);
   font-weight: 600;
 }
 
@@ -1172,7 +1180,7 @@ button {
 
 .menu-note {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--bk-muted);
   padding: 4px 8px 2px;
 }
 
@@ -1184,8 +1192,8 @@ button {
 }
 
 .swatch {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: var(--r-pill);
   border: 2px solid transparent;
   background: var(--c);
@@ -1217,7 +1225,7 @@ button {
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .time-input {
@@ -1244,7 +1252,7 @@ button {
   text-align: center;
   font-size: 11px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--bk-muted);
   padding: 2px 0;
 }
 
@@ -1267,13 +1275,13 @@ button {
 }
 
 .mini-cal-day.today {
-  color: var(--accent);
+  color: var(--bk-accent);
   font-weight: 700;
 }
 
 .mini-cal-day.selected {
-  background: var(--accent);
-  color: var(--accent-text);
+  background: var(--bk-accent);
+  color: var(--bk-accent-text);
   font-weight: 700;
 }
 
@@ -1296,7 +1304,7 @@ button {
   background-color: var(--panel);
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-xl);
-  box-shadow: var(--shadow-pop);
+  box-shadow: var(--bk-shadow-pop);
   padding: 20px;
   width: min(340px, 86%);
   overflow: hidden;
@@ -1341,7 +1349,7 @@ button {
   color: var(--text);
   border-radius: var(--r-lg);
   padding: 7px 8px 7px 13px;
-  box-shadow: var(--shadow-pop);
+  box-shadow: var(--bk-shadow-pop);
 }
 
 .toast::before {
@@ -1350,8 +1358,8 @@ button {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
+  background: var(--bk-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--bk-accent) 60%, transparent);
 }
 
 .toast.error {
@@ -1377,7 +1385,7 @@ button {
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-md);
   background: transparent;
-  color: var(--accent);
+  color: var(--bk-accent);
   font-size: 12.5px;
   font-weight: 600;
   padding: 3px 10px;
@@ -1406,18 +1414,18 @@ button {
   white-space: nowrap;
   font-size: 12px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .reminder-kicker.stage-2 {
-  color: var(--accent-2);
+  color: var(--bk-accent-2);
 }
 
 .reminder-more {
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent-text);
-  background: var(--accent);
+  color: var(--bk-accent-text);
+  background: var(--bk-accent);
   border-radius: var(--r-sm);
   padding: 0 6px;
 }
@@ -1456,7 +1464,7 @@ button {
   background: var(--panel-2);
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-pop);
+  box-shadow: var(--bk-shadow-pop);
 }
 
 .reminder-banner .reminder-body {
@@ -1503,7 +1511,7 @@ button {
 
 /* Cột: nền nhạt bo góc 12px, không viền; màu trạng thái chỉ ở chấm đèn đầu cột */
 .board-col {
-  --c: var(--muted);
+  --c: var(--bk-muted);
   flex: 1 1 0;
   min-width: 150px;
   display: flex;
@@ -1514,7 +1522,7 @@ button {
 }
 
 .board-col.col-in_progress {
-  --c: var(--accent);
+  --c: var(--bk-accent);
 }
 
 .board-col.col-done {
@@ -1587,7 +1595,7 @@ button {
   background: var(--panel);
   border: 1px solid var(--edge);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--bk-shadow-xs);
   color: var(--text);
   cursor: grab;
   touch-action: none;
@@ -1612,12 +1620,12 @@ button {
 
 .task-card:focus-visible,
 .task-card.selected {
-  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--bk-accent) 60%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bk-accent) 16%, transparent);
 }
 
 .task-card.done .card-title {
-  color: var(--muted);
+  color: var(--bk-muted);
   text-decoration: line-through;
 }
 
@@ -1630,7 +1638,7 @@ button {
 .task-card.overlay {
   cursor: grabbing;
   transform: rotate(1.5deg);
-  box-shadow: var(--shadow-pop), 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: var(--bk-shadow-pop), 0 0 0 1px color-mix(in srgb, var(--bk-accent) 40%, transparent);
 }
 
 .card-top {
@@ -1641,7 +1649,7 @@ button {
   margin-bottom: 5px;
   font-size: 11px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .card-top .label {
@@ -1668,7 +1676,7 @@ button {
   gap: 4px 8px;
   margin-top: 7px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .card-meta:empty {
@@ -1724,7 +1732,7 @@ button {
   margin-left: auto;
   overflow: hidden;
   font-size: 11px;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .card-tags .tag-chip {
@@ -1757,7 +1765,7 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 34px;
+  min-height: 44px;
   padding: 4px 10px;
   border: 1px dashed var(--edge-strong);
   border-radius: var(--r-lg);
@@ -1765,8 +1773,8 @@ button {
 
 .cal-undated.over {
   border-style: solid;
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--bk-accent);
+  background: var(--bk-accent-soft);
 }
 
 .cal-undated-label {
@@ -1776,7 +1784,7 @@ button {
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .cal-undated-list {
@@ -1808,7 +1816,7 @@ button {
   padding: 0 8px;
   font-size: 11.5px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 /* Lưới tháng: khung bo góc 12px, kẻ ô mảnh */
@@ -1858,8 +1866,8 @@ button {
 
 .cal-cell.over,
 .cal-week-col.over {
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--bk-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--bk-accent);
 }
 
 .cal-cell-head {
@@ -1882,13 +1890,13 @@ button {
   line-height: 20px;
   text-align: center;
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .cal-cell.today .cal-daynum,
 .cal-week-col.today .cal-daynum {
-  background: var(--accent);
-  color: var(--accent-text);
+  background: var(--bk-accent);
+  color: var(--bk-accent-text);
   font-weight: 700;
 }
 
@@ -1957,14 +1965,14 @@ button {
   max-width: 220px;
   cursor: grabbing;
   background: var(--panel-2);
-  box-shadow: var(--shadow-pop), 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: var(--bk-shadow-pop), 0 0 0 1px color-mix(in srgb, var(--bk-accent) 40%, transparent);
 }
 
 .cal-chip-time {
   flex: none;
   font-size: 10.5px;
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .cal-chip-title {
@@ -1979,14 +1987,14 @@ button {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: var(--accent);
+  color: var(--bk-accent);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .cal-more:hover {
-  background: var(--accent-soft);
+  background: var(--bk-accent-soft);
 }
 
 .cal-week {
@@ -2106,7 +2114,7 @@ button {
 .recur-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .recur-col {
@@ -2124,7 +2132,7 @@ button {
 }
 
 .recur-radio input[type='radio'] {
-  accent-color: var(--accent);
+  accent-color: var(--bk-accent);
   margin: 0;
 }
 
@@ -2146,7 +2154,7 @@ button {
 }
 
 .sidebar-foot .settings-btn.on {
-  color: var(--accent);
+  color: var(--bk-accent);
   background: var(--surface-on);
 }
 
@@ -2209,7 +2217,7 @@ button {
 
 .settings-crumb {
   font-size: 13px;
-  color: var(--muted);
+  color: var(--bk-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2236,7 +2244,7 @@ button {
   background: transparent;
   padding: 6px 8px;
   border-radius: var(--r-md);
-  color: var(--muted);
+  color: var(--bk-muted);
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
@@ -2263,7 +2271,7 @@ button {
 }
 
 .settings-nav button.on svg {
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .settings-body {
@@ -2298,7 +2306,7 @@ button {
 .set-hint {
   font-size: 12px;
   line-height: 1.45;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .set-control {
@@ -2337,14 +2345,14 @@ button {
 .value-btn.boxed {
   border: 1px solid var(--edge-strong);
   background: var(--field);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--bk-shadow-xs);
 }
 
 /* Số liệu, trạng thái máy: chữ mono xanh ngọc */
 .readout {
   font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .path {
@@ -2360,10 +2368,10 @@ button {
   gap: 10px;
   margin-top: 14px;
   padding: 8px 8px 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--accent-2) 40%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bk-accent-2) 40%, transparent);
   border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--accent-2) 8%, transparent);
-  color: var(--accent-2);
+  background: color-mix(in srgb, var(--bk-accent-2) 8%, transparent);
+  color: var(--bk-accent-2);
   font-size: 12.5px;
 }
 
@@ -2377,7 +2385,7 @@ button {
   border: 0;
   border-radius: 999px;
   background: var(--edge-strong);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--bk-shadow-xs);
   cursor: pointer;
 }
 
@@ -2389,17 +2397,17 @@ button {
   height: 16px;
   border-radius: 50%;
   background: var(--text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--bk-shadow-sm);
   transition: left 0.14s ease-out;
 }
 
 .switch.on {
-  background: var(--accent);
+  background: var(--bk-accent);
 }
 
 .switch.on i {
   left: 18px;
-  background: var(--accent-text);
+  background: var(--bk-accent-text);
 }
 
 /* Thanh trượt âm lượng: phần đã chọn tô xanh ngọc (--p do React đặt) */
@@ -2408,18 +2416,18 @@ button {
   width: 120px;
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(90deg, var(--accent) var(--p, 50%), var(--line) var(--p, 50%));
+  background: linear-gradient(90deg, var(--bk-accent) var(--p, 50%), var(--line) var(--p, 50%));
   cursor: pointer;
 }
 
 .range::-webkit-slider-thumb {
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--screen-bg);
-  border: 2px solid var(--accent);
-  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--bk-accent);
+  box-shadow: var(--bk-shadow-sm);
 }
 
 .set-control .readout {
@@ -2475,7 +2483,7 @@ button {
 }
 
 .b-kind {
-  color: var(--muted);
+  color: var(--bk-muted);
   white-space: nowrap;
 }
 
@@ -2492,7 +2500,7 @@ button {
 }
 
 .backup-list .btn.ghost:hover {
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 /* Hộp thoại nhập dữ liệu: hai lựa chọn đặt cạnh nhau */
@@ -2504,7 +2512,7 @@ button {
   margin-bottom: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .modal p.import-file {
@@ -2520,7 +2528,7 @@ button {
   margin: 0 0 14px 23px;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .import-options {
@@ -2538,13 +2546,13 @@ button {
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-lg);
   background: transparent;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--bk-shadow-xs);
   text-align: left;
   cursor: pointer;
 }
 
 .import-opt:hover:not(:disabled) {
-  border-color: var(--accent);
+  border-color: var(--bk-accent);
 }
 
 .import-opt.danger:hover:not(:disabled) {
@@ -2554,7 +2562,7 @@ button {
 .opt-title {
   font-weight: 600;
   font-size: 14px;
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .import-opt.danger .opt-title {
@@ -2564,7 +2572,7 @@ button {
 .opt-hint {
   font-size: 12px;
   line-height: 1.4;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .modal p.set-hint {
@@ -2591,8 +2599,8 @@ button {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 6px var(--accent-soft);
+  background: var(--bk-accent);
+  box-shadow: 0 0 0 6px var(--bk-accent-soft);
 }
 
 .about-hero .set-hint {
@@ -2621,7 +2629,7 @@ button {
 .about-specs dt {
   padding-right: 22px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .about-specs dd {
@@ -2693,7 +2701,7 @@ button {
   border: 1px solid var(--edge-strong);
   border-radius: var(--r-lg);
   background: transparent;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--bk-shadow-xs);
   text-align: left;
   cursor: pointer;
 }
@@ -2703,8 +2711,8 @@ button {
 }
 
 .robot-card.on {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--bk-accent);
+  background: var(--bk-accent-soft);
 }
 
 .rc-name {
@@ -2716,7 +2724,7 @@ button {
 }
 
 .robot-card.on .rc-name {
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .rc-dot {
@@ -2730,7 +2738,7 @@ button {
 .rc-blurb {
   font-size: 12px;
   line-height: 1.4;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 /* ---------- Cài đặt / Kết nối AI ---------- */
@@ -2798,30 +2806,30 @@ button {
 }
 
 .ai-state.connected {
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .ai-state.connected i {
-  background: var(--accent);
+  background: var(--bk-accent);
   box-shadow: 0 0 6px var(--glow);
 }
 
 .ai-state.outdated {
-  color: var(--accent-2);
+  color: var(--bk-accent-2);
 }
 
 .ai-state.outdated i {
-  background: var(--accent-2);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-2) 70%, transparent);
+  background: var(--bk-accent-2);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--bk-accent-2) 70%, transparent);
 }
 
 .ai-state.available i {
   background: transparent;
-  border: 1px solid var(--muted);
+  border: 1px solid var(--bk-muted);
 }
 
 .ai-clients a {
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 /* Lệnh / cấu hình để chép: khối chữ mono lõm xuống, nút chép ở góc */
@@ -2843,7 +2851,7 @@ button {
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.5;
-  color: var(--muted);
+  color: var(--bk-muted);
   word-break: break-all;
   user-select: all;
 }
@@ -2871,7 +2879,7 @@ button {
 .ai-examples .chip-btn::before {
   content: '›';
   margin-right: 6px;
-  color: var(--accent);
+  color: var(--bk-accent);
 }
 
 .ai-last {
@@ -2885,7 +2893,7 @@ button {
 .ai-other summary {
   cursor: pointer;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--bk-muted);
 }
 
 .ai-other summary:hover {

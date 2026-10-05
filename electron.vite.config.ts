@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   main: {
@@ -31,6 +32,8 @@ export default defineConfig({
         input: { index: resolve(__dirname, 'src/renderer/index.html') }
       }
     },
-    plugins: [react()]
+    // Một bản React duy nhất cho cả app và momi-ui
+    resolve: { dedupe: ['react', 'react-dom'] },
+    plugins: [react(), tailwindcss()]
   }
 })

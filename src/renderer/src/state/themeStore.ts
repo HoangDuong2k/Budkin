@@ -1,5 +1,6 @@
 // Theme = đèn bàn. Có cảnh 3D thì ThemeDirector đổi theme DOM đúng khung hình bóng đèn tắt / bật;
 // chế độ 2D thì đổi ngay.
+import { withoutTransitions } from 'momi-ui'
 import { create } from 'zustand'
 import type { Theme } from '../../../shared/palette'
 import { call } from '../ipc'
@@ -34,7 +35,8 @@ export const useTheme = create<ThemeState>((set, get) => ({
   },
   applyDom: (theme) => {
     if (theme === get().theme) return
-    document.documentElement.dataset.theme = theme
+    // Màu đổi tức thì, đúng khung hình bóng đèn tắt / sáng (không để nút, ô nhập… chuyển màu dần)
+    withoutTransitions(() => (document.documentElement.dataset.theme = theme))
     set({ theme })
     void call('app:setTheme', theme)
   }
