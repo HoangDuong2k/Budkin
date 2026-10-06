@@ -270,9 +270,13 @@ async function checkAlignment(page: Page, label: string, theme: 'light' | 'dark'
     { x: midX, y: rect.y - d },
     { x: midX, y: rect.y + rect.height + d }
   ]
-  const px = await page.evaluate((pts) => (window as unknown as Probe).__budkin.samplePixels(pts), [...inside, ...outside])
-  await page.evaluate(() => ((document.querySelector('.screen') as HTMLElement).style.visibility = ''))
   const bg = hex(SCREEN_BG[theme])
+  const sample = (): Promise<Rgb[]> => page.evaluate((pts) => (window as unknown as Probe).__budkin.samplePixels(pts), [...inside, ...outside])
+  // Mỗi lần đọc vẽ một khung mới. Vừa đổi theme mà máy vẽ bằng CPU (bản đã cài trên máy ảo Windows) chưa kịp chạy hết
+  // hiệu ứng sáng / tối dần thì màn hình còn màu cũ: đọc lại tới khi đúng màu (app sai thì hết giờ vẫn sai)
+  let px: Rgb[] = []
+  await until(async () => (px = await sample()).slice(0, 4).every((c) => near(c, bg)))
+  await page.evaluate(() => ((document.querySelector('.screen') as HTMLElement).style.visibility = ''))
   assert(
     px.slice(0, 4).every((c) => near(c, bg)),
     `${label}: màn hình 3D nằm đúng dưới lớp giao diện (mép trong: ${JSON.stringify(px.slice(0, 4))})`
