@@ -42,11 +42,13 @@ export default function RobotGuide({ sections, labels }: Props): React.JSX.Eleme
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
     const p = parts
     const s = {
-      // Hướng nhìn hiện tại / đích (−1…1; y dương là nhìn lên)
+      // Hướng nhìn hiện tại / đích (−1…1: x âm là quay sang trái, y dương là ngước lên) và vận tốc (lò xo)
       lx: 0,
       ly: 0,
-      tx: -0.4,
-      ty: 0.4,
+      vx: 0,
+      vy: 0,
+      tx: -0.35,
+      ty: 0.3,
       // Chúi trước / ngả sau (độ, âm là chúi về phía người xem) và lắc ngang
       lean: 0,
       leanV: 0,
@@ -73,12 +75,20 @@ export default function RobotGuide({ sections, labels }: Props): React.JSX.Eleme
       const dt = Math.min(0.05, last ? (now - last) / 1000 : 1 / 60)
       last = now
       s.t += dt
-      // Nhìn theo chuột (đang mở mục lục thì nhìn lên bong bóng)
-      const tx = ctl.current.open ? -0.55 : s.tx
-      const ty = ctl.current.open ? 0.75 : s.ty
-      const k = 1 - Math.exp(-dt * (reduced ? 5 : 9))
-      s.lx += (tx - s.lx) * k
-      s.ly += (ty - s.ly) * k
+      // Quay đầu nhìn theo chuột (đang mở mục lục thì ngước lên bong bóng). Lò xo hơi non tay: quay nhanh, vọt nhẹ rồi
+      // dừng; giảm chuyển động thì chỉ trôi chậm về hướng mới
+      const tx = ctl.current.open ? -0.3 : s.tx
+      const ty = ctl.current.open ? 0.85 : s.ty
+      if (reduced) {
+        const k = 1 - Math.exp(-dt * 5)
+        s.lx += (tx - s.lx) * k
+        s.ly += (ty - s.ly) * k
+      } else {
+        s.vx += ((tx - s.lx) * 130 - s.vx * 17) * dt
+        s.vy += ((ty - s.ly) * 130 - s.vy * 17) * dt
+        s.lx += s.vx * dt
+        s.ly += s.vy * dt
+      }
       // Lò xo tắt dần: kéo về thẳng đứng, lắc lư vài nhịp
       if (!reduced) {
         s.leanV += (-62 * s.lean - 6.5 * s.leanV) * dt
@@ -117,18 +127,32 @@ export default function RobotGuide({ sections, labels }: Props): React.JSX.Eleme
 
       const strain = Math.abs(s.lean)
       // Chúi về trước thì nhìn xuống, ngả ra sau thì ngước lên (hốt hoảng)
-      const ly = clamp(s.ly + (s.lean / 22) * 0.9, -1.4, 1.4)
+      const yaw = clamp(s.lx, -1.15, 1.15)
+      const pitch = clamp(s.ly + (s.lean / 22) * 0.9, -1.4, 1.4)
+      const ay = Math.abs(yaw)
       const flail = reduced ? 0 : Math.min(60, strain * 2.4 + Math.abs(s.leanV) * 0.04) + (strain > 4 ? 7 * Math.sin(s.t * 19) : 0)
       if (tilt.current) tilt.current.style.transform = `perspective(320px) rotateX(${s.lean.toFixed(2)}deg) rotateZ(${s.sway.toFixed(2)}deg)`
       tf(p.fx.current, `scale(${scale.toFixed(3)})`)
-      tf(p.body.current, `rotate(${(s.lx * 1.5).toFixed(2)} 0 -30)`)
+      // Thân xoay theo một chút, đầu xoay nhiều: cả đầu dịch và nghiêng về phía nhìn, vỏ đầu hẹp lại như đang quay
+      tf(p.body.current, `translate(${(yaw * 2).toFixed(2)} 0) rotate(${(yaw * 3).toFixed(2)} 0 -30)`)
       tf(p.armL.current, `rotate(${flail.toFixed(2)} -52 -72)`)
       tf(p.armR.current, `rotate(${(-flail).toFixed(2)} 52 -72)`)
-      tf(p.head.current, `translate(${(s.lx * 5).toFixed(2)} ${(-ly * 2 + nod * 7).toFixed(2)}) rotate(${(s.lx * 4 + s.sway * 1.2).toFixed(2)} 0 -105)`)
-      tf(p.antenna.current, `rotate(${s.ant.toFixed(2)} 0 -189)`)
-      // Chao mạnh thì mắt mở to (hốt hoảng)
+      tf(
+        p.head.current,
+        `translate(${(yaw * 4).toFixed(2)} ${(-pitch * 4 + nod * 7).toFixed(2)}) rotate(${(yaw * 4.5 + s.sway * 1.2).toFixed(2)} 0 -105) ` +
+          `translate(0 -148) scale(${(1 - ay * 0.07).toFixed(3)} 1) translate(0 148)`
+      )
+      // Mặt kính trượt về phía nhìn và hẹp lại; tai phía đó khuất vào sau đầu, tai bên kia lộ ra
+      tf(p.face.current, `translate(${(yaw * 11).toFixed(2)} ${(-pitch * 7).toFixed(2)}) translate(0 -149) scale(${(1 - ay * 0.14).toFixed(3)} ${(1 - Math.abs(pitch) * 0.07).toFixed(3)}) translate(0 149)`)
+      tf(p.earL.current, `translate(${(yaw < 0 ? ay * 8 : -ay * 1.5).toFixed(2)} ${(-pitch * 2).toFixed(2)})`)
+      tf(p.earR.current, `translate(${(yaw > 0 ? -ay * 8 : ay * 1.5).toFixed(2)} ${(-pitch * 2).toFixed(2)})`)
+      tf(p.antenna.current, `translate(${(yaw * 3).toFixed(2)} 0) rotate(${(s.ant - yaw * 4).toFixed(2)} 0 -189)`)
+      // Chao mạnh thì mắt mở to (hốt hoảng); mắt liếc thêm về phía nhìn
       const es = 1 + Math.min(0.28, strain / 28)
-      tf(p.eyes.current, `translate(${(s.lx * 7).toFixed(2)} ${(-ly * 5 - 148).toFixed(2)}) scale(${es.toFixed(3)} ${(es * blink).toFixed(3)})`)
+      tf(
+        p.eyes.current,
+        `translate(${(yaw * 8).toFixed(2)} ${(-pitch * 6 - 148).toFixed(2)}) scale(${(es * (1 - ay * 0.08)).toFixed(3)} ${(es * blink).toFixed(3)})`
+      )
 
       const settled =
         Math.abs(s.lean) < 0.05 &&
@@ -139,6 +163,8 @@ export default function RobotGuide({ sections, labels }: Props): React.JSX.Eleme
         Math.abs(s.antV) < 0.05 &&
         Math.abs(tx - s.lx) < 0.002 &&
         Math.abs(ty - s.ly) < 0.002 &&
+        Math.abs(s.vx) < 0.01 &&
+        Math.abs(s.vy) < 0.01 &&
         s.blinkAt < 0 &&
         s.nodAt < 0 &&
         s.introAt < 0
@@ -150,9 +176,22 @@ export default function RobotGuide({ sections, labels }: Props): React.JSX.Eleme
       raf = requestAnimationFrame(frame)
     }
 
+    // Hướng tới con trỏ, chia theo khoảng từ robot tới mép màn hình ở phía đó: robot đứng ở góc nên con trỏ ở đâu
+    // trên trang cũng làm nó đổi hướng (chia theo cả bề rộng thì mới tới giữa trang đã quay hết cỡ)
+    const aim = (d: number, before: number, after: number): number => {
+      const n = clamp(d / Math.max(d < 0 ? before : after, 120), -1, 1)
+      return Math.sign(n) * Math.pow(Math.abs(n), 0.8)
+    }
     const onPointer = (e: PointerEvent): void => {
-      s.tx = clamp((e.clientX - center.x) / (innerWidth * 0.45), -1, 1)
-      s.ty = clamp((center.y - e.clientY) / (innerHeight * 0.6), -1, 1)
+      s.tx = aim(e.clientX - center.x, center.x, innerWidth - center.x)
+      s.ty = aim(center.y - e.clientY, innerHeight - center.y, center.y)
+      wake()
+    }
+    // Con trỏ ra khỏi cửa sổ: quay lại nhìn người xem
+    const onLeave = (e: MouseEvent): void => {
+      if (e.relatedTarget) return
+      s.tx = 0
+      s.ty = 0.1
       wake()
     }
     const onScroll = (): void => {
@@ -190,6 +229,7 @@ export default function RobotGuide({ sections, labels }: Props): React.JSX.Eleme
     // Robot chỉ hiện khi đã chạy được (trước đó ẩn, tránh hiện rồi mới thu nhỏ để bật ra)
     root.current?.setAttribute('data-ready', '')
     addEventListener('pointermove', onPointer, { passive: true })
+    document.addEventListener('mouseout', onLeave)
     addEventListener('scroll', onScroll, { passive: true })
     addEventListener('resize', measure)
     scheduleBlink()
@@ -200,6 +240,7 @@ export default function RobotGuide({ sections, labels }: Props): React.JSX.Eleme
     return () => {
       cancelAnimationFrame(raf)
       removeEventListener('pointermove', onPointer)
+      document.removeEventListener('mouseout', onLeave)
       removeEventListener('scroll', onScroll)
       removeEventListener('resize', measure)
       clearTimeout(blinkTimer)
