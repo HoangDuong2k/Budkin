@@ -627,7 +627,8 @@ async function sceneFlow(page: Page): Promise<void> {
 
   // Chế độ Tiết kiệm: đứng yên thì không vẽ khung nào
   await invoke(page, 'settings:update', { quality: 'saver' })
-  await page.waitForFunction(() => (window as unknown as Probe).__budkin.stage.ready, undefined, { timeout: 10000 })
+  // Tạo lại canvas = dựng lại cảnh 3D: chờ như lúc mở app (máy vẽ bằng CPU mất hơn 10 giây)
+  await page.waitForFunction(() => (window as unknown as Probe).__budkin.stage.ready, undefined, { timeout: 20_000 * WAIT })
   // Di chuột nhẹ (đặt lại hẹn giờ buồn ngủ — 4 s khi kiểm thử), chờ robot đứng yên rồi đo; chỉ tính lần đo mà
   // robot không đổi trạng thái giữa chừng (máy chậm / vẽ bằng CPU có thể chạm mốc buồn ngủ). Đếm được khung thì đo lại
   // (máy ảo Windows: cú bấm bị treo trước đó có thể tới muộn, robot cử động giữa lúc đo) — lấy lần đo ít khung nhất;
