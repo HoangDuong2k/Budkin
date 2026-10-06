@@ -45,7 +45,7 @@
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "maath": "^0.10.8",
-    "momi-ui": "github:HoangDuong2k/momi-ui#v0.3.0",
+    "momi-ui": "github:HoangDuong2k/momi-ui#v0.3.1",
     "playwright-core": "^1.63.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -62,6 +62,6 @@
     "esbuild@0.25.12": true,
     "esbuild@0.28.2": true,
     "electron-winstaller": false,
-    "github:HoangDuong2k/momi-ui#0cd2b3caf40ce47a29ffb1ba3aeeba21bf01911b": true
+    "github:HoangDuong2k/momi-ui#2d4f40cbecb5476ba217657cd274aca3052ed547": true
   }
 }
