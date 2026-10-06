@@ -317,7 +317,9 @@ Icon (mặt robot) vẽ bằng SVG trong `build/icon-src/`; sửa xong thì ch�
 
 **GitHub Actions** (`.github/workflows/build.yml`) chạy trên máy Windows, Ubuntu và macOS thật:
 
-- **test:** kiểm tra kiểu, unit test, build, e2e (WebGL bằng SwiftShader).
+- **test:** kiểm tra kiểu, unit test, build, e2e (WebGL bằng SwiftShader). Riêng máy ảo Windows (3D vẽ bằng CPU rất chậm):
+  các bước canh giờ của robot 3D (đứng yên, ngủ / thức, quay đầu, đếm khung hình) sai thì chỉ ghi cảnh báo trên trang
+  tóm tắt, không làm hỏng job — Linux, macOS và máy thật có GPU vẫn kiểm tra chặt.
 - **build:** đóng gói, rồi kiểm thử trên bản cài thật — Windows: cài `Setup.exe` im lặng, e2e trên bản đã cài, kiểm tra
   lối tắt, "khởi động cùng máy", rồi gỡ cài đặt (mục tự khởi động và lối tắt phải biến mất, dữ liệu người dùng phải
   còn). Ubuntu: e2e trên AppImage; cài `.deb`, e2e **không** tắt sandbox (profile AppArmor), kiểm tra file `.desktop`,
