@@ -32,6 +32,9 @@ export interface FlatRigFrame {
   reduced: boolean
   /** Hướng nhìn: x sang phải, y lên trên, mỗi trục −1..1 (đã làm mượt ở phía robot) */
   look: { x: number; y: number }
+  /** Như look, nhưng khi nhìn theo con trỏ thì chia theo khoảng từ đầu robot tới mép cửa sổ ở phía đó: con trỏ ở đâu
+   *  trong cửa sổ cũng làm hướng nhìn đổi rõ (look đã gần hết cỡ khi con trỏ mới ở giữa màn hình máy tính) */
+  aim: { x: number; y: number }
   tracking: boolean
   /** Con trỏ gần robot: 1 ngay trên robot … 0 ở xa */
   near: number
@@ -43,6 +46,13 @@ export interface FlatRigFrame {
   dark: number
   /** Đang được phép chuyển động nền (thở, bồng bềnh) */
   ambient: boolean
+}
+
+/** Lệch d (px) về một phía, chia cho khoảng tới mép cửa sổ ở phía đó (ít nhất 120px); cong nhẹ để con trỏ gần robot
+ *  vẫn làm robot quay rõ */
+function towardEdge(d: number, before: number, after: number): number {
+  const n = Math.max(-1, Math.min(1, d / Math.max(d < 0 ? before : after, 120)))
+  return Math.sign(n) * Math.pow(Math.abs(n), 0.8)
 }
 
 /** Mắt robot (cách mặt bàn y mét) → toạ độ cửa sổ */
@@ -84,6 +94,7 @@ export function useFlatRig(spec: FlatRigSpec, apply: (f: FlatRigFrame) => boolea
 
     // ---- Nhìn đi đâu ----
     let look: { x: number; y: number }
+    let aim: { x: number; y: number } | null = null
     let tracking = false
     if (mode === 'sleep' || mode === 'drowsy') look = { x: 0.15, y: -0.7 }
     else if (mode === 'lampReact') look = { x: 1, y: 0.35 }
@@ -93,6 +104,10 @@ export function useFlatRig(spec: FlatRigSpec, apply: (f: FlatRigFrame) => boolea
       const px = ((pointer.x + 1) / 2) * stage.viewport.width
       const py = ((1 - pointer.y) / 2) * stage.viewport.height
       look = { x: Math.tanh((px - head.x) / 380), y: Math.tanh((head.y - py) / 300) }
+      aim = {
+        x: towardEdge(px - head.x, head.x, stage.viewport.width - head.x),
+        y: towardEdge(head.y - py, stage.viewport.height - head.y, head.y)
+      }
       tracking = true
     }
 
@@ -125,7 +140,7 @@ export function useFlatRig(spec: FlatRigSpec, apply: (f: FlatRigFrame) => boolea
     }
     const ambient = !reduced && policy.quality !== 'saver' && mode !== 'sleep'
 
-    moving = apply({ dt, now, mode, t, reduced, look, tracking, near, eyeOpen, alertOn, alertHop, dark: 1 - env.env, ambient }) || moving
+    moving = apply({ dt, now, mode, t, reduced, look, aim: aim ?? look, tracking, near, eyeOpen, alertOn, alertHop, dark: 1 - env.env, ambient }) || moving
 
     if (hud.zzz) {
       const p = stage.robotAnchor((16 + spec.zzzY) / 1000)
@@ -156,6 +171,22 @@ export function easeOutBack(t: number): number {
 
 export function easeInOut(t: number): number {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+}
+
+/** Lò xo hơi non tay (vọt nhẹ rồi dừng) kéo obj[key] về đích, vận tốc ở obj[vkey]; trả về true nếu còn đang chuyển động */
+export function spring(obj: Record<string, number>, key: string, vkey: string, target: number, dt: number, eps = 0.001): boolean {
+  // Chia nhỏ bước để vẫn ổn định khi một khung hình đến trễ
+  for (let left = Math.min(dt, 0.25); left > 0; left -= 1 / 60) {
+    const h = Math.min(left, 1 / 60)
+    obj[vkey] += ((target - obj[key]) * 130 - obj[vkey] * 17) * h
+    obj[key] += obj[vkey] * h
+  }
+  if (Math.abs(target - obj[key]) < eps && Math.abs(obj[vkey]) < eps * 10) {
+    obj[key] = target
+    obj[vkey] = 0
+    return false
+  }
+  return true
 }
 
 /** Tiến về đích theo hàm mũ; trả về true nếu còn đang chuyển động */
