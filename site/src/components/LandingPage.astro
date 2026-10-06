@@ -5,6 +5,8 @@ import { getImage } from 'astro:assets'
 import type { ImageMetadata } from 'astro'
 import logo from '../../../build/icons/128x128.png'
 import favicon from '../../../build/icons/64x64.png'
+import appleIcon from '../../../build/icons/256x256.png'
+import { version } from '../../../package.json'
 import type { Dict } from '../i18n/vi'
 import { DOWNLOAD, REPO } from '../i18n/vi'
 import LandingBody, { type Img } from './LandingBody'
@@ -27,8 +29,12 @@ const optimize = async (name: string, width: number): Promise<Img> => {
   const img = await getImage({ src: byName(name), width, format: 'webp', quality: 82 })
   return { src: img.src, width: Number(img.attributes.width), height: Number(img.attributes.height) }
 }
+// Logo trên thanh trên (28 px, ảnh gấp đôi cho màn hình mật độ cao), favicon, biểu tượng khi lưu ra màn hình chính
+const logoImg = await getImage({ src: logo, width: 56, format: 'png' })
+const faviconImg = await getImage({ src: favicon, width: 64, format: 'png' })
+const appleImg = await getImage({ src: appleIcon, width: 180, format: 'png' })
 const shots: Record<string, Img> = {}
-for (const s of [t.hero.shot, ...t.sections.map((x) => x.shot)]) {
+for (const s of [t.hero.shot, ...t.sections.flatMap((x) => [x.shot, x.inset])]) {
   if (s && !shots[s.src]) shots[s.src] = await optimize(s.src, 1440)
 }
 const robots = await Promise.all(
@@ -36,9 +42,35 @@ const robots = await Promise.all(
 )
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '')
-const home = `${base}${t.lang === 'vi' ? '/' : `/${t.lang}/`}`
+const path = (lang: string): string => `${base}${lang === 'vi' ? '/' : `/${lang}/`}`
+const home = path(t.lang)
 const nav = { ...t.nav, switchLang: { ...t.nav.switchLang, href: `${base}${t.nav.switchLang.href}` } }
 const sections = t.sections.map(({ id, question }) => ({ id, question }))
+
+// SEO: địa chỉ đầy đủ của trang, hai bản ngôn ngữ, ảnh chia sẻ
+const abs = (p: string): string => new URL(p, Astro.site).href
+const canonical = abs(home)
+const ogImage = abs(`${base}/${t.ogImage.src}`)
+const otherLocale = t.lang === 'vi' ? 'en_US' : 'vi_VN'
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Budkin',
+  description: t.description,
+  url: canonical,
+  image: ogImage,
+  screenshot: abs(shots[t.hero.shot.src].src),
+  applicationCategory: 'ProductivityApplication',
+  operatingSystem: 'Windows 10, Windows 11, macOS 13+, Ubuntu 24.04+',
+  softwareVersion: version,
+  inLanguage: ['vi', 'en'],
+  downloadUrl: DOWNLOAD,
+  license: 'https://opensource.org/licenses/MIT',
+  isAccessibleForFree: true,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  author: { '@type': 'Person', name: t.footer.madeBy, url: 'https://github.com/HoangDuong2k' },
+  codeRepository: REPO
+}
 ---
 
 <!doctype html>
@@ -50,10 +82,35 @@ const sections = t.sections.map(({ id, question }) => ({ id, question }))
     <title>{t.title}</title>
     <meta name="description" content={t.description} />
     <meta name="theme-color" content="#121315" />
-    <link rel="icon" type="image/png" href={favicon.src} />
+    <link rel="icon" type="image/png" href={faviconImg.src} />
+    <link rel="apple-touch-icon" href={appleImg.src} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="vi" href={abs(path('vi'))} />
+    <link rel="alternate" hreflang="en" href={abs(path('en'))} />
+    <link rel="alternate" hreflang="x-default" href={abs(path('vi'))} />
+    <link rel="sitemap" href={`${base}/sitemap.xml`} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Budkin" />
+    <meta property="og:title" content={t.title} />
+    <meta property="og:description" content={t.description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={t.locale} />
+    <meta property="og:locale:alternate" content={otherLocale} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={t.ogImage.alt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={t.title} />
+    <meta name="twitter:description" content={t.description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={t.ogImage.alt} />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   </head>
   <body class="min-h-dvh bg-background text-foreground antialiased">
-    <SiteHeader client:load home={home} logo={logo.src} download={DOWNLOAD} repo={REPO} labels={nav} />
+    <SiteHeader client:load home={home} logo={logoImg.src} download={DOWNLOAD} repo={REPO} labels={nav} />
     <LandingBody t={t} shots={shots} robots={robots} download={DOWNLOAD} repo={REPO} />
     <RobotGuide client:load sections={sections} labels={t.robot} />
   </body>
