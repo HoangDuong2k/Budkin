@@ -1,0 +1,57 @@
+name: Pages
+
+# Trang giới thiệu (site/) → GitHub Pages: https://hoangduong2k.github.io/Budkin/
+# Cần bật một lần trong repo: Settings → Pages → Build and deployment → Source: GitHub Actions
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      # Trang dùng chung với app: ảnh chụp, icon, hình robot 2D, số phiên bản
+      - 'docs/screenshots/**'
+      - 'build/icons/**'
+      - 'src/renderer/src/flat/robots/art.tsx'
+      - 'src/renderer/src/styles/robot-art.css'
+      - 'package.json'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Một lần đăng tại một thời điểm; lần mới hơn thay lần đang chờ
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      # Chỉ cần thư viện của trang (React của trang dùng cho cả file hình robot nằm trong src/ của app)
+      - run: npm ci
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -21,6 +21,9 @@ robot phát sáng.
 Dữ liệu chỉ nằm trên máy của bạn, không cần tài khoản, không gửi đi đâu — trừ khi bạn tự
 [kết nối Claude](#hỏi-đáp-và-giao-việc-cho-claude) để hỏi đáp, giao việc bằng lời.
 
+Trang giới thiệu: [hoangduong2k.github.io/Budkin](https://hoangduong2k.github.io/Budkin/) (tiếng Việt) ·
+[English](https://hoangduong2k.github.io/Budkin/en/).
+
 ## Robot trên bàn
 
 | Budkin | Orbi | Rover | Miu | Mech |
@@ -327,6 +330,25 @@ Icon (mặt robot) vẽ bằng SVG trong `build/icon-src/`; sửa xong thì ch�
   Apple vào Applications, e2e trên bản đã cài, "khởi động cùng máy", rồi xoá app (dữ liệu người dùng phải còn).
 - **release:** đẩy tag `v*` (`git tag v0.1.0 && git push origin v0.1.0`) thì tạo GitHub Release kèm bộ cài và
   `SHA256SUMS.txt`.
+
+### Trang giới thiệu
+
+`site/` là trang tĩnh (Astro + React ở phần cần tương tác + momi-ui), tiếng Việt ở `/Budkin/`, tiếng Anh ở
+`/Budkin/en/`. Dùng chung với app: ảnh chụp `docs/screenshots` (đổi sang WebP lúc build), icon, hình robot 2D
+(`src/renderer/src/flat/robots/art.tsx`). Nội dung nằm trong `site/src/i18n/vi.ts` và `en.ts` (cùng cấu trúc: mỗi phần
+là một câu hỏi, robot ở góc trang dùng các câu hỏi làm mục lục).
+
+```bash
+cd site && npm ci
+npm run dev                 # http://localhost:4321/Budkin/
+npm run build               # → site/dist
+```
+
+- Ảnh chia sẻ link (Open Graph, 1200×630): `npx electron site/scripts/og-image.cjs` ở thư mục gốc →
+  `site/public/og-vi.png`, `og-en.png`. Đổi tiêu đề phần mở đầu thì sửa cả chữ trong script rồi chạy lại.
+- **Pages** (`.github/workflows/pages.yml`): đẩy lên `main` có thay đổi ở `site/` (hoặc ảnh chụp, icon, hình robot
+  dùng chung) thì build và đăng lên GitHub Pages. Cần bật một lần: Settings → Pages → Source: **GitHub Actions**.
+  Commit chỉ sửa `site/` không chạy workflow build app.
 
 ### Kiến trúc
 

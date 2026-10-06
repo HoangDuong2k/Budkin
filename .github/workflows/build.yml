@@ -4,7 +4,11 @@ on:
   push:
     tags: ['v*']
     branches: [main]
+    # Chỉ sửa trang giới thiệu (đăng bằng pages.yml) thì không build app. Đẩy tag v* luôn chạy (GitHub không xét
+    # paths với tag)
+    paths-ignore: ['site/**', '.github/workflows/pages.yml']
   pull_request:
+    paths-ignore: ['site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 env:
