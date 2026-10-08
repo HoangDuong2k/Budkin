@@ -17,6 +17,8 @@ interface Props {
   robots: (Img & { name: string })[]
   download: string
   repo: string
+  /** Hiệu ứng nền của phần mở đầu (island riêng, truyền vào từ slot "heroFx" của Astro) */
+  heroFx?: React.ReactNode
 }
 
 function Shot({ img, shot, priority }: { img: Img; shot: ShotInfo; priority?: boolean }): React.JSX.Element {
@@ -125,7 +127,7 @@ function Actions({ t, download, repo, center, downloadOnly }: { t: Dict; downloa
   )
 }
 
-export default function LandingBody({ t, shots, robots, download, repo }: Props): React.JSX.Element {
+export default function LandingBody({ t, shots, robots, download, repo, heroFx }: Props): React.JSX.Element {
   const total = String(t.sections.length).padStart(2, '0')
   const eyebrow = (i: number): React.JSX.Element => (
     <span className="eyebrow">
@@ -139,6 +141,7 @@ export default function LandingBody({ t, shots, robots, download, repo }: Props)
         <section className="relative isolate overflow-hidden pt-16 pb-20 md:pt-24 md:pb-28">
           <BackgroundPattern variant="grid" fade="top" />
           <div className="hero-glow" aria-hidden />
+          {heroFx}
           <Container size="xl" className="flex flex-col items-center text-center">
             <p className="eyebrow">
               <span className="led" aria-hidden />

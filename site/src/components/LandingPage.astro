@@ -9,6 +9,7 @@ import appleIcon from '../../../build/icons/256x256.png'
 import { version } from '../../../package.json'
 import type { Dict } from '../i18n/vi'
 import { DOWNLOAD, REPO } from '../i18n/vi'
+import HeroDust from './HeroDust'
 import LandingBody, { type Img } from './LandingBody'
 import RobotGuide from './RobotGuide'
 import SiteHeader from './SiteHeader'
@@ -111,7 +112,9 @@ const jsonLd = {
   </head>
   <body class="min-h-dvh bg-background text-foreground antialiased">
     <SiteHeader client:load home={home} logo={logoImg.src} download={DOWNLOAD} repo={REPO} labels={nav} />
-    <LandingBody t={t} shots={shots} robots={robots} download={DOWNLOAD} repo={REPO} />
+    <LandingBody t={t} shots={shots} robots={robots} download={DOWNLOAD} repo={REPO}>
+      <HeroDust slot="heroFx" client:idle />
+    </LandingBody>
     <RobotGuide client:load sections={sections} labels={t.robot} />
   </body>
 </html>
