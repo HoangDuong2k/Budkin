@@ -22,13 +22,13 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "astro": "^7.3.5",
-    "momi-ui": "github:HoangDuong2k/momi-ui#v0.3.1",
+    "momi-ui": "github:HoangDuong2k/momi-ui#v0.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tailwindcss": "^4.3.3"
   },
   "allowScripts": {
     "esbuild": true,
-    "github:HoangDuong2k/momi-ui#2d4f40cbecb5476ba217657cd274aca3052ed547": true
+    "github:HoangDuong2k/momi-ui#e08bfae24bb443886a863c04fa9f196f52af332b": true
   }
 }
