@@ -35,6 +35,36 @@ export interface Section {
   inset?: Shot
   /** Thẻ theo hệ điều hành (phần cài đặt) */
   platforms?: Point[]
+  /** Con số lớn kèm chú thích (vd. "0" tài khoản) */
+  stats?: Stat[]
+  /** Khung trò chuyện mẫu (phần kết nối Claude): các câu bạn hỏi, câu Claude trả lời */
+  chat?: { you: string; prompts: string[]; reply: string }
+  /** Chữ cỡ cực lớn làm nền (phần lời kết, vd. "0đ") */
+  display?: string
+}
+
+/** Một con số lớn và lời chú thích */
+export interface Stat {
+  value: string
+  label: string
+}
+
+/** Một việc mẫu trong cảnh robot ở phần mở đầu */
+export interface DemoTask {
+  title: string
+  /** Giờ hạn hiển thị trên thẻ và bong bóng */
+  when: string
+  tag: string
+}
+
+/** Ghim chú thích trên ảnh bàn làm việc ở phần mở đầu: toạ độ theo % của ảnh */
+export interface Hotspot {
+  x: number
+  y: number
+  title: string
+  text: string
+  /** Ghim này là công tắc đèn (bấm để bật / tắt) */
+  lamp?: boolean
 }
 
 export const vi = {
@@ -60,7 +90,41 @@ export const vi = {
     download: 'Tải Budkin',
     source: 'Xem mã nguồn',
     footnote: 'Windows · macOS · Ubuntu — dữ liệu chỉ nằm trên máy bạn',
-    shot: { src: 'desk-night.png', alt: 'Bàn làm việc Budkin lúc tắt đèn: màn hình danh sách việc, robot bên trái đang nhắc một việc đến hạn, đèn bàn bên phải' }
+    shot: { src: 'desk-night.png', alt: 'Bàn làm việc Budkin lúc tắt đèn: màn hình danh sách việc, robot bên trái đang nhắc một việc đến hạn, đèn bàn bên phải' },
+    /** Ảnh lúc bật đèn (bấm công tắc ở phần mở đầu) */
+    dayShot: { src: 'desk-day.png', alt: 'Bàn làm việc Budkin lúc bật đèn: robot, màn hình danh sách việc, đèn bàn' },
+    hud: 'Bàn số 09 · robot đang trực',
+    /** Tiêu đề chia dòng (dòng `accent` được tô sáng); nội dung giống `title` */
+    headline: [{ text: 'Việc cần làm,' }, { text: 'đặt trên một bàn làm việc' }, { text: 'có robot canh giờ', accent: true }] as { text: string; accent?: boolean }[],
+    /** Cảnh robot đang trực ở phần mở đầu: robot báo việc đến hạn, bạn trả lời ngay trên bong bóng */
+    scene: {
+      label: 'Budkin đang trực: bấm vào robot để chọc, trả lời bong bóng nhắc việc',
+      duty: 'Đang trực',
+      due: 'Đến hạn',
+      done: 'Xong',
+      snooze: '10 phút',
+      doneSay: ['Tuyệt! Thêm một việc xong rồi.', 'Gọn gàng! Mình gạch nhé.', 'Xong! Bạn làm tốt lắm.'],
+      snoozeSay: 'Ok, 10 phút nữa mình nhắc lại.',
+      allDone: 'Hết việc rồi, nghỉ tay chút nhé!',
+      poke: ['Ơ, nhột!', 'Mình đang canh giờ mà~', 'Bíp bíp!', 'Có việc gì cứ để mình lo.'],
+      tasks: [
+        { title: 'Gửi báo cáo tuần cho sếp', when: '17:00', tag: '#Gấp' },
+        { title: 'Họp team dự án mới', when: '10:00', tag: 'Công ty' },
+        { title: 'Mua sữa và pate cho mèo', when: 'Hôm nay', tag: 'Nhà' }
+      ] satisfies DemoTask[] as DemoTask[]
+    },
+    lamp: { label: 'Đèn bàn', on: 'Bật', off: 'Tắt', hint: 'Bấm vào đèn để bật / tắt' },
+    hotspots: [
+      { x: 19.5, y: 74, title: 'Robot', text: 'nhìn theo chuột, nhắc khi việc đến hạn' },
+      { x: 50, y: 70, title: 'Màn hình', text: 'danh sách, Kanban, lịch' },
+      { x: 86, y: 19, title: 'Đèn bàn', text: 'bấm để đổi sáng tối', lamp: true }
+    ] satisfies Hotspot[] as Hotspot[]
+  },
+  /** Băng chữ chạy ngang dưới phần mở đầu */
+  ticker: ['Miễn phí', 'Mã nguồn mở MIT', 'Windows · macOS · Ubuntu', 'Không cần tài khoản', 'Dữ liệu chỉ trên máy bạn', '5 robot', 'Kết nối Claude', 'Tiếng Việt · English'],
+  ui: {
+    /** Thanh kéo so sánh hai ảnh */
+    compare: 'Kéo để so sánh lúc tắt đèn và bật đèn'
   },
   robot: {
     button: 'Hỏi Budkin: mở mục lục',
@@ -154,6 +218,11 @@ export const vi = {
         { title: 'Bạn giữ quyền', text: 'Tắt, Chỉ xem hoặc Xem và sửa. Mỗi thay đổi Claude làm đều có nút Hoàn tác trong 15 phút.' },
         { title: 'Budkin đang tắt?', text: 'khi Claude cần đọc hay sửa việc, Budkin tự mở chạy nền rồi trả lời.' }
       ],
+      chat: {
+        you: 'Bạn',
+        prompts: ['Hôm nay tôi có việc gì?', 'Thêm việc gọi điện cho mẹ lúc 8 giờ tối mai', 'Dời các việc quá hạn sang thứ Hai'],
+        reply: 'Đã thêm vào Budkin. Muốn đổi ý thì bấm Hoàn tác trong 15 phút.'
+      },
       shot: { src: 'desk-ai.png', alt: 'Claude vừa thêm hai việc vào Budkin, kèm thông báo có nút Hoàn tác' },
       inset: { src: 'settings-ai.png', alt: 'Cài đặt → Kết nối AI: Claude Desktop đã kết nối, quyền Xem và sửa', label: 'Kết nối AI' }
     },
@@ -161,6 +230,12 @@ export const vi = {
       id: 'data',
       question: 'Dữ liệu nằm ở đâu?',
       answer: 'Chỉ trên máy của bạn. Không tài khoản, không máy chủ, không gửi đi đâu, trừ khi bạn tự kết nối Claude để hỏi đáp.',
+      stats: [
+        { value: '0', label: 'tài khoản phải tạo' },
+        { value: '0', label: 'máy chủ giữ việc của bạn' },
+        { value: '7', label: 'ngày sao lưu tự động' },
+        { value: '1', label: 'file để chuyển sang máy mới' }
+      ],
       points: [
         { title: 'Sao lưu tự động', text: 'mỗi ngày một bản, giữ 7 ngày gần nhất; khôi phục chỉ với một nút bấm.' },
         { title: 'Chuyển sang máy khác', text: 'xuất toàn bộ việc ra một file, nhập ở máy mới: gộp với dữ liệu sẵn có hoặc thay thế.' },
@@ -173,6 +248,10 @@ export const vi = {
       question: 'Máy yếu có chạy được không?',
       answer:
         'Được. Máy không có card đồ hoạ, GPU hay gặp lỗi, hoặc khi bạn chọn Chỉ 2D, cả bàn làm việc được vẽ lại bằng tranh vector, cùng phong cách và bố cục với bản 3D.',
+      stats: [
+        { value: '⅓', label: 'lõi CPU khi rê chuột liên tục' },
+        { value: '≈0', label: 'khi để yên' }
+      ],
       points: [
         { title: 'Vẫn đủ 5 robot', text: 'nhìn theo con trỏ, chớp mắt, báo động, ăn mừng, ngủ có "Zzz".' },
         { title: 'Nhẹ hơn nhiều', text: 'rê chuột liên tục chỉ tốn khoảng một phần ba lõi CPU, để yên gần như không tốn gì.' },
@@ -202,7 +281,8 @@ export const vi = {
       id: 'price',
       question: 'Có mất phí không?',
       answer:
-        'Không. Budkin miễn phí và là mã nguồn mở theo giấy phép MIT: dùng, sửa, chia sẻ lại thoải mái. Kết nối Claude cũng không tốn thêm phí, vì Budkin dùng tài khoản Claude bạn đang có.'
+        'Không. Budkin miễn phí và là mã nguồn mở theo giấy phép MIT: dùng, sửa, chia sẻ lại thoải mái. Kết nối Claude cũng không tốn thêm phí, vì Budkin dùng tài khoản Claude bạn đang có.',
+      display: '0đ'
     }
   ] satisfies Section[] as Section[],
   footer: {

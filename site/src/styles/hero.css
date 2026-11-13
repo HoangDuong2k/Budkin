@@ -1,0 +1,928 @@
+/* Phần mở đầu (components/Hero.tsx): lời giới thiệu bên trái, Budkin "đang trực" trước mặt đồng hồ lớn bên phải.
+   Chuyển động chỉ dùng transform / opacity (và vài thuộc tính riêng translate / scale) để chạy trên GPU. */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  padding-block: 2.5rem 4.5rem;
+}
+
+@media (min-width: 1024px) {
+  .hero {
+    min-height: calc(100svh - 4rem);
+    padding-block: 3rem 5.5rem;
+  }
+}
+
+.hero-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 74% 52%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 42%),
+    radial-gradient(ellipse 50% 40% at 8% 0%, color-mix(in srgb, var(--primary) 9%, transparent), transparent 70%);
+}
+
+/* Báo động: quầng đỏ phía sau robot phập phồng */
+.hero-ambient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(circle at 74% 52%, color-mix(in srgb, var(--destructive) 22%, transparent), transparent 40%);
+  transition: opacity 0.5s ease;
+  will-change: opacity;
+}
+
+.hero[data-mood='alert'] .hero-ambient::after {
+  opacity: 1;
+}
+
+.hero-inner {
+  display: grid;
+  gap: 3.5rem;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .hero-inner {
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* ——— Lời giới thiệu ——— */
+
+.hero-badge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--warning);
+}
+
+.hero-badge-rule {
+  width: 1.5rem;
+  height: 1px;
+  background: var(--border-strong);
+}
+
+.hero-title {
+  margin-top: 1.75rem;
+  font-size: clamp(2.5rem, 1.2rem + 3.9vw, 4.6rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+/* Mỗi dòng nằm sau một mặt nạ, chữ trượt lên từ dưới. Chừa chỗ trên / dưới để dấu tiếng Việt không bị cắt */
+.hero-line {
+  display: block;
+  overflow: hidden;
+  padding-block: 0.14em 0.06em;
+  margin-block: -0.14em -0.06em;
+}
+
+.hero-line-inner {
+  display: inline-block;
+  text-wrap: balance;
+}
+
+/* Dòng tô sáng: chữ xanh ngọc có vệt sáng lướt qua */
+.hero-accent {
+  color: transparent;
+  background: linear-gradient(100deg, var(--primary) 0%, var(--primary) 38%, #c8fbf6 50%, var(--primary) 62%, #2aa198 100%);
+  background-size: 260% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.hero-lead {
+  max-width: 34rem;
+  margin-top: 1.75rem;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+
+@media (min-width: 640px) {
+  .hero-lead {
+    font-size: 1.125rem;
+  }
+}
+
+/* Nút hút về phía con trỏ (script đặt transform) */
+.magnetic {
+  display: inline-flex;
+  transition: transform 0.3s var(--ease-out);
+}
+
+/* Vệt sáng lướt qua nút tải */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.5) 50%, transparent 65%);
+  transform: translateX(-130%);
+  pointer-events: none;
+}
+
+/* ——— Cảnh robot ——— */
+
+.scene {
+  --px: 0;
+  --py: 0;
+  position: relative;
+  width: min(100%, 560px);
+  aspect-ratio: 1;
+  margin-inline: auto;
+}
+
+/* Mặt đồng hồ: lệch ngược chiều chuột (lớp xa nhất) */
+.dial {
+  position: absolute;
+  inset: 5%;
+  border-radius: 50%;
+  transform: translate3d(calc(var(--px) * -10px), calc(var(--py) * -8px), 0);
+  transition: transform 0.5s var(--ease-out);
+}
+
+.dial-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.dial-ring {
+  fill: color-mix(in srgb, var(--card) 45%, transparent);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+
+.dial-ring-inner {
+  fill: none;
+  stroke: var(--border);
+  stroke-dasharray: 2 6;
+}
+
+.dial-tick {
+  stroke: color-mix(in srgb, var(--foreground) 22%, transparent);
+  stroke-width: 1.5;
+}
+
+.dial-tick-major {
+  stroke: color-mix(in srgb, var(--primary) 70%, transparent);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.dial-hand {
+  stroke-linecap: round;
+}
+
+.dial-hand-h {
+  stroke: color-mix(in srgb, var(--foreground) 40%, transparent);
+  stroke-width: 6;
+}
+
+.dial-hand-m {
+  stroke: color-mix(in srgb, var(--primary) 55%, transparent);
+  stroke-width: 3.5;
+}
+
+/* Tia quét như radar */
+.dial-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg 285deg, color-mix(in srgb, var(--primary) 26%, transparent) 360deg);
+  mask-image: radial-gradient(circle, transparent 18%, #000 60%);
+  will-change: transform;
+}
+
+.dial-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg 285deg, color-mix(in srgb, var(--destructive) 34%, transparent) 360deg);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.hero[data-mood='alert'] .dial-sweep::after {
+  opacity: 1;
+}
+
+.dial-time {
+  position: absolute;
+  top: 7%;
+  left: 2%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background) 80%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.dial-time::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--primary);
+}
+
+.hero[data-mood='alert'] .dial-time {
+  border-color: color-mix(in srgb, var(--destructive) 50%, transparent);
+  color: var(--destructive);
+}
+
+.hero[data-mood='alert'] .dial-time::before {
+  background: var(--destructive);
+  box-shadow: 0 0 8px var(--destructive);
+}
+
+/* Robot trên bệ */
+.bot-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  z-index: 2;
+  width: 44%;
+  translate: -50% 0;
+}
+
+.bot-pedestal-ring {
+  --ring-c: var(--primary);
+  position: absolute;
+  left: 50%;
+  bottom: -5%;
+  width: 130%;
+  aspect-ratio: 4 / 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--ring-c) 28%, transparent), transparent 66%);
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--ring-c) 60%, transparent),
+    0 0 36px -4px color-mix(in srgb, var(--ring-c) 55%, transparent);
+  transition: box-shadow 0.4s ease;
+}
+
+.hero[data-mood='alert'] .bot-pedestal-ring {
+  --ring-c: var(--destructive);
+}
+
+.hero-bot {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 220 / 272;
+  padding: 0;
+  border: 0;
+  border-radius: 2rem;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hero-bot:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 6px;
+}
+
+.hero-bot .robot-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.hero-bot-shadow {
+  fill: url(#fr-shadow);
+}
+
+/* Thẻ việc lơ lửng: mỗi thẻ một độ sâu (--d), lớp gần trôi theo chuột nhiều hơn */
+.fcard {
+  --d: 1;
+  position: absolute;
+  z-index: 3;
+  transform: translate3d(calc(var(--px) * var(--d) * 22px), calc(var(--py) * var(--d) * 16px), 0);
+  transition: transform 0.5s var(--ease-out);
+  pointer-events: none;
+}
+
+.fcard-0 {
+  --d: 1.7;
+  top: 34%;
+  left: -6%;
+}
+
+.fcard-1 {
+  --d: 1;
+  top: 31%;
+  right: -9%;
+}
+
+.fcard-2 {
+  --d: 2.3;
+  bottom: 12%;
+  left: -2%;
+}
+
+.fcard-inner {
+  --tilt: -4deg;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  width: 13.5rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--popover) 94%, transparent);
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.85);
+  rotate: var(--tilt);
+  transition:
+    opacity 0.4s ease,
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+
+.fcard-1 .fcard-inner {
+  --tilt: 3deg;
+}
+
+.fcard-2 .fcard-inner {
+  --tilt: -2deg;
+}
+
+.fcard-check {
+  position: relative;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.125rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 0.3rem;
+  transition:
+    background 0.3s,
+    border-color 0.3s;
+}
+
+.fcard-title {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-decoration-thickness: 1.5px;
+  transition: color 0.3s;
+}
+
+.fcard-meta {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--primary);
+}
+
+.fcard-tag {
+  color: var(--warning);
+}
+
+/* Việc đang đến hạn: viền đỏ */
+.fcard[data-due] .fcard-inner {
+  border-color: color-mix(in srgb, var(--destructive) 65%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--destructive) 16%, transparent),
+    0 18px 40px -16px rgb(0 0 0 / 0.85);
+}
+
+.fcard[data-due] .fcard-check {
+  border-color: var(--destructive);
+}
+
+.fcard[data-due] .fcard-meta {
+  color: var(--destructive);
+}
+
+/* Đã xong: ô tick xanh, gạch ngang, mờ đi */
+.fcard[data-done] .fcard-inner {
+  opacity: 0.55;
+}
+
+.fcard[data-done] .fcard-check {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.fcard[data-done] .fcard-check::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--primary-foreground);
+  border-width: 0 2px 2px 0;
+  rotate: 45deg;
+}
+
+.fcard[data-done] .fcard-title {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+
+/* Bong bóng của robot */
+.bubble-slot {
+  position: absolute;
+  top: 3%;
+  left: 50%;
+  z-index: 4;
+  width: min(18rem, 76%);
+  translate: -50% 0;
+  display: flex;
+  justify-content: center;
+}
+
+.bubble {
+  position: relative;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 1rem;
+  background: var(--popover);
+  box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.9);
+  transform-origin: 50% 100%;
+}
+
+/* Đuôi bong bóng chỉ xuống robot */
+.bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  translate: -50% 0;
+  rotate: 45deg;
+  border: solid var(--border-strong);
+  border-width: 0 1px 1px 0;
+  background: var(--popover);
+}
+
+.bubble-due,
+.bubble-due::after {
+  border-color: color-mix(in srgb, var(--destructive) 55%, transparent);
+}
+
+.bubble-say {
+  width: auto;
+  max-width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.bubble-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--destructive);
+}
+
+.bubble-title {
+  margin-top: 0.375rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.bubble-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.bubble-btn {
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  background: var(--secondary);
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    border-color 0.2s;
+}
+
+.bubble-btn:hover {
+  border-color: var(--primary);
+}
+
+.bubble-btn:active {
+  transform: scale(0.95);
+}
+
+.bubble-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.bubble-btn-primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Giấy màu khi xong việc */
+.confetti {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.confetti i {
+  position: absolute;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0;
+}
+
+/* Gợi ý cuộn xuống */
+.scroll-cue {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  display: none;
+  width: 22px;
+  height: 34px;
+  translate: -50% 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 12px;
+}
+
+.scroll-cue span {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 3px;
+  height: 7px;
+  translate: -50% 0;
+  border-radius: 2px;
+  background: var(--primary);
+}
+
+@media (min-width: 1024px) and (min-height: 760px) {
+  .scroll-cue {
+    display: block;
+  }
+}
+
+/* Điện thoại: cảnh nhỏ lại, thẻ việc gọn hơn */
+@media (max-width: 640px) {
+  .fcard-inner {
+    width: 10.5rem;
+    padding: 0.5rem 0.625rem;
+  }
+
+  .fcard-title {
+    font-size: 0.75rem;
+  }
+
+  /* Màn hẹp: thẻ việc sẽ đè lên robot — chỉ giữ bong bóng nhắc việc */
+  .fcard {
+    display: none;
+  }
+
+  .bubble-slot {
+    top: 0;
+    width: 86%;
+  }
+
+  .dial-time {
+    top: auto;
+    bottom: 0;
+    left: 0;
+  }
+}
+
+/* Robot nhỏ ở góc trốn đi khi robot lớn đang trên màn hình */
+.robot-guide {
+  transition:
+    opacity 0.4s ease,
+    transform 0.5s var(--ease-out),
+    visibility 0s;
+}
+
+html[data-hero-bot] .robot-guide {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(24px) scale(0.7);
+  transform-origin: 100% 100%;
+  transition:
+    opacity 0.3s ease,
+    transform 0.4s var(--ease-out),
+    visibility 0s 0.4s;
+}
+
+/* ——— Chuyển động ——— */
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-badge,
+  .hero-lead,
+  .hero-copy > div,
+  .hero-copy > p:last-child {
+    animation: rise 0.9s var(--ease-out) both;
+  }
+
+  .hero-lead {
+    animation-delay: 0.45s;
+  }
+
+  .hero-copy > div {
+    animation-delay: 0.58s;
+  }
+
+  .hero-copy > p:last-child {
+    animation-delay: 0.7s;
+  }
+
+  .hero-line-inner {
+    animation: line-up 1s var(--ease-out) both;
+    animation-delay: calc(0.1s + var(--i) * 0.12s);
+  }
+
+  .hero-line-inner.hero-accent {
+    animation:
+      line-up 1s var(--ease-out) calc(0.1s + var(--i) * 0.12s) both,
+      shimmer 6s ease-in-out 1.6s infinite;
+  }
+
+  .btn-shine::after {
+    animation: shine 5s ease-in-out 2.2s infinite;
+  }
+
+  .dial {
+    animation: dial-in 1.2s var(--ease-out) 0.15s both;
+  }
+
+  .dial-sweep {
+    animation: spin 6s linear infinite;
+  }
+
+  .hero[data-mood='alert'] .dial-sweep {
+    animation-duration: 2.4s;
+  }
+
+  .hero[data-mood='alert'] .hero-ambient::after {
+    animation: alarm-glow 1s ease-in-out infinite alternate;
+  }
+
+  .bot-wrap {
+    animation: hover-float 4.5s ease-in-out infinite;
+  }
+
+  .fcard-inner {
+    animation:
+      card-in 0.9s var(--ease-out) both,
+      card-bob 6s ease-in-out infinite;
+  }
+
+  .fcard-0 .fcard-inner {
+    animation-delay: 0.7s, 0s;
+  }
+
+  .fcard-1 .fcard-inner {
+    animation-delay: 0.85s, -2s;
+  }
+
+  .fcard-2 .fcard-inner {
+    animation-delay: 1s, -4s;
+  }
+
+  .fcard[data-due] .fcard-check {
+    animation: due-ping 1s ease-in-out infinite;
+  }
+
+  .bubble {
+    animation: pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  }
+
+  .bubble-due {
+    animation:
+      pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both,
+      nudge 2.2s ease-in-out 0.6s infinite;
+  }
+
+  .confetti i {
+    animation: confetti 1.15s cubic-bezier(0.15, 0.7, 0.3, 1) both;
+  }
+
+  .scroll-cue span {
+    animation: cue 1.8s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+}
+
+@keyframes line-up {
+  from {
+    transform: translateY(115%) rotate(3deg);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  55% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+@keyframes shine {
+  0%,
+  70% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes dial-in {
+  from {
+    opacity: 0;
+    scale: 0.82;
+    rotate: -40deg;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes alarm-glow {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hover-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    scale: 0.7;
+    translate: 0 40px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes card-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes due-ping {
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--destructive) 25%, transparent);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    scale: 0.7;
+    translate: 0 12px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes nudge {
+  0%,
+  80%,
+  100% {
+    transform: rotate(0);
+  }
+  85% {
+    transform: rotate(-2.5deg);
+  }
+  90% {
+    transform: rotate(2.5deg);
+  }
+  95% {
+    transform: rotate(-1.5deg);
+  }
+}
+
+@keyframes confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0) scale(0.5);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(var(--dx), var(--dy)) rotate(calc(var(--rot) * 0.6)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 1.15), calc(var(--dy) + 130px)) rotate(var(--rot)) scale(0.9);
+  }
+}
+
+@keyframes cue {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}

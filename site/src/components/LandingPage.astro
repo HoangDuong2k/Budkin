@@ -9,8 +9,8 @@ import appleIcon from '../../../build/icons/256x256.png'
 import { version } from '../../../package.json'
 import type { Dict } from '../i18n/vi'
 import { DOWNLOAD, REPO } from '../i18n/vi'
-import HeroDust from './HeroDust'
 import LandingBody, { type Img } from './LandingBody'
+import Hero from './Hero'
 import RobotGuide from './RobotGuide'
 import SiteHeader from './SiteHeader'
 import '../styles/global.css'
@@ -35,7 +35,7 @@ const logoImg = await getImage({ src: logo, width: 56, format: 'png' })
 const faviconImg = await getImage({ src: favicon, width: 64, format: 'png' })
 const appleImg = await getImage({ src: appleIcon, width: 180, format: 'png' })
 const shots: Record<string, Img> = {}
-for (const s of [t.hero.shot, ...t.sections.flatMap((x) => [x.shot, x.inset])]) {
+for (const s of [t.hero.shot, t.hero.dayShot, ...t.sections.flatMap((x) => [x.shot, x.inset])]) {
   if (s && !shots[s.src]) shots[s.src] = await optimize(s.src, 1440)
 }
 const robots = await Promise.all(
@@ -80,6 +80,8 @@ const jsonLd = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <!-- Có JS: bật hiệu ứng hiện dần khi cuộn (không có JS thì mọi thứ hiện sẵn) -->
+    <script is:inline>document.documentElement.classList.add('js')</script>
     <title>{t.title}</title>
     <meta name="description" content={t.description} />
     <meta name="theme-color" content="#121315" />
@@ -113,8 +115,77 @@ const jsonLd = {
   <body class="min-h-dvh bg-background text-foreground antialiased">
     <SiteHeader client:load home={home} logo={logoImg.src} download={DOWNLOAD} repo={REPO} labels={nav} />
     <LandingBody t={t} shots={shots} robots={robots} download={DOWNLOAD} repo={REPO}>
-      <HeroDust slot="heroFx" client:idle />
+      <Hero client:load t={t} download={DOWNLOAD} repo={REPO} />
     </LandingBody>
     <RobotGuide client:load sections={sections} labels={t.robot} />
+    <script>
+      // Công tắc đèn ở ảnh bàn làm việc: bấm vào đèn trong ảnh hoặc nút công tắc để đổi ảnh tắt / bật đèn
+      const desk = document.querySelector<HTMLElement>('[data-lamp]')
+      const toggles = document.querySelectorAll<HTMLElement>('[data-lamp-toggle]')
+      // Giải mã sẵn ảnh bật đèn lúc rảnh, để lần bấm đầu không phải đợi giải mã ảnh lớn (gây khựng)
+      const dayImg = desk?.querySelector<HTMLImageElement>('.stage-day')
+      const dayReady = new Promise<void>((resolve) => {
+        const decode = (): void => void (dayImg?.decode?.() ?? Promise.resolve()).catch(() => undefined).finally(resolve)
+        if ('requestIdleCallback' in window) requestIdleCallback(decode, { timeout: 1500 })
+        else setTimeout(decode, 300)
+      })
+      let lampOn = false
+      toggles.forEach((btn) =>
+        btn.addEventListener('click', () => {
+          if (!desk) return
+          lampOn = !lampOn
+          toggles.forEach((b) => b.setAttribute('aria-pressed', String(lampOn)))
+          void dayReady.then(() => {
+            desk.dataset.lamp = lampOn ? 'on' : 'off'
+          })
+        })
+      )
+
+      // Thanh kéo so sánh hai ảnh
+      document.querySelectorAll<HTMLElement>('[data-compare]').forEach((el) => {
+        const input = el.querySelector('input')
+        if (!input) return
+        const set = (): void => el.style.setProperty('--pos', `${input.value}%`)
+        input.addEventListener('input', set)
+        set()
+      })
+
+      // Thanh tiến độ đọc: trình duyệt chưa có dòng thời gian theo cuộn (vd. Firefox) thì tính bằng script
+      const bar = document.querySelector<HTMLElement>('.scroll-progress')
+      if (bar && !CSS.supports('animation-timeline: scroll()')) {
+        let queued = false
+        const update = (): void => {
+          queued = false
+          const max = document.documentElement.scrollHeight - innerHeight
+          bar.style.setProperty('--progress', String(max > 0 ? Math.min(1, scrollY / max) : 0))
+        }
+        const onScroll = (): void => {
+          if (queued) return
+          queued = true
+          requestAnimationFrame(update)
+        }
+        addEventListener('scroll', onScroll, { passive: true })
+        addEventListener('resize', onScroll)
+        update()
+      }
+
+      // Hiện dần khi cuộn tới
+      const items = document.querySelectorAll<HTMLElement>('[data-reveal]')
+      if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        items.forEach((el) => el.classList.add('in'))
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (!e.isIntersecting) continue
+              e.target.classList.add('in')
+              io.unobserve(e.target)
+            }
+          },
+          { rootMargin: '0px 0px -8% 0px' }
+        )
+        items.forEach((el) => io.observe(el))
+      }
+    </script>
   </body>
 </html>

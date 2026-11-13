@@ -12,6 +12,8 @@
 @import '../../../src/renderer/src/styles/robot-art.css' layer(components);
 
 @import './robot-guide.css' layer(components);
+@import './landing.css' layer(components);
+@import './hero.css' layer(components);
 
 /* Token của momi-ui theo bảng màu Budkin (lúc bật đèn: chạng vạng dưới đèn LED trắng ấm). :root.dark để thắng .dark
    mặc định của momi-ui (cùng không nằm trong layer) */
@@ -86,16 +88,6 @@ html {
   box-shadow: 0 0 8px var(--primary);
 }
 
-/* Quầng sáng xanh ngọc sau phần mở đầu, như ánh màn hình hắt lên tường trong đêm */
-.hero-glow {
-  position: absolute;
-  inset: auto 0 0;
-  height: 70%;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(ellipse 50% 60% at 50% 70%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%);
-}
-
 /* Nhãn nhỏ ở góc ảnh chụp ("Bật đèn" / "Tắt đèn", "Kanban" / "Lịch") */
 .shot-label {
   position: absolute;
@@ -114,10 +106,8 @@ html {
   color: var(--warning);
 }
 
-.robot-name {
-  font-family: var(--font-label);
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
+/* Nhãn ở góc phải (ảnh thứ hai của thanh kéo so sánh) */
+.shot-label-end {
+  left: auto;
+  right: 0.625rem;
 }

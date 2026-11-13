@@ -27,3 +27,48 @@ export function ArrowIcon(p: P): React.JSX.Element {
     </svg>
   )
 }
+
+export function MonitorIcon(p: P): React.JSX.Element {
+  return (
+    <svg {...base} {...p}>
+      <rect x="2" y="3" width="20" height="13" rx="2" />
+      <path d="M8 21h8M12 16v5M6 8h7M6 11h4" />
+    </svg>
+  )
+}
+
+export function BotIcon(p: P): React.JSX.Element {
+  return (
+    <svg {...base} {...p}>
+      <rect x="4" y="8" width="16" height="12" rx="3" />
+      <path d="M12 8V4M9 13v2M15 13v2" />
+      <circle cx="12" cy="3" r="1" />
+    </svg>
+  )
+}
+
+export function LampIcon(p: P): React.JSX.Element {
+  return (
+    <svg {...base} {...p}>
+      <path d="M14 3 8 6l3 5 6-3-3-5ZM9.5 8.5 6 16M4 21h8M6 16l2 5" />
+      <path d="M15 11.5c.8 1.2 2.3 1.6 3.5.9" />
+    </svg>
+  )
+}
+
+export function GlobeIcon(p: P): React.JSX.Element {
+  return (
+    <svg {...base} {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3Z" />
+    </svg>
+  )
+}
+
+export function PowerIcon(p: P): React.JSX.Element {
+  return (
+    <svg {...base} {...p}>
+      <path d="M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0" />
+    </svg>
+  )
+}

@@ -22,7 +22,36 @@ export const en: Dict = {
     download: 'Download Budkin',
     source: 'View source',
     footnote: 'Windows · macOS · Ubuntu — your data stays on your computer',
-    shot: { src: 'desk-night.png', alt: 'The Budkin desk with the lamp off: a task list on the monitor, the robot on the left reminding you of a due task, the lamp on the right' }
+    shot: { src: 'desk-night.png', alt: 'The Budkin desk with the lamp off: a task list on the monitor, the robot on the left reminding you of a due task, the lamp on the right' },
+    dayShot: { src: 'desk-day.png', alt: 'The Budkin desk with the lamp on: the robot, a task list on the monitor, the desk lamp' },
+    hud: 'Desk 09 · robot on duty',
+    headline: [{ text: 'Your to-do list,' }, { text: 'on a desk with a robot' }, { text: 'keeping time', accent: true }],
+    scene: {
+      label: 'Budkin on duty: click the robot to poke it, answer the reminder bubble',
+      duty: 'On duty',
+      due: 'Due',
+      done: 'Done',
+      snooze: '10 min',
+      doneSay: ['Nice! One more thing done.', 'Neat! Ticking it off.', 'Done! Great job.'],
+      snoozeSay: 'Okay, I will remind you in 10 minutes.',
+      allDone: 'All clear, time for a break!',
+      poke: ['Hey, that tickles!', 'I am keeping time here~', 'Beep boop!', 'Leave the reminders to me.'],
+      tasks: [
+        { title: 'Send the weekly report to my boss', when: '5:00 PM', tag: '#Urgent' },
+        { title: 'Kick-off meeting for the new project', when: '10:00 AM', tag: 'Work' },
+        { title: 'Buy milk and cat food', when: 'Today', tag: 'Home' }
+      ]
+    },
+    lamp: { label: 'Desk lamp', on: 'On', off: 'Off', hint: 'Click the lamp to switch it on / off' },
+    hotspots: [
+      { x: 19.5, y: 74, title: 'Robot', text: 'follows your cursor, speaks up when things are due' },
+      { x: 50, y: 70, title: 'Monitor', text: 'lists, Kanban, calendar' },
+      { x: 86, y: 19, title: 'Desk lamp', text: 'click to switch light and dark', lamp: true }
+    ]
+  },
+  ticker: ['Free', 'MIT open source', 'Windows · macOS · Ubuntu', 'No account', 'Your data stays on your computer', '5 robots', 'Works with Claude', 'English · Tiếng Việt'],
+  ui: {
+    compare: 'Drag to compare the lamp off and on'
   },
   robot: {
     button: 'Ask Budkin: open the table of contents',
@@ -116,6 +145,11 @@ export const en: Dict = {
         { title: 'You stay in control', text: 'Off, View only, or View and edit. Every change Claude makes comes with an Undo button for 15 minutes.' },
         { title: 'Budkin closed?', text: 'when Claude needs to read or change tasks, Budkin starts in the background and answers.' }
       ],
+      chat: {
+        you: 'You',
+        prompts: ['What do I have today?', 'Add a task to call mom at 8 pm tomorrow', 'Move my overdue tasks to Monday'],
+        reply: 'Added to Budkin. Changed your mind? Click Undo within 15 minutes.'
+      },
       shot: { src: 'desk-ai.png', alt: 'Claude has just added two tasks to Budkin, with a notification that has an Undo button' },
       inset: { src: 'settings-ai.png', alt: 'Settings → AI connection: Claude Desktop connected with View and edit access', label: 'AI connection' }
     },
@@ -123,6 +157,12 @@ export const en: Dict = {
       id: 'data',
       question: 'Where is my data stored?',
       answer: 'Only on your computer. No account, no server, nothing sent anywhere, unless you connect Claude yourself to ask about your tasks.',
+      stats: [
+        { value: '0', label: 'accounts to create' },
+        { value: '0', label: 'servers holding your tasks' },
+        { value: '7', label: 'days of automatic backups' },
+        { value: '1', label: 'file to move to a new computer' }
+      ],
       points: [
         { title: 'Automatic backups', text: 'one a day, the last 7 days kept; restoring takes a single click.' },
         { title: 'Moving to another computer', text: 'export everything to one file and import it on the new one: merge with what is there or replace it.' },
@@ -135,6 +175,10 @@ export const en: Dict = {
       question: 'Does it run on a modest computer?',
       answer:
         'Yes. Without a graphics card, with a GPU that keeps failing, or when you choose 2D only, the whole desk is redrawn as vector art in the same style and layout as the 3D one.',
+      stats: [
+        { value: '⅓', label: 'of a CPU core while moving the mouse' },
+        { value: '≈0', label: 'when left alone' }
+      ],
       points: [
         { title: 'All 5 robots are still there', text: 'they follow your cursor, blink, raise the alarm, celebrate and sleep with a "Zzz".' },
         { title: 'Much lighter', text: 'moving the mouse non-stop takes about a third of one CPU core; left alone it uses almost nothing.' },
@@ -164,7 +208,8 @@ export const en: Dict = {
       id: 'price',
       question: 'Does it cost anything?',
       answer:
-        'No. Budkin is free and open source under the MIT license: use it, change it, share it. Connecting Claude costs nothing extra either, because Budkin uses the Claude account you already have.'
+        'No. Budkin is free and open source under the MIT license: use it, change it, share it. Connecting Claude costs nothing extra either, because Budkin uses the Claude account you already have.',
+      display: '$0'
     }
   ],
   footer: {
